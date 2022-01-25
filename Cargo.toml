@@ -1,0 +1,26 @@
+[package]
+name = "newton-fractal"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+js-sys = "0.3.55"
+wasm-bindgen = "0.2.63"
+num-complex = "0.4.0"
+
+[dependencies.web-sys]
+version = "0.3.4"
+features = [
+  "console",
+  "HtmlCanvasElement",
+  "CanvasRenderingContext2d",
+  # "WebGlBuffer",
+  # "WebGlVertexArrayObject",
+  # "WebGl2RenderingContext",
+  # "WebGlProgram",
+  # "WebGlShader",
+
+]
