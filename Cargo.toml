@@ -8,7 +8,8 @@ crate-type = ["cdylib"]
 
 [dependencies]
 js-sys = "0.3.55"
-wasm-bindgen = "0.2.63"
+serde = { version = "1.0.136", features = ["derive"] }
+wasm-bindgen = { version = "0.2.63", features = ["serde-serialize"] }
 num-complex = "0.4.0"
 
 [dependencies.web-sys]

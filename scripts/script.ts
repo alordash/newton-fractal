@@ -1,14 +1,18 @@
-import init, { draw_on_canvas, MyComplex, draw_grid } from '../pkg/newton_fractal.js';
+import init, { draw_grid, Polynomial } from '../pkg/newton_fractal.js';
+
+let polynom: Polynomial;
+let startPoint = [[0, 0], [-0.5, 0], [0.5, 0]];
+const divisionParts = 100;
 
 async function run() {
     await init();
 
-    z = new MyComplex(1.0, 2.0);
     myCanvas = <HTMLCanvasElement>document.getElementById("main-canvas");
     myCanvasContext = myCanvas.getContext("2d");
     
     console.log('myCanvas :>> ', myCanvas);
-    draw_on_canvas(myCanvas, 10);
+    polynom = new Polynomial(startPoint);
+    draw();
 }
 
 run();
@@ -16,12 +20,10 @@ run();
 let myCanvas: HTMLCanvasElement;
 let myCanvasContext: CanvasRenderingContext2D;
 
-let z: MyComplex;
-
 function draw() {
     let power = +powerRange.value;
     powerOutput.value = `Power: ${power}`;
-    draw_grid(myCanvas, myCanvasContext, 50, power, 600, 600);
+    draw_grid(myCanvas, myCanvasContext, divisionParts, polynom, 600, 600);
 }
 
 let powerOutput = <HTMLInputElement>document.getElementById("powerOutput");
