@@ -11,7 +11,8 @@ import init, { Dimension, Plotter, Polynomial } from '../pkg/newton_fractal.js';
 let plotter;
 let polynom;
 let startPoints = [[0, 0]];
-const divisionParts = 50;
+const xParts = 100;
+const yParts = 50;
 function CanvasClickCallback(me) {
     let x = me.offsetX;
     let y = me.offsetY;
@@ -29,7 +30,7 @@ function run() {
         let myCanvasContext = myCanvas.getContext("2d");
         myCanvas.addEventListener("click", CanvasClickCallback);
         console.log('myCanvas :>> ', myCanvas);
-        let dimension = new Dimension(600, 600, 2, 2, -1, -1);
+        let dimension = new Dimension(1200, 600, 4, 2, -2, -1);
         plotter = new Plotter(dimension, myCanvas, myCanvasContext);
         plotter.resize_canvas();
         polynom = new Polynomial(startPoints);
@@ -38,6 +39,6 @@ function run() {
 }
 run();
 function draw() {
-    plotter.plot_points(divisionParts, polynom);
+    plotter.plot_points(0.025, 0.025, polynom);
 }
 //# sourceMappingURL=script.js.map

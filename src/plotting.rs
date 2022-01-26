@@ -73,7 +73,13 @@ impl Plotter {
     }
 
     #[wasm_bindgen]
-    pub fn plot_points(&self, division_parts: u32, polynom: &Polynomial, point_size: Option<f64>) {
+    pub fn plot_points(
+        &self,
+        step_x: f64,
+        step_y: f64,
+        polynom: &Polynomial,
+        point_size: Option<f64>,
+    ) {
         if polynom.get_roots().len() == 0 {
             return;
         }
@@ -91,11 +97,7 @@ impl Plotter {
 
         let (x_range, y_range) = (self.dimension.x_range, self.dimension.y_range);
         log!("x_range: {}, y_range: {}", x_range, y_range);
-        let (step_x, step_y) = (
-            x_range / division_parts as f64,
-            y_range / division_parts as f64,
-        );
-        let size = ((step_x + step_y) / 2.0) * ((width + height) / 2.0) * point_size / 3.0;
+        let size = ((step_x + step_y) / 2.0) * ((width + height) / 2.0) * point_size / 4.0;
         ctx.set_fill_style(&"black".into());
 
         let mut y = self.dimension.y_offset + step_y / 2.0;
