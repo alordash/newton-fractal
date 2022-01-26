@@ -7,9 +7,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import init, { draw_grid, Polynomial } from '../pkg/newton_fractal.js';
+import init, { Dimension, Plotter, Polynomial } from '../pkg/newton_fractal.js';
+let myCanvas;
+let myCanvasContext;
+let plotter;
 let polynom;
-let startPoint = [[0, 0], [-0.5, 0], [0.5, 0]];
+let startPoint = [[0, 0]];
 const divisionParts = 100;
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -17,24 +20,15 @@ function run() {
         myCanvas = document.getElementById("main-canvas");
         myCanvasContext = myCanvas.getContext("2d");
         console.log('myCanvas :>> ', myCanvas);
+        let dimension = new Dimension(600, 600, 0.5, 0.5);
+        plotter = new Plotter(dimension, myCanvas, myCanvasContext);
+        plotter.resize_canvas();
         polynom = new Polynomial(startPoint);
         draw();
     });
 }
 run();
-let myCanvas;
-let myCanvasContext;
 function draw() {
-    let power = +powerRange.value;
-    powerOutput.value = `Power: ${power}`;
-    draw_grid(myCanvas, myCanvasContext, divisionParts, polynom, 600, 600);
+    plotter.plot_points(divisionParts, polynom);
 }
-let powerOutput = document.getElementById("powerOutput");
-let powerRange = document.getElementById("powerRange");
-powerRange.onchange = powerRange.onmousemove = () => {
-    draw();
-};
-powerRange.addEventListener("change", () => {
-    draw();
-});
 //# sourceMappingURL=script.js.map

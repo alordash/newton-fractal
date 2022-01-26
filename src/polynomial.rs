@@ -48,11 +48,11 @@ impl Polynomial {
             Some(v) => z - v,
             None => return None,
         };
-        log!("z: {}\nInitial prod: {}", z, &prod);
+        // log!("z: {}\nInitial prod: {}", z, &prod);
         for root in self.roots.iter().skip(1) {
             let k = z - root;
             prod *= k;
-            log!("Root: {}\nk: {}\nProd: {}", root, k, &prod);
+            // log!("Root: {}\nk: {}\nProd: {}", root, k, &prod);
         }
         Some(prod)
     }
