@@ -1,3 +1,5 @@
+use crate::approximation::Approximation;
+
 use super::polynomial::Polynomial;
 use num_complex::Complex;
 use wasm_bindgen::prelude::*;
@@ -73,11 +75,26 @@ impl Plotter {
     }
 
     #[wasm_bindgen]
+    pub fn plot_point(&self, x: f64, y: f64, color: &JsValue, size: f64) {
+        let ctx = &self.context;
+        let (canvas_x, canvas_y) = self.plot_to_canvas(x, y);
+        ctx.move_to(canvas_x, canvas_y);
+        ctx.begin_path();
+        ctx.arc(canvas_x, canvas_y, size, 0f64, 2f64 * std::f64::consts::PI)
+            .unwrap();
+        ctx.set_fill_style(color);
+        ctx.fill();
+        ctx.stroke();
+        ctx.close_path();
+    }
+
+    #[wasm_bindgen]
     pub fn plot_points(
         &self,
         step_x: f64,
         step_y: f64,
         polynom: &Polynomial,
+        approximation: &Approximation,
         point_size: Option<f64>,
     ) {
         if polynom.get_roots().len() == 0 {
@@ -107,7 +124,6 @@ impl Plotter {
                 let z = Complex::<f64>::new(x, y);
                 // log!("Original point: {:?}", z);
                 let z = polynom.calculate(z).unwrap();
-                // let z: MyComplex = f(z.into(), power).into();
                 // log!("Result point: {:?}", z);
                 let (canvas_x, canvas_y) = self.plot_to_canvas(z.re, z.im);
                 // log!("Remapped point: ({}, {})", canvas_x, canvas_y);
@@ -129,21 +145,12 @@ impl Plotter {
 
         for root in polynom.get_roots().iter() {
             let p = root.clone();
-            let (canvas_x, canvas_y) = self.plot_to_canvas(p.re, p.im);
-            ctx.move_to(canvas_x, canvas_y);
-            ctx.begin_path();
-            ctx.arc(
-                canvas_x,
-                canvas_y,
-                size * 1.5,
-                0f64,
-                2f64 * std::f64::consts::PI,
-            )
-            .unwrap();
-            ctx.set_fill_style(&"red".into());
-            ctx.fill();
-            ctx.stroke();
-            ctx.close_path();
+            self.plot_point(p.re, p.im, &"red".into(), 2.5 * size);
+        }
+
+        for point in approximation.get_points().iter() {
+            let p = point.clone();
+            self.plot_point(p.re, p.im, &"blue".into(), 2.0 * size);
         }
     }
 }

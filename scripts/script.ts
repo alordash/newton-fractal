@@ -1,11 +1,28 @@
-import init, { Dimension, Plotter, Polynomial } from '../pkg/newton_fractal.js';
+import init, { Dimension, Plotter, Polynomial, Approximation } from '../pkg/newton_fractal.js';
+
+let approximateButton = <HTMLButtonElement>document.getElementById("approximateButton");
 
 let plotter: Plotter;
+const xStep = 0.025;
+const yStep = 0.025;
 
 let polynom: Polynomial;
 let startPoints = [[0, 0]];
-const xParts = 100;
-const yParts = 50;
+
+let approximation: Approximation;
+
+function CreateRootPoint(x: number, y: number) {
+    polynom.add_root(x, y);
+    plotPoints();
+}
+
+function AddApproximationPoint(x: number, y: number) {
+    approximation?.free();
+
+    approximation = new Approximation(x, y);
+
+    plotPoints();
+}
 
 function CanvasClickCallback(me: MouseEvent) {
     let x = me.offsetX;
@@ -15,9 +32,11 @@ function CanvasClickCallback(me: MouseEvent) {
     x = p[0];
     y = p[1];
 
-    console.log('polynom :>> ', polynom);
-    polynom.add_root(x, y);
-    draw();
+    if (me.shiftKey) {
+        AddApproximationPoint(x, y);
+    } else {
+        CreateRootPoint(x, y);
+    }
 }
 
 async function run() {
@@ -28,16 +47,25 @@ async function run() {
 
     myCanvas.addEventListener("click", CanvasClickCallback);
 
+    approximation = new Approximation();
+
     console.log('myCanvas :>> ', myCanvas);
     let dimension = new Dimension(1200, 600, 4, 2, -2, -1);
     plotter = new Plotter(dimension, myCanvas, myCanvasContext);
     plotter.resize_canvas();
     polynom = new Polynomial(startPoints);
-    draw();
+
+    plotPoints();
 }
 
 run();
 
-function draw() {
-    plotter.plot_points(0.025, 0.025, polynom);
+function plotPoints() {
+    plotter.plot_points(xStep, yStep, polynom, approximation);
 }
+
+approximateButton.addEventListener("click", () => {
+    approximation.get_next_point(polynom);
+    
+    plotPoints();
+});

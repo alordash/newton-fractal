@@ -5,10 +5,10 @@ mod logger;
 use logger::*;
 
 pub mod polynomial;
-use polynomial::*;
 
 pub mod plotting;
-use plotting::*;
+
+pub mod approximation;
 
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
