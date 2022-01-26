@@ -29,12 +29,11 @@ impl Polynomial {
         })
     }
 
-    pub fn add_root(&mut self, root: &JsValue) {
-        let (re, im): (f64, f64) = match root.into_serde() {
-            Ok(v) => v,
-            Err(_) => return,
-        };
+    #[wasm_bindgen]
+    pub fn add_root(&mut self, re: f64, im: f64) {
+        log!("x: {}, y: {}", re, im);
         self.roots.push(Complex64 { re, im });
+        log!("Now have {} roots: {:?}", self.roots.len(), self.roots);
     }
 }
 
