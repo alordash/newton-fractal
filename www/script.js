@@ -76,7 +76,7 @@ function run() {
         plotter = new Plotter(dimension, myCanvas, myCanvasContext);
         plotter.resize_canvas();
         polynom = new Polynomial(startPoints);
-        draw;
+        draw();
     });
 }
 run();
@@ -99,5 +99,6 @@ function displayRoots() {
 }
 function draw() {
     drawNewtonsFractal();
+    displayRoots();
 }
 //# sourceMappingURL=script.js.map

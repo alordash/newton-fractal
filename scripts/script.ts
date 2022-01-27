@@ -81,7 +81,7 @@ async function run() {
     plotter.resize_canvas();
     polynom = new Polynomial(startPoints);
 
-    draw
+    draw();
 }
 
 run();
@@ -113,5 +113,5 @@ function displayRoots() {
 
 function draw() {
     drawNewtonsFractal();
-    // displayRoots();
+    displayRoots();
 }
