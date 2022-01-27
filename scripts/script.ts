@@ -1,6 +1,4 @@
-import init, { Dimension, Plotter, Polynomial, Approximation } from '../pkg/newton_fractal.js';
-
-let approximateButton = <HTMLButtonElement>document.getElementById("approximateButton");
+import init, { Dimension, Plotter, Polynomial } from '../pkg/newton_fractal.js';
 
 let plotter: Plotter;
 const xStep = 0.025;
@@ -9,8 +7,6 @@ const yStep = 0.025;
 let polynom: Polynomial;
 let startPoints = [[0, 0]];
 
-let approximation: Approximation;
-
 const regionsColor = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], [255, 255, 0, 255], [255, 0, 255, 255], [0, 255, 255, 255]];
 
 function CreateRootPoint(x: number, y: number) {
@@ -18,12 +14,9 @@ function CreateRootPoint(x: number, y: number) {
     plotPoints();
 }
 
-function AddApproximationPoint(x: number, y: number) {
-    approximation?.free();
-
-    approximation = new Approximation(x, y);
-
-    plotPoints();
+function RemoveRootPoint(x: number, y: number) {
+    let id = polynom.get_closest_root_id(x, y);
+    polynom.remove_root_by_id(id);
 }
 
 function CanvasClickCallback(me: MouseEvent) {
@@ -35,12 +28,15 @@ function CanvasClickCallback(me: MouseEvent) {
     y = p[1];
 
     if (me.shiftKey) {
-        AddApproximationPoint(x, y);
-    } else if (me.ctrlKey) {
-        polynom.add_root(x, y);
-        drawNewtonsFractal();
+        RemoveRootPoint(x, y);
     } else {
-        CreateRootPoint(x, y);
+        polynom.add_root(x, y);
+    }
+
+    if (me.ctrlKey) {
+        plotPoints()
+    } else {
+        drawNewtonsFractal();
     }
 }
 
@@ -51,8 +47,6 @@ async function run() {
     let myCanvasContext = myCanvas.getContext("2d");
 
     myCanvas.addEventListener("click", CanvasClickCallback);
-
-    approximation = new Approximation();
 
     console.log('myCanvas :>> ', myCanvas);
     let dimension = new Dimension(1200, 600, 4, 2, -2, -1);
@@ -66,20 +60,8 @@ async function run() {
 run();
 
 function plotPoints() {
-    plotter.plot_points(xStep, yStep, polynom, approximation);
+    plotter.plot_points(xStep, yStep, polynom);
 }
-
-approximateButton.addEventListener("click", () => {
-    approximation.get_next_point(polynom);
-
-    plotPoints();
-});
-
-let reverseColorsButton = <HTMLButtonElement>document.getElementById("reverseColors");
-
-reverseColorsButton.addEventListener("click", () => {
-    plotter.reverse_colors();
-});
 
 let iterationsCountRange = <HTMLInputElement>document.getElementById("iterationsCount");
 let iterationsCountDisplay = <HTMLOutputElement>document.getElementById("iterationsCountDisplay");

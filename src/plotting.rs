@@ -1,5 +1,3 @@
-use crate::approximation::Approximation;
-
 use super::polynomial::Polynomial;
 use js_sys::Math::sqrt;
 use num_complex::{Complex, Complex64};
@@ -138,7 +136,6 @@ impl Plotter {
         step_x: f64,
         step_y: f64,
         polynom: &Polynomial,
-        approximation: &Approximation,
         point_size: Option<f64>,
     ) {
         if polynom.get_roots().len() == 0 {
@@ -190,11 +187,6 @@ impl Plotter {
         for root in polynom.get_roots().iter() {
             let p = root.clone();
             self.plot_point(p.re, p.im, &"red".into(), 4.0 * size);
-        }
-
-        for point in approximation.get_points().iter() {
-            let p = point.clone();
-            self.plot_point(p.re, p.im, &"blue".into(), 3.0 * size);
         }
     }
 

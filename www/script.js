@@ -7,23 +7,20 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import init, { Dimension, Plotter, Polynomial, Approximation } from '../pkg/newton_fractal.js';
-let approximateButton = document.getElementById("approximateButton");
+import init, { Dimension, Plotter, Polynomial } from '../pkg/newton_fractal.js';
 let plotter;
 const xStep = 0.025;
 const yStep = 0.025;
 let polynom;
 let startPoints = [[0, 0]];
-let approximation;
 const regionsColor = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], [255, 255, 0, 255], [255, 0, 255, 255], [0, 255, 255, 255]];
 function CreateRootPoint(x, y) {
     polynom.add_root(x, y);
     plotPoints();
 }
-function AddApproximationPoint(x, y) {
-    approximation === null || approximation === void 0 ? void 0 : approximation.free();
-    approximation = new Approximation(x, y);
-    plotPoints();
+function RemoveRootPoint(x, y) {
+    let id = polynom.get_closest_root_id(x, y);
+    polynom.remove_root_by_id(id);
 }
 function CanvasClickCallback(me) {
     let x = me.offsetX;
@@ -32,14 +29,16 @@ function CanvasClickCallback(me) {
     x = p[0];
     y = p[1];
     if (me.shiftKey) {
-        AddApproximationPoint(x, y);
-    }
-    else if (me.ctrlKey) {
-        polynom.add_root(x, y);
-        drawNewtonsFractal();
+        RemoveRootPoint(x, y);
     }
     else {
-        CreateRootPoint(x, y);
+        polynom.add_root(x, y);
+    }
+    if (me.ctrlKey) {
+        plotPoints();
+    }
+    else {
+        drawNewtonsFractal();
     }
 }
 function run() {
@@ -48,7 +47,6 @@ function run() {
         let myCanvas = document.getElementById("main-canvas");
         let myCanvasContext = myCanvas.getContext("2d");
         myCanvas.addEventListener("click", CanvasClickCallback);
-        approximation = new Approximation();
         console.log('myCanvas :>> ', myCanvas);
         let dimension = new Dimension(1200, 600, 4, 2, -2, -1);
         plotter = new Plotter(dimension, myCanvas, myCanvasContext);
@@ -59,16 +57,8 @@ function run() {
 }
 run();
 function plotPoints() {
-    plotter.plot_points(xStep, yStep, polynom, approximation);
+    plotter.plot_points(xStep, yStep, polynom);
 }
-approximateButton.addEventListener("click", () => {
-    approximation.get_next_point(polynom);
-    plotPoints();
-});
-let reverseColorsButton = document.getElementById("reverseColors");
-reverseColorsButton.addEventListener("click", () => {
-    plotter.reverse_colors();
-});
 let iterationsCountRange = document.getElementById("iterationsCount");
 let iterationsCountDisplay = document.getElementById("iterationsCountDisplay");
 iterationsCountRange.addEventListener("change", () => {
@@ -78,6 +68,7 @@ iterationsCountRange.addEventListener("change", () => {
 let newtonFractalButton = document.getElementById("newtonFractal");
 newtonFractalButton.addEventListener("click", drawNewtonsFractal);
 let applyEffectCheckbox = document.getElementById("applyEffect");
+applyEffectCheckbox.addEventListener("change", drawNewtonsFractal);
 function drawNewtonsFractal() {
     let iterationsCount = parseInt(iterationsCountRange.value);
     plotter.draw_newtons_fractal(polynom, iterationsCount, regionsColor, applyEffectCheckbox.checked);

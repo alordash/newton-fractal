@@ -35,6 +35,35 @@ impl Polynomial {
         self.roots.push(Complex64 { re, im });
         log!("Now have {} roots: {:?}", self.roots.len(), self.roots);
     }
+
+    #[wasm_bindgen]
+    pub fn get_closest_root_id(&self, re: f64, im: f64) -> Option<u32> {
+        let mut min_d = f64::MAX;
+        let mut idx = usize::MAX;
+
+        let p = Complex64::new(re, im);
+        for (i, root) in self.roots.iter().enumerate() {
+            let d = p - root;
+            let d = (d.re * d.re + d.im * d.im).sqrt();
+            if d < min_d {
+                min_d = d;
+                idx = i;
+            }
+        }
+
+        if idx > self.roots.len() {
+            return None;
+        }
+        Some(idx as u32)
+    }
+
+    #[wasm_bindgen]
+    pub fn remove_root_by_id(&mut self, id: usize) {
+        if id > self.roots.len() {
+            return;
+        }
+        self.roots.remove(id);
+    }
 }
 
 impl Polynomial {
