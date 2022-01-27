@@ -60,4 +60,8 @@ approximateButton.addEventListener("click", () => {
     approximation.get_next_point(polynom);
     plotPoints();
 });
+let reverseColorsButton = document.getElementById("reverseColors");
+reverseColorsButton.addEventListener("click", () => {
+    plotter.reverse_colors();
+});
 //# sourceMappingURL=script.js.map

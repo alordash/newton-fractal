@@ -69,3 +69,9 @@ approximateButton.addEventListener("click", () => {
     
     plotPoints();
 });
+
+let reverseColorsButton = <HTMLButtonElement>document.getElementById("reverseColors");
+
+reverseColorsButton.addEventListener("click", () => {
+    plotter.reverse_colors();
+});

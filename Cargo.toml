@@ -18,6 +18,7 @@ features = [
   "console",
   "HtmlCanvasElement",
   "CanvasRenderingContext2d",
+  "ImageData"
   # "WebGlBuffer",
   # "WebGlVertexArrayObject",
   # "WebGl2RenderingContext",

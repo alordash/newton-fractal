@@ -2,8 +2,8 @@ use crate::approximation::Approximation;
 
 use super::polynomial::Polynomial;
 use num_complex::Complex;
-use wasm_bindgen::prelude::*;
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
+use wasm_bindgen::{prelude::*, Clamped};
+use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
 
 use super::logger::*;
 
@@ -114,8 +114,8 @@ impl Plotter {
 
         let (x_range, y_range) = (self.dimension.x_range, self.dimension.y_range);
         log!("x_range: {}, y_range: {}", x_range, y_range);
-        let size = ((step_x + step_y) / 2.0) * ((width + height) / 2.0) * point_size / 4.0;
-        ctx.set_fill_style(&"black".into());
+        let size = ((step_x + step_y) / 2.0) * ((width + height) / 2.0) * point_size / 6.0;
+        ctx.set_fill_style(&"grey".into());
 
         let mut y = self.dimension.y_offset + step_y / 2.0;
         while y < y_range + step_y / 2.0 {
@@ -145,12 +145,48 @@ impl Plotter {
 
         for root in polynom.get_roots().iter() {
             let p = root.clone();
-            self.plot_point(p.re, p.im, &"red".into(), 2.5 * size);
+            self.plot_point(p.re, p.im, &"red".into(), 4.0 * size);
         }
 
         for point in approximation.get_points().iter() {
             let p = point.clone();
-            self.plot_point(p.re, p.im, &"blue".into(), 2.0 * size);
+            self.plot_point(p.re, p.im, &"blue".into(), 3.0 * size);
+        }
+    }
+
+    #[wasm_bindgen]
+    pub fn reverse_colors(&self) {
+        let (width, height) = (self.dimension.width, self.dimension.height);
+        match self.context.get_image_data(0.0, 0.0, width, height) {
+            Ok(image_data) => {
+                let mut data = image_data.data();
+                for i in (0..data.len()).step_by(4) {
+                    data[i] ^= 255;
+                    data[i + 1] ^= 255;
+                    data[i + 2] ^= 255;
+                }
+                let new_image_data = match ImageData::new_with_u8_clamped_array_and_sh(
+                    Clamped(data.as_slice()),
+                    width as u32,
+                    height as u32,
+                ) {
+                    Ok(v) => v,
+                    Err(e) => {
+                        log!(
+                            "Error creating new image data of size {}x{}: {:?}",
+                            width,
+                            height,
+                            e
+                        );
+                        return;
+                    }
+                };
+                match self.context.put_image_data(&new_image_data, 0.0, 0.0) {
+                    Ok(_) => log!("Successfully modified values in image data and applied them."),
+                    Err(e) => log!("Error applying modified image: {:?}", e),
+                }
+            }
+            Err(e) => log!("Error getting canvas image data: {:?}", e),
         }
     }
 }
