@@ -79,7 +79,7 @@ impl Plotter {
                 }
             };
         match self.context.put_image_data(&new_image_data, 0.0, 0.0) {
-            Ok(_) => log!("Successfully modified values in image data and applied them."),
+            Ok(_) => (), // log!("Successfully modified values in image data and applied them."),
             Err(e) => log!("Error applying modified image: {:?}", e),
         }
     }
@@ -154,7 +154,7 @@ impl Plotter {
         ctx.clear_rect(0f64, 0f64, canvas.width().into(), canvas.height().into());
 
         let (x_range, y_range) = (self.dimension.x_range, self.dimension.y_range);
-        log!("x_range: {}, y_range: {}", x_range, y_range);
+        // log!("x_range: {}, y_range: {}", x_range, y_range);
         let size = ((step_x + step_y) / 2.0) * ((width + height) / 2.0) * point_size / 6.0;
         ctx.set_fill_style(&"grey".into());
 
@@ -225,8 +225,6 @@ impl Plotter {
 
         let colors_num = colors.len();
 
-        log!("Got {} colors: {:?}", colors_num, colors);
-
         let (width, height) = (self.dimension.width, self.dimension.height);
         let (w_int, h_int) = (width as u32, height as u32);
         let mut new_data = vec![[0u8; 4]; (width * height) as usize];
@@ -237,7 +235,7 @@ impl Plotter {
             self.dimension.y_range / height,
         );
 
-        let mut iter_count_k = iterations_count as f64 + 1.0;
+        let iter_count_k = iterations_count as f64 + 1.0;
 
         let roots = polynom.get_roots();
         let mut index: usize = 0;
@@ -248,7 +246,7 @@ impl Plotter {
                 let mut closest_root_id: usize = usize::MAX;
                 let mut p = Complex64::new(x, y);
                 for _ in 0..iterations_count {
-                    p = polynom.newton_method_approx(p).unwrap();
+                    p = polynom.newton_method_approx(p);
                 }
                 for (i, root) in roots.iter().enumerate() {
                     let d = p - root;

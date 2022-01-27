@@ -9,10 +9,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import init, { Dimension, Plotter, Polynomial } from '../pkg/newton_fractal.js';
 let plotter;
-const xStep = 0.025;
-const yStep = 0.025;
 let polynom;
 let startPoints = [[-0.5, -0.25]];
+const HOLD_POINT_DST_THRESHOLD = 0.125;
+let holdingPointIndex = -1;
 let regionColors = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], [255, 255, 0, 255], [255, 0, 255, 255], [0, 255, 255, 255]];
 function DimColors(colors) {
     for (let i = 0; i < colors.length; i++) {
@@ -22,35 +22,61 @@ function DimColors(colors) {
     }
 }
 DimColors(regionColors);
-function CanvasClickCallback(me) {
-    let x = me.offsetX;
-    let y = me.offsetY;
+function MapPoints(x, y) {
     let p = plotter.canvas_to_plot_to_js(x, y);
-    x = p[0];
-    y = p[1];
+    return { x: p[0], y: p[1] };
+}
+function CanvasClick(me) {
+    if (holdingPointIndex != -1)
+        return;
+    let { x, y } = MapPoints(me.offsetX, me.offsetY);
+    let id_and_dst = polynom.get_closest_root_id(x, y);
+    let id = id_and_dst[0];
     if (me.shiftKey) {
-        let id = polynom.get_closest_root_id(x, y);
         polynom.remove_root_by_id(id);
     }
     else {
         polynom.add_root(x, y);
     }
-    drawNewtonsFractal();
-    displayRoots();
+    draw();
+}
+function CanvasMouseDown(me) {
+    let { x, y } = MapPoints(me.offsetX, me.offsetY);
+    let id_and_dst = polynom.get_closest_root_id(x, y);
+    let id = id_and_dst[0];
+    let dst = id_and_dst[1];
+    if (dst < HOLD_POINT_DST_THRESHOLD) {
+        holdingPointIndex = id;
+    }
+    else {
+        holdingPointIndex = -1;
+    }
+}
+function CanvasMouseMove(me) {
+    if (holdingPointIndex == -1)
+        return;
+    if (me.buttons != 1) {
+        holdingPointIndex = -1;
+        return;
+    }
+    let { x, y } = MapPoints(me.offsetX, me.offsetY);
+    polynom.set_root_by_id(holdingPointIndex, x, y);
+    draw();
 }
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         yield init();
         let myCanvas = document.getElementById("main-canvas");
         let myCanvasContext = myCanvas.getContext("2d");
-        myCanvas.addEventListener("click", CanvasClickCallback);
+        myCanvas.addEventListener("mousedown", CanvasMouseDown);
+        myCanvas.addEventListener("click", CanvasClick);
+        myCanvas.addEventListener("mousemove", CanvasMouseMove);
         console.log('myCanvas :>> ', myCanvas);
         let dimension = new Dimension(1200, 600, 4, 2, -2, -1);
         plotter = new Plotter(dimension, myCanvas, myCanvasContext);
         plotter.resize_canvas();
         polynom = new Polynomial(startPoints);
-        drawNewtonsFractal();
-        displayRoots();
+        draw;
     });
 }
 run();
@@ -58,17 +84,20 @@ let iterationsCountRange = document.getElementById("iterationsCount");
 let iterationsCountDisplay = document.getElementById("iterationsCountDisplay");
 iterationsCountRange.addEventListener("change", () => {
     iterationsCountDisplay.value = iterationsCountRange.value;
-    drawNewtonsFractal();
+    draw();
 });
 let newtonFractalButton = document.getElementById("newtonFractal");
-newtonFractalButton.addEventListener("click", drawNewtonsFractal);
+newtonFractalButton.addEventListener("click", draw);
 let applyEffectCheckbox = document.getElementById("applyEffect");
-applyEffectCheckbox.addEventListener("change", drawNewtonsFractal);
+applyEffectCheckbox.addEventListener("change", draw);
 function drawNewtonsFractal() {
     let iterationsCount = parseInt(iterationsCountRange.value);
     plotter.draw_newtons_fractal(polynom, iterationsCount, regionColors, applyEffectCheckbox.checked);
 }
 function displayRoots() {
     plotter.display_roots(polynom);
+}
+function draw() {
+    drawNewtonsFractal();
 }
 //# sourceMappingURL=script.js.map

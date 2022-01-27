@@ -12,6 +12,12 @@ serde = { version = "1.0.136", features = ["derive"] }
 wasm-bindgen = { version = "0.2.63", features = ["serde-serialize"] }
 num-complex = "0.4.0"
 
+[profile.release]
+lto = true
+opt-level = 2
+debug = 0
+overflow-checks = false
+
 [dependencies.web-sys]
 version = "0.3.4"
 features = [
@@ -19,10 +25,4 @@ features = [
   "HtmlCanvasElement",
   "CanvasRenderingContext2d",
   "ImageData"
-  # "WebGlBuffer",
-  # "WebGlVertexArrayObject",
-  # "WebGl2RenderingContext",
-  # "WebGlProgram",
-  # "WebGlShader",
-
 ]
