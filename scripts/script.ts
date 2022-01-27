@@ -93,7 +93,11 @@ let newtonFractalButton = <HTMLButtonElement>document.getElementById("newtonFrac
 
 newtonFractalButton.addEventListener("click", drawNewtonsFractal);
 
+let applyEffectCheckbox = <HTMLInputElement>document.getElementById("applyEffect");
+
+applyEffectCheckbox.addEventListener("change", drawNewtonsFractal);
+
 function drawNewtonsFractal() {
     let iterationsCount = parseInt(iterationsCountRange.value);
-    plotter.draw_newtons_fractal(polynom, iterationsCount, regionsColor);
+    plotter.draw_newtons_fractal(polynom, iterationsCount, regionsColor, applyEffectCheckbox.checked);
 }

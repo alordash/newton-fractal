@@ -8,6 +8,8 @@ use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
 
 use super::logger::*;
 
+const SEARCH_TRESHOLD: f64 = 0.01;
+
 #[wasm_bindgen]
 #[derive(Clone, Copy)]
 pub struct Dimension {
@@ -82,6 +84,10 @@ impl Plotter {
             Ok(_) => log!("Successfully modified values in image data and applied them."),
             Err(e) => log!("Error applying modified image: {:?}", e),
         }
+    }
+
+    pub fn adjust_color(color: u8, k: f64) -> u8 {
+        ((color as f64 / k) as u8).clamp(u8::MIN, u8::MAX)
     }
 }
 
@@ -210,7 +216,13 @@ impl Plotter {
     }
 
     #[wasm_bindgen]
-    pub fn draw_newtons_fractal(&self, polynom: &Polynomial, iterations_count: u32, colors: JsValue) {
+    pub fn draw_newtons_fractal(
+        &self,
+        polynom: &Polynomial,
+        iterations_count: u32,
+        colors: JsValue,
+        apply_effect: bool,
+    ) {
         let colors: Vec<[u8; 4]> = match colors.into_serde() {
             Ok(v) => v,
             Err(e) => {
@@ -233,15 +245,17 @@ impl Plotter {
             self.dimension.y_range / height,
         );
 
+        let mut iter_count_k = iterations_count as f64 + 1.0;
+
         let roots = polynom.get_roots();
         let mut index: usize = 0;
-        for yp in 0..h_int {
+        for _ in 0..h_int {
             x = x0;
-            for xp in 0..w_int {
+            for _ in 0..w_int {
                 let mut min_d = f64::MAX;
                 let mut closest_root_id: usize = usize::MAX;
                 let mut p = Complex64::new(x, y);
-                for i in 0..iterations_count {
+                for _ in 0..iterations_count {
                     p = polynom.newton_method_approx(p).unwrap();
                 }
                 for (i, root) in roots.iter().enumerate() {
@@ -250,9 +264,21 @@ impl Plotter {
                     if d < min_d {
                         min_d = d;
                         closest_root_id = i;
+                        if d < SEARCH_TRESHOLD {
+                            break;
+                        }
                     }
                 }
-                new_data[index] = colors[closest_root_id % colors_num];
+                let color = &colors[closest_root_id % colors_num];
+                if apply_effect {
+                    let k = (min_d.sqrt().sqrt().sqrt() * iter_count_k * iter_count_k).sqrt(); //(min_d.sqrt()).sqrt().sqrt() * iter_count_k;
+                    for i in 0..=2 {
+                        new_data[index][i] = Plotter::adjust_color(color[i], k);
+                    }
+                    new_data[index][3] = color[3];
+                } else {
+                    new_data[index] = color.clone();
+                }
                 index += 1;
                 x += x_step;
             }

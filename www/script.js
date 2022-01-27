@@ -77,8 +77,9 @@ iterationsCountRange.addEventListener("change", () => {
 });
 let newtonFractalButton = document.getElementById("newtonFractal");
 newtonFractalButton.addEventListener("click", drawNewtonsFractal);
+let applyEffectCheckbox = document.getElementById("applyEffect");
 function drawNewtonsFractal() {
     let iterationsCount = parseInt(iterationsCountRange.value);
-    plotter.draw_newtons_fractal(polynom, iterationsCount, regionsColor);
+    plotter.draw_newtons_fractal(polynom, iterationsCount, regionsColor, applyEffectCheckbox.checked);
 }
 //# sourceMappingURL=script.js.map
