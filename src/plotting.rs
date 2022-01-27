@@ -263,7 +263,7 @@ impl Plotter {
                 }
                 let color = &colors[closest_root_id % colors_num];
                 if apply_effect {
-                    let k = (min_d.sqrt().sqrt().sqrt() * iter_count_k * iter_count_k).sqrt(); //(min_d.sqrt()).sqrt().sqrt() * iter_count_k;
+                    let k = (min_d.sqrt() * iter_count_k * iter_count_k).sqrt(); //(min_d.sqrt()).sqrt().sqrt() * iter_count_k;
                     for i in 0..=2 {
                         new_data[index][i] = Plotter::adjust_color(color[i], k);
                     }

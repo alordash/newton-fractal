@@ -5,14 +5,17 @@ const xStep = 0.025;
 const yStep = 0.025;
 
 let polynom: Polynomial;
-let startPoints = [[0, 0]];
+let startPoints = [[-0.5, -0.25]];
 
-const regionsColor = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], [255, 255, 0, 255], [255, 0, 255, 255], [0, 255, 255, 255]];
-
-function CreateRootPoint(x: number, y: number) {
-    polynom.add_root(x, y);
-    plotPoints();
+let regionColors = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], [255, 255, 0, 255], [255, 0, 255, 255], [0, 255, 255, 255]];
+function dimColors(colors: number[][]) {
+    for (let i = 0; i < colors.length; i++) {
+        for (let j = 0; j < 3; j++) {
+            colors[i][j] /= 1.25
+        }
+    }
 }
+dimColors(regionColors);
 
 function RemoveRootPoint(x: number, y: number) {
     let id = polynom.get_closest_root_id(x, y);
@@ -33,11 +36,7 @@ function CanvasClickCallback(me: MouseEvent) {
         polynom.add_root(x, y);
     }
 
-    if (me.ctrlKey) {
-        plotPoints()
-    } else {
-        drawNewtonsFractal();
-    }
+    drawNewtonsFractal();
 }
 
 async function run() {
@@ -54,14 +53,15 @@ async function run() {
     plotter.resize_canvas();
     polynom = new Polynomial(startPoints);
 
-    plotPoints();
+    // plotPoints();
+    drawNewtonsFractal();
 }
 
 run();
 
-function plotPoints() {
-    plotter.plot_points(xStep, yStep, polynom);
-}
+// function plotPoints() {
+//     plotter.plot_points(xStep, yStep, polynom);
+// }
 
 let iterationsCountRange = <HTMLInputElement>document.getElementById("iterationsCount");
 let iterationsCountDisplay = <HTMLOutputElement>document.getElementById("iterationsCountDisplay");
@@ -81,5 +81,5 @@ applyEffectCheckbox.addEventListener("change", drawNewtonsFractal);
 
 function drawNewtonsFractal() {
     let iterationsCount = parseInt(iterationsCountRange.value);
-    plotter.draw_newtons_fractal(polynom, iterationsCount, regionsColor, applyEffectCheckbox.checked);
+    plotter.draw_newtons_fractal(polynom, iterationsCount, regionColors, applyEffectCheckbox.checked);
 }

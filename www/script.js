@@ -12,12 +12,16 @@ let plotter;
 const xStep = 0.025;
 const yStep = 0.025;
 let polynom;
-let startPoints = [[0, 0]];
-const regionsColor = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], [255, 255, 0, 255], [255, 0, 255, 255], [0, 255, 255, 255]];
-function CreateRootPoint(x, y) {
-    polynom.add_root(x, y);
-    plotPoints();
+let startPoints = [[-0.5, -0.25]];
+let regionColors = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], [255, 255, 0, 255], [255, 0, 255, 255], [0, 255, 255, 255]];
+function dimColors(colors) {
+    for (let i = 0; i < colors.length; i++) {
+        for (let j = 0; j < 3; j++) {
+            colors[i][j] /= 1.25;
+        }
+    }
 }
+dimColors(regionColors);
 function RemoveRootPoint(x, y) {
     let id = polynom.get_closest_root_id(x, y);
     polynom.remove_root_by_id(id);
@@ -34,12 +38,7 @@ function CanvasClickCallback(me) {
     else {
         polynom.add_root(x, y);
     }
-    if (me.ctrlKey) {
-        plotPoints();
-    }
-    else {
-        drawNewtonsFractal();
-    }
+    drawNewtonsFractal();
 }
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -52,13 +51,10 @@ function run() {
         plotter = new Plotter(dimension, myCanvas, myCanvasContext);
         plotter.resize_canvas();
         polynom = new Polynomial(startPoints);
-        plotPoints();
+        drawNewtonsFractal();
     });
 }
 run();
-function plotPoints() {
-    plotter.plot_points(xStep, yStep, polynom);
-}
 let iterationsCountRange = document.getElementById("iterationsCount");
 let iterationsCountDisplay = document.getElementById("iterationsCountDisplay");
 iterationsCountRange.addEventListener("change", () => {
@@ -71,6 +67,6 @@ let applyEffectCheckbox = document.getElementById("applyEffect");
 applyEffectCheckbox.addEventListener("change", drawNewtonsFractal);
 function drawNewtonsFractal() {
     let iterationsCount = parseInt(iterationsCountRange.value);
-    plotter.draw_newtons_fractal(polynom, iterationsCount, regionsColor, applyEffectCheckbox.checked);
+    plotter.draw_newtons_fractal(polynom, iterationsCount, regionColors, applyEffectCheckbox.checked);
 }
 //# sourceMappingURL=script.js.map
