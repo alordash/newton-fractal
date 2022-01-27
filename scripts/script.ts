@@ -11,6 +11,8 @@ let startPoints = [[0, 0]];
 
 let approximation: Approximation;
 
+const regionsColor = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], [255, 255, 0, 255], [255, 0, 255, 255], [0, 255, 255, 255]];
+
 function CreateRootPoint(x: number, y: number) {
     polynom.add_root(x, y);
     plotPoints();
@@ -66,7 +68,7 @@ function plotPoints() {
 
 approximateButton.addEventListener("click", () => {
     approximation.get_next_point(polynom);
-    
+
     plotPoints();
 });
 
@@ -74,4 +76,10 @@ let reverseColorsButton = <HTMLButtonElement>document.getElementById("reverseCol
 
 reverseColorsButton.addEventListener("click", () => {
     plotter.reverse_colors();
+});
+
+let voronoiTesselationButton = <HTMLButtonElement>document.getElementById("voronoiTesselation");
+
+voronoiTesselationButton.addEventListener("click", () => {
+    plotter.draw_voronoi_tesselation(polynom, regionsColor);
 });

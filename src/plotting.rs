@@ -1,7 +1,8 @@
 use crate::approximation::Approximation;
 
 use super::polynomial::Polynomial;
-use num_complex::Complex;
+use js_sys::Math::sqrt;
+use num_complex::{Complex, Complex64};
 use wasm_bindgen::{prelude::*, Clamped};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
 
@@ -45,6 +46,43 @@ pub struct Plotter {
     pub dimension: Dimension,
     canvas: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
+}
+
+impl Plotter {
+    pub fn canvas_to_plot(&self, x: f64, y: f64) -> (f64, f64) {
+        (
+            self.dimension.x_offset + x * self.dimension.x_range / self.dimension.width,
+            self.dimension.y_offset + y * self.dimension.y_range / self.dimension.height,
+        )
+    }
+
+    pub fn plot_to_canvas(&self, x: f64, y: f64) -> (f64, f64) {
+        (
+            (x - self.dimension.x_offset) * self.dimension.width / self.dimension.x_range,
+            (y - self.dimension.y_offset) * self.dimension.height / self.dimension.y_range,
+        )
+    }
+
+    pub fn draw_raw_data(&self, data: Clamped<&[u8]>) {
+        let (width, height) = (self.dimension.width, self.dimension.height);
+        let new_image_data =
+            match ImageData::new_with_u8_clamped_array_and_sh(data, width as u32, height as u32) {
+                Ok(v) => v,
+                Err(e) => {
+                    log!(
+                        "Error creating new image data of size {}x{}: {:?}",
+                        width,
+                        height,
+                        e
+                    );
+                    return;
+                }
+            };
+        match self.context.put_image_data(&new_image_data, 0.0, 0.0) {
+            Ok(_) => log!("Successfully modified values in image data and applied them."),
+            Err(e) => log!("Error applying modified image: {:?}", e),
+        }
+    }
 }
 
 #[wasm_bindgen]
@@ -165,43 +203,60 @@ impl Plotter {
                     data[i + 1] ^= 255;
                     data[i + 2] ^= 255;
                 }
-                let new_image_data = match ImageData::new_with_u8_clamped_array_and_sh(
-                    Clamped(data.as_slice()),
-                    width as u32,
-                    height as u32,
-                ) {
-                    Ok(v) => v,
-                    Err(e) => {
-                        log!(
-                            "Error creating new image data of size {}x{}: {:?}",
-                            width,
-                            height,
-                            e
-                        );
-                        return;
-                    }
-                };
-                match self.context.put_image_data(&new_image_data, 0.0, 0.0) {
-                    Ok(_) => log!("Successfully modified values in image data and applied them."),
-                    Err(e) => log!("Error applying modified image: {:?}", e),
-                }
+                self.draw_raw_data(Clamped(data.as_slice()));
             }
             Err(e) => log!("Error getting canvas image data: {:?}", e),
         }
     }
-}
 
-impl Plotter {
-    pub fn canvas_to_plot(&self, x: f64, y: f64) -> (f64, f64) {
-        (
-            self.dimension.x_offset + x * self.dimension.x_range / self.dimension.width,
-            self.dimension.y_offset + y * self.dimension.y_range / self.dimension.height,
-        )
-    }
-    pub fn plot_to_canvas(&self, x: f64, y: f64) -> (f64, f64) {
-        (
-            (x - self.dimension.x_offset) * self.dimension.width / self.dimension.x_range,
-            (y - self.dimension.y_offset) * self.dimension.height / self.dimension.y_range,
-        )
+    #[wasm_bindgen]
+    pub fn draw_voronoi_tesselation(&self, polynom: &Polynomial, colors: JsValue) {
+        let colors: Vec<[u8; 4]> = match colors.into_serde() {
+            Ok(v) => v,
+            Err(e) => {
+                log!("Error parsing provided colors info: {}", e);
+                return;
+            }
+        };
+
+        let colors_num = colors.len();
+
+        log!("Got {} colors: {:?}", colors_num, colors);
+
+        let (width, height) = (self.dimension.width, self.dimension.height);
+        let (w_int, h_int) = (width as u32, height as u32);
+        let mut new_data = vec![[0u8; 4]; (width * height) as usize];
+        let x0 = self.dimension.x_offset;
+        let (mut x, mut y) = (x0, self.dimension.y_offset);
+        let (x_step, y_step) = (
+            self.dimension.x_range / width,
+            self.dimension.y_range / height,
+        );
+
+        let roots = polynom.get_roots();
+        let mut index: usize = 0;
+        for yp in 0..h_int {
+            x = x0;
+            for xp in 0..w_int {
+                let mut min_d = f64::MAX;
+                let mut closest_root_id: usize = 0;
+                let p = Complex64::new(x, y);
+                for (i, root) in roots.iter().enumerate() {
+                    let d = p - root;
+                    let d = sqrt(d.re * d.re + d.im * d.im);
+                    if d < min_d {
+                        min_d = d;
+                        closest_root_id = i;
+                    }
+                }
+                new_data[index] = colors[closest_root_id % colors_num];
+                index += 1;
+                x += x_step;
+            }
+            y += y_step;
+        }
+
+        let new_data: Vec<_> = new_data.into_iter().flatten().collect();
+        self.draw_raw_data(Clamped(new_data.as_slice()));
     }
 }
