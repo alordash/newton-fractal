@@ -14,18 +14,14 @@ const yStep = 0.025;
 let polynom;
 let startPoints = [[-0.5, -0.25]];
 let regionColors = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], [255, 255, 0, 255], [255, 0, 255, 255], [0, 255, 255, 255]];
-function dimColors(colors) {
+function DimColors(colors) {
     for (let i = 0; i < colors.length; i++) {
         for (let j = 0; j < 3; j++) {
             colors[i][j] /= 1.25;
         }
     }
 }
-dimColors(regionColors);
-function RemoveRootPoint(x, y) {
-    let id = polynom.get_closest_root_id(x, y);
-    polynom.remove_root_by_id(id);
-}
+DimColors(regionColors);
 function CanvasClickCallback(me) {
     let x = me.offsetX;
     let y = me.offsetY;
@@ -33,12 +29,14 @@ function CanvasClickCallback(me) {
     x = p[0];
     y = p[1];
     if (me.shiftKey) {
-        RemoveRootPoint(x, y);
+        let id = polynom.get_closest_root_id(x, y);
+        polynom.remove_root_by_id(id);
     }
     else {
         polynom.add_root(x, y);
     }
     drawNewtonsFractal();
+    displayRoots();
 }
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -52,6 +50,7 @@ function run() {
         plotter.resize_canvas();
         polynom = new Polynomial(startPoints);
         drawNewtonsFractal();
+        displayRoots();
     });
 }
 run();
@@ -68,5 +67,8 @@ applyEffectCheckbox.addEventListener("change", drawNewtonsFractal);
 function drawNewtonsFractal() {
     let iterationsCount = parseInt(iterationsCountRange.value);
     plotter.draw_newtons_fractal(polynom, iterationsCount, regionColors, applyEffectCheckbox.checked);
+}
+function displayRoots() {
+    plotter.display_roots(polynom);
 }
 //# sourceMappingURL=script.js.map

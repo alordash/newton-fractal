@@ -263,7 +263,7 @@ impl Plotter {
                 }
                 let color = &colors[closest_root_id % colors_num];
                 if apply_effect {
-                    let k = (min_d.sqrt() * iter_count_k * iter_count_k).sqrt(); //(min_d.sqrt()).sqrt().sqrt() * iter_count_k;
+                    let k = (min_d.sqrt() * iter_count_k * iter_count_k).sqrt();
                     for i in 0..=2 {
                         new_data[index][i] = Plotter::adjust_color(color[i], k);
                     }
@@ -279,5 +279,13 @@ impl Plotter {
 
         let new_data: Vec<_> = new_data.into_iter().flatten().collect();
         self.draw_raw_data(Clamped(new_data.as_slice()));
+    }
+
+    #[wasm_bindgen]
+    pub fn display_roots(&self, polynom: &Polynomial) {
+        for root in polynom.get_roots().iter() {
+            let p = root.clone();
+            self.plot_point(p.re, p.im, &"wheat".into(), 4.0);
+        }
     }
 }
