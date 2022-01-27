@@ -18,7 +18,7 @@ impl Polynomial {
             Err(_) => {
                 log!("Error getting roots from: {:?}", roots);
                 return None;
-            },
+            }
         };
         log!("Got roots: {:?}", roots);
         Some(Polynomial {
@@ -41,7 +41,7 @@ impl Polynomial {
     pub fn get_roots(&self) -> &[Complex64] {
         &self.roots
     }
-    
+
     pub fn calculate(&self, z: Complex64) -> Option<Complex64> {
         let mut prod = match self.roots.get(0) {
             Some(v) => z - v,
@@ -69,12 +69,12 @@ impl Polynomial {
     }
 
     pub fn newton_method_approx(&self, z: Complex64) -> Option<Complex64> {
-        let mut sum = match self.roots.get(0) {
-            Some(v) => 1.0 / (z - v),
-            None => return None,
-        };
-        for root in self.roots.iter().skip(1) {
+        let mut sum = Complex64::new(0.0, 0.0);
+        for root in self.roots.iter() {
             sum += 1.0 / (z - root);
+            if sum.is_nan() {
+                return Some(root.clone());
+            }
         }
         Some(z - 1.0 / sum)
     }

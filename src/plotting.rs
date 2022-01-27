@@ -210,7 +210,7 @@ impl Plotter {
     }
 
     #[wasm_bindgen]
-    pub fn draw_voronoi_tesselation(&self, polynom: &Polynomial, colors: JsValue) {
+    pub fn draw_newtons_fractal(&self, polynom: &Polynomial, iterations_count: u32, colors: JsValue) {
         let colors: Vec<[u8; 4]> = match colors.into_serde() {
             Ok(v) => v,
             Err(e) => {
@@ -239,8 +239,11 @@ impl Plotter {
             x = x0;
             for xp in 0..w_int {
                 let mut min_d = f64::MAX;
-                let mut closest_root_id: usize = 0;
-                let p = Complex64::new(x, y);
+                let mut closest_root_id: usize = usize::MAX;
+                let mut p = Complex64::new(x, y);
+                for i in 0..iterations_count {
+                    p = polynom.newton_method_approx(p).unwrap();
+                }
                 for (i, root) in roots.iter().enumerate() {
                     let d = p - root;
                     let d = sqrt(d.re * d.re + d.im * d.im);

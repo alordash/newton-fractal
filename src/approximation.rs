@@ -26,7 +26,8 @@ impl Approximation {
         if len == 0 {
             return;
         }
-        match polynom.newton_method_approx(self.points[len - 1]) {
+        let p = self.points[len - 1];
+        match polynom.newton_method_approx(p) {
             Some(v) => self.points.push(v),
             None => (),
         }

@@ -36,6 +36,9 @@ function CanvasClickCallback(me: MouseEvent) {
 
     if (me.shiftKey) {
         AddApproximationPoint(x, y);
+    } else if (me.ctrlKey) {
+        polynom.add_root(x, y);
+        drawNewtonsFractal();
     } else {
         CreateRootPoint(x, y);
     }
@@ -78,8 +81,19 @@ reverseColorsButton.addEventListener("click", () => {
     plotter.reverse_colors();
 });
 
-let voronoiTesselationButton = <HTMLButtonElement>document.getElementById("voronoiTesselation");
+let iterationsCountRange = <HTMLInputElement>document.getElementById("iterationsCount");
+let iterationsCountDisplay = <HTMLOutputElement>document.getElementById("iterationsCountDisplay");
 
-voronoiTesselationButton.addEventListener("click", () => {
-    plotter.draw_voronoi_tesselation(polynom, regionsColor);
+iterationsCountRange.addEventListener("change", () => {
+    iterationsCountDisplay.value = iterationsCountRange.value;
+    drawNewtonsFractal();
 });
+
+let newtonFractalButton = <HTMLButtonElement>document.getElementById("newtonFractal");
+
+newtonFractalButton.addEventListener("click", drawNewtonsFractal);
+
+function drawNewtonsFractal() {
+    let iterationsCount = parseInt(iterationsCountRange.value);
+    plotter.draw_newtons_fractal(polynom, iterationsCount, regionsColor);
+}
