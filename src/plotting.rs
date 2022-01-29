@@ -66,24 +66,18 @@ impl Plotter {
     }
 
     pub fn draw_raw_data(&self, data: Clamped<&[u8]>) {
-        let (width, height) = (self.dimension.width, self.dimension.height);
-        let new_image_data =
-            match ImageData::new_with_u8_clamped_array_and_sh(data, width as u32, height as u32) {
-                Ok(v) => v,
-                Err(e) => {
-                    log!(
-                        "Error creating new image data of size {}x{}: {:?}",
-                        width,
-                        height,
-                        e
-                    );
-                    return;
-                }
-            };
-        match self.context.put_image_data(&new_image_data, 0.0, 0.0) {
-            Ok(_) => (), // log!("Successfully modified values in image data and applied them."),
-            Err(e) => log!("Error applying modified image: {:?}", e),
-        }
+        self.context
+            .put_image_data(
+                &ImageData::new_with_u8_clamped_array_and_sh(
+                    data,
+                    self.dimension.width as u32,
+                    self.dimension.height as u32,
+                )
+                .unwrap(),
+                0.0,
+                0.0,
+            )
+            .unwrap();
     }
 
     pub fn adjust_color(color: u8, k: f64) -> u8 {
@@ -99,11 +93,13 @@ impl Plotter {
         canvas: HtmlCanvasElement,
         context: CanvasRenderingContext2d,
     ) -> Plotter {
-        Plotter {
+        let plotter = Plotter {
             dimension,
             canvas,
             context,
-        }
+        };
+        plotter.context.set_image_smoothing_enabled(false);
+        plotter
     }
 
     #[wasm_bindgen]
@@ -193,56 +189,30 @@ impl Plotter {
     }
 
     #[wasm_bindgen]
-    pub fn reverse_colors(&self) {
-        let (width, height) = (self.dimension.width, self.dimension.height);
-        match self.context.get_image_data(0.0, 0.0, width, height) {
-            Ok(image_data) => {
-                let mut data = image_data.data();
-                for i in (0..data.len()).step_by(4) {
-                    data[i] ^= 255;
-                    data[i + 1] ^= 255;
-                    data[i + 2] ^= 255;
-                }
-                self.draw_raw_data(Clamped(data.as_slice()));
+    pub fn fill_pixels_nalgebra(&self, colors: JsValue) {
+        let colors: Vec<[u8; 4]> = match colors.into_serde() {
+            Ok(v) => v,
+            Err(e) => {
+                log!("Error parsing provided colors info: {}", e);
+                return;
             }
-            Err(e) => log!("Error getting canvas image data: {:?}", e),
-        }
-    }
+        };
 
-    #[wasm_bindgen]
-    pub fn fill_pixels_default(&self) {
+        let len = colors.len();
+        let colors = unsafe { std::slice::from_raw_parts(colors.as_ptr().cast::<u32>(), len) };
+        let mut colors_iter = colors.iter().cycle();
+
         let (w_int, h_int) = (
             self.dimension.width as usize,
             self.dimension.height as usize,
         );
-        
-        let mut new_data = vec![[0u8; 4]; w_int * h_int];
-        let mut i = 0 as usize;
-        for yp in 0..h_int {
-            for xp in 0..w_int {
-                new_data[i] = [xp as u8, yp as u8, (xp + yp) as u8, 255];
-                i += 1;
-            }
-        }
+        let new_data: DMatrix<u32> =
+            DMatrix::from_fn(w_int, h_int, |_, _| *colors_iter.next().unwrap());
 
-        let new_data: Vec<_> = new_data.into_iter().flatten().collect();
-        self.draw_raw_data(Clamped(new_data.as_slice()));
-    }
-
-    #[wasm_bindgen]
-    pub fn fill_pixels_nalgebra(&self) {
-        let (w_int, h_int) = (
-            self.dimension.width as usize,
-            self.dimension.height as usize,
-        );
-
-        let new_data: DMatrix<u32> = DMatrix::from_fn(w_int, h_int, |x, y| {
-            (x as u32) | (y as u32) << 8 | ((x + y) as u32) << 16 | 255 << 24
-        });
         let new_data = unsafe {
             std::slice::from_raw_parts(
                 new_data.data.as_vec().as_ptr().cast::<u8>(),
-                new_data.len() * 4,
+                new_data.len() << 2,
             )
         };
 

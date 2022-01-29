@@ -32,14 +32,8 @@ function CanvasClick(me) {
     let { x, y } = MapPoints(me.offsetX, me.offsetY);
     let id_and_dst = polynom.get_closest_root_id(x, y);
     let id = id_and_dst[0];
-    if (me.shiftKey) {
-        console.log("(SHIFT): Filling with linq");
-        plotter.fill_pixels_nalgebra();
-    }
-    else {
-        console.log("(JUST MOUSE): Filling using \"for\"");
-        plotter.fill_pixels_default();
-    }
+    console.log("Filling with nalgebra");
+    plotter.fill_pixels_nalgebra(regionColors);
 }
 function CanvasMouseDown(me) {
     let { x, y } = MapPoints(me.offsetX, me.offsetY);
@@ -73,7 +67,7 @@ function run() {
         myCanvas.addEventListener("click", CanvasClick);
         myCanvas.addEventListener("mousemove", CanvasMouseMove);
         console.log('myCanvas :>> ', myCanvas);
-        let dimension = new Dimension(1200, 600, 4, 2, -2, -1);
+        let dimension = new Dimension(1919, 1001, 4, 2, -2, -1);
         plotter = new Plotter(dimension, myCanvas, myCanvasContext);
         plotter.resize_canvas();
         polynom = new Polynomial(startPoints);

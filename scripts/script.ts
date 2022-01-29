@@ -29,15 +29,8 @@ function CanvasClick(me: MouseEvent) {
 
     let id_and_dst = polynom.get_closest_root_id(x, y);
     let id = id_and_dst[0];
-    if (me.shiftKey) {
-        console.log("(SHIFT): Filling with linq");
-        plotter.fill_pixels_nalgebra();
-        // polynom.remove_root_by_id(id);
-    } else {
-        console.log("(JUST MOUSE): Filling using \"for\"");
-        plotter.fill_pixels_default();
-        // polynom.add_root(x, y);
-    }
+    console.log("Filling with nalgebra");
+    plotter.fill_pixels_nalgebra(regionColors);
 
     // draw();
 }
@@ -80,7 +73,7 @@ async function run() {
     myCanvas.addEventListener("mousemove", CanvasMouseMove);
 
     console.log('myCanvas :>> ', myCanvas);
-    let dimension = new Dimension(1200, 600, 4, 2, -2, -1);
+    let dimension = new Dimension(1919, 1001, 4, 2, -2, -1);
     plotter = new Plotter(dimension, myCanvas, myCanvasContext);
     plotter.resize_canvas();
     polynom = new Polynomial(startPoints);
