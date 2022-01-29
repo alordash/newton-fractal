@@ -4,6 +4,8 @@ use num_complex::{Complex, Complex64};
 use wasm_bindgen::{prelude::*, Clamped};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
 
+use nalgebra::DMatrix;
+
 use super::logger::*;
 
 const SEARCH_TRESHOLD: f64 = 0.01;
@@ -205,6 +207,46 @@ impl Plotter {
             }
             Err(e) => log!("Error getting canvas image data: {:?}", e),
         }
+    }
+
+    #[wasm_bindgen]
+    pub fn fill_pixels_default(&self) {
+        let (w_int, h_int) = (
+            self.dimension.width as usize,
+            self.dimension.height as usize,
+        );
+        
+        let mut new_data = vec![[0u8; 4]; w_int * h_int];
+        let mut i = 0 as usize;
+        for yp in 0..h_int {
+            for xp in 0..w_int {
+                new_data[i] = [xp as u8, yp as u8, (xp + yp) as u8, 255];
+                i += 1;
+            }
+        }
+
+        let new_data: Vec<_> = new_data.into_iter().flatten().collect();
+        self.draw_raw_data(Clamped(new_data.as_slice()));
+    }
+
+    #[wasm_bindgen]
+    pub fn fill_pixels_nalgebra(&self) {
+        let (w_int, h_int) = (
+            self.dimension.width as usize,
+            self.dimension.height as usize,
+        );
+
+        let new_data: DMatrix<u32> = DMatrix::from_fn(w_int, h_int, |x, y| {
+            (x as u32) | (y as u32) << 8 | ((x + y) as u32) << 16 | 255 << 24
+        });
+        let new_data = unsafe {
+            std::slice::from_raw_parts(
+                new_data.data.as_vec().as_ptr().cast::<u8>(),
+                new_data.len() * 4,
+            )
+        };
+
+        self.draw_raw_data(Clamped(new_data));
     }
 
     #[wasm_bindgen]

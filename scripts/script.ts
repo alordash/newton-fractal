@@ -30,12 +30,16 @@ function CanvasClick(me: MouseEvent) {
     let id_and_dst = polynom.get_closest_root_id(x, y);
     let id = id_and_dst[0];
     if (me.shiftKey) {
-        polynom.remove_root_by_id(id);
+        console.log("(SHIFT): Filling with linq");
+        plotter.fill_pixels_nalgebra();
+        // polynom.remove_root_by_id(id);
     } else {
-        polynom.add_root(x, y);
+        console.log("(JUST MOUSE): Filling using \"for\"");
+        plotter.fill_pixels_default();
+        // polynom.add_root(x, y);
     }
 
-    draw();
+    // draw();
 }
 
 function CanvasMouseDown(me: MouseEvent) {
@@ -61,7 +65,7 @@ function CanvasMouseMove(me: MouseEvent) {
     let { x, y } = MapPoints(me.offsetX, me.offsetY);
 
     polynom.set_root_by_id(holdingPointIndex, x, y);
-    
+
     draw()
 }
 

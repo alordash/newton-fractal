@@ -33,12 +33,13 @@ function CanvasClick(me) {
     let id_and_dst = polynom.get_closest_root_id(x, y);
     let id = id_and_dst[0];
     if (me.shiftKey) {
-        polynom.remove_root_by_id(id);
+        console.log("(SHIFT): Filling with linq");
+        plotter.fill_pixels_nalgebra();
     }
     else {
-        polynom.add_root(x, y);
+        console.log("(JUST MOUSE): Filling using \"for\"");
+        plotter.fill_pixels_default();
     }
-    draw();
 }
 function CanvasMouseDown(me) {
     let { x, y } = MapPoints(me.offsetX, me.offsetY);
