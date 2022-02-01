@@ -114,6 +114,4 @@ impl Polynomial {
         }
         z - 1.0 / sum
     }
-
-    // pub fn newton_method_SIMD_approx(&self, z: Complex32)
 }

@@ -7,7 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import init, { Dimension, Plotter, Polynomial, SIMD_test } from '../pkg/newton_fractal.js';
+import init, { Dimension, Plotter, Polynomial, SimdComplex32 } from '../pkg/newton_fractal.js';
 let plotter;
 let polynom;
 let startPoints = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25], [0.5, 0.5]];
@@ -73,7 +73,10 @@ function run() {
         plotter = new Plotter(dimension, myCanvas, myCanvasContext);
         plotter.resize_canvas();
         polynom = new Polynomial(startPoints);
-        SIMD_test([1, 2, 3, 4], [4, 5, 6, 7]);
+        let z1 = new SimdComplex32(1, 2);
+        let z2 = new SimdComplex32(3, 4);
+        let simd_res = SimdComplex32.double_inversion_to_js(z1.re, z1.im, z2.re, z2.im);
+        console.log('simd_res :>> ', simd_res);
         draw();
     });
 }

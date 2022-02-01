@@ -333,33 +333,3 @@ impl Plotter {
         }
     }
 }
-
-#[wasm_bindgen]
-pub fn SIMD_test(a: JsValue, b: JsValue) {
-    let (a, b): ([f32; 4], [f32; 4]) = match (a.into_serde(), b.into_serde()) {
-        (Ok(v1), Ok(v2)) => (v1, v2),
-        (Err(e), _) => {
-            println!("Error parsing first array: {}", e);
-            return;
-        },
-        (_, Err(e)) => {
-            println!("Error parsing second array: {}", e);
-            return;
-        },
-        (Err(e1), Err(e2)) => {
-            println!("Error parsing both arrays: {}, {}", e1, e2);
-            return;
-        }
-    };
-    log!("a: {:?}", a);
-    log!("b: {:?}", b);
-
-    unsafe {
-        let vec_a: v128 = transmute(a);
-        log!("vec_a: {:#?}", vec_a);
-        let vec_b: v128 = transmute(b);
-        log!("vec_b: {:#?}", vec_b);
-        let vec_c: v128 = f32x4_mul(vec_a, vec_b);
-        log!("vec_c: {:#?}", vec_c);
-    }
-}

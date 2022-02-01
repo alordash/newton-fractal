@@ -5,6 +5,8 @@ use wasm_bindgen::prelude::*;
 mod logger;
 use logger::*;
 
+pub mod simd_complex32;
+
 pub mod polynomial;
 
 pub mod plotting;
