@@ -1,9 +1,9 @@
-import init, { Dimension, Plotter, Polynomial, SIMD_test } from '../pkg/newton_fractal.js';
+import init, { Dimension, Plotter, Polynomial } from '../pkg/newton_fractal.js';
 
 let plotter: Plotter;
 
 let polynom: Polynomial;
-let startPoints = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25], [0.5, 0.5]];
+let startPoints = [[-0.5, -0.25]];
 
 const HOLD_POINT_DST_THRESHOLD = 0.125;
 let holdingPointIndex = -1;
@@ -29,14 +29,13 @@ function CanvasClick(me: MouseEvent) {
 
     let id_and_dst = polynom.get_closest_root_id(x, y);
     let id = id_and_dst[0];
-    console.log("Filling with nalgebra");
-    if(me.shiftKey) {
+    if (me.shiftKey) {
+        polynom.remove_root_by_id(id);
+    } else {
         polynom.add_root(x, y);
     }
-    let iterationsCount = parseInt(iterationsCountRange.value);
-    plotter.fill_pixels_nalgebra(polynom, iterationsCount, regionColors);
 
-    // draw();
+    draw();
 }
 
 function CanvasMouseDown(me: MouseEvent) {
@@ -62,7 +61,7 @@ function CanvasMouseMove(me: MouseEvent) {
     let { x, y } = MapPoints(me.offsetX, me.offsetY);
 
     polynom.set_root_by_id(holdingPointIndex, x, y);
-
+    
     draw()
 }
 
@@ -72,17 +71,15 @@ async function run() {
     let myCanvas = <HTMLCanvasElement>document.getElementById("main-canvas");
     let myCanvasContext = myCanvas.getContext("2d");
 
-    // myCanvas.addEventListener("mousedown", CanvasMouseDown)
+    myCanvas.addEventListener("mousedown", CanvasMouseDown)
     myCanvas.addEventListener("click", CanvasClick);
-    // myCanvas.addEventListener("mousemove", CanvasMouseMove);
+    myCanvas.addEventListener("mousemove", CanvasMouseMove);
 
     console.log('myCanvas :>> ', myCanvas);
-    let dimension = new Dimension(1919, 1001, 4, 2, -2, -1);
+    let dimension = new Dimension(1200, 600, 4, 2, -2, -1);
     plotter = new Plotter(dimension, myCanvas, myCanvasContext);
     plotter.resize_canvas();
     polynom = new Polynomial(startPoints);
-
-    SIMD_test([1.0, 2.0, 3.0, 4.0], [4.0, 5.0, 6.0, 7.0]);
 
     draw();
 }

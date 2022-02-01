@@ -4,9 +4,6 @@ use num_complex::{Complex, Complex64};
 use wasm_bindgen::{prelude::*, Clamped};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
 
-use std::arch::wasm32::*;
-use std::mem::transmute;
-
 use nalgebra::{DMatrix, RawStorage};
 
 use super::logger::*;
@@ -192,68 +189,6 @@ impl Plotter {
     }
 
     #[wasm_bindgen]
-    pub fn fill_pixels_nalgebra(
-        &self,
-        polynom: &Polynomial,
-        iterations_count: usize,
-        colors: JsValue,
-    ) {
-        let colors: Vec<[u8; 4]> = match colors.into_serde() {
-            Ok(v) => v,
-            Err(e) => {
-                log!("Error parsing provided colors info: {}", e);
-                return;
-            }
-        };
-
-        let colors_len = colors.len();
-        let colors =
-            unsafe { std::slice::from_raw_parts(colors.as_ptr().cast::<u32>(), colors_len) };
-        let mut colors_iter = colors.iter().cycle();
-
-        let (w_int, h_int) = (
-            self.dimension.width as usize,
-            self.dimension.height as usize,
-        );
-
-        let roots = polynom.get_roots();
-        // let root = roots[0];
-        let new_data: DMatrix<u32> = DMatrix::from_fn(w_int, h_int, |x, y| {
-            let mut min_d = f64::MAX;
-            let mut closest_root_id: usize = 0;
-            let (xp, yp) = self.canvas_to_plot(x as f64, y as f64);
-            let mut p = Complex64::new(xp, yp);
-            let mut i = 0;
-            while i < iterations_count {
-                p = polynom.newton_method_approx(p);
-                i += 1;
-            }
-            // for _ in 0..iterations_count {
-            //     log!("computing next p");
-            //     p = polynom.newton_method_approx(p);
-            // }
-            for (i, root) in roots.iter().enumerate() {
-                let d = (p - root).norm_sqr().sqrt();
-                if d < min_d {
-                    min_d = d;
-                    closest_root_id = i;
-                }
-            }
-            colors[closest_root_id % colors_len]
-            // *colors_iter.next().unwrap() + v
-        });
-
-        let new_data = unsafe {
-            std::slice::from_raw_parts(
-                std::mem::transmute::<*const u32, *const u8>(new_data.data.ptr()),
-                new_data.len() << 2,
-            )
-        };
-
-        self.draw_raw_data(Clamped(new_data));
-    }
-
-    #[wasm_bindgen]
     pub fn draw_newtons_fractal(
         &self,
         polynom: &Polynomial,
@@ -331,35 +266,5 @@ impl Plotter {
             let p = root.clone();
             self.plot_point(p.re, p.im, &"wheat".into(), 4.0);
         }
-    }
-}
-
-#[wasm_bindgen]
-pub fn SIMD_test(a: JsValue, b: JsValue) {
-    let (a, b): ([f32; 4], [f32; 4]) = match (a.into_serde(), b.into_serde()) {
-        (Ok(v1), Ok(v2)) => (v1, v2),
-        (Err(e), _) => {
-            println!("Error parsing first array: {}", e);
-            return;
-        },
-        (_, Err(e)) => {
-            println!("Error parsing second array: {}", e);
-            return;
-        },
-        (Err(e1), Err(e2)) => {
-            println!("Error parsing both arrays: {}, {}", e1, e2);
-            return;
-        }
-    };
-    log!("a: {:?}", a);
-    log!("b: {:?}", b);
-
-    unsafe {
-        let vec_a: v128 = transmute(a);
-        log!("vec_a: {:#?}", vec_a);
-        let vec_b: v128 = transmute(b);
-        log!("vec_b: {:#?}", vec_b);
-        let vec_c: v128 = f32x4_mul(vec_a, vec_b);
-        log!("vec_c: {:#?}", vec_c);
     }
 }
