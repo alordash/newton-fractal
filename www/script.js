@@ -7,10 +7,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import init, { Dimension, Plotter, Polynomial } from '../pkg/newton_fractal.js';
+import init, { Dimension, Plotter, Polynomial, SIMD_test } from '../pkg/newton_fractal.js';
 let plotter;
 let polynom;
-let startPoints = [[-0.5, -0.25]];
+let startPoints = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25], [0.5, 0.5]];
 const HOLD_POINT_DST_THRESHOLD = 0.125;
 let holdingPointIndex = -1;
 let regionColors = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], [255, 255, 0, 255], [255, 0, 255, 255], [0, 255, 255, 255]];
@@ -33,7 +33,11 @@ function CanvasClick(me) {
     let id_and_dst = polynom.get_closest_root_id(x, y);
     let id = id_and_dst[0];
     console.log("Filling with nalgebra");
-    plotter.fill_pixels_nalgebra(regionColors);
+    if (me.shiftKey) {
+        polynom.add_root(x, y);
+    }
+    let iterationsCount = parseInt(iterationsCountRange.value);
+    plotter.fill_pixels_nalgebra(polynom, iterationsCount, regionColors);
 }
 function CanvasMouseDown(me) {
     let { x, y } = MapPoints(me.offsetX, me.offsetY);
@@ -63,14 +67,13 @@ function run() {
         yield init();
         let myCanvas = document.getElementById("main-canvas");
         let myCanvasContext = myCanvas.getContext("2d");
-        myCanvas.addEventListener("mousedown", CanvasMouseDown);
         myCanvas.addEventListener("click", CanvasClick);
-        myCanvas.addEventListener("mousemove", CanvasMouseMove);
         console.log('myCanvas :>> ', myCanvas);
         let dimension = new Dimension(1919, 1001, 4, 2, -2, -1);
         plotter = new Plotter(dimension, myCanvas, myCanvasContext);
         plotter.resize_canvas();
         polynom = new Polynomial(startPoints);
+        SIMD_test([1, 2, 3, 4], [4, 5, 6, 7]);
         draw();
     });
 }

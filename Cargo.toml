@@ -18,6 +18,7 @@ lto = "thin"
 opt-level = 3
 debug = 0
 overflow-checks = false
+wasm-opt = ["-Oz", "--enable-mutable-globals"]
 
 [dependencies.web-sys]
 version = "0.3.4"

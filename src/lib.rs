@@ -1,3 +1,4 @@
+#![cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
 #[macro_use]
@@ -13,4 +14,3 @@ pub fn main() -> Result<(), JsValue> {
     log!("Test: {}", 1);
     Ok(())
 }
-

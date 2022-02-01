@@ -102,6 +102,7 @@ impl Polynomial {
 
     pub fn newton_method_approx(&self, z: Complex64) -> Complex64 {
         let mut sum = Complex64::new(0.0, 0.0);
+        // let a = _mm_sqrt
         for root in self.roots.iter() {
             sum += 1.0 / (z - root);
             if sum.is_nan() {
