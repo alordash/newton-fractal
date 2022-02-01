@@ -1,19 +1,22 @@
-use num_complex::Complex64;
+use num_complex::{Complex32};
 use wasm_bindgen::prelude::*;
+
+use std::arch::wasm32::*;
+use std::mem::transmute;
 
 use super::logger::*;
 
 #[wasm_bindgen]
 #[derive(Clone)]
 pub struct Polynomial {
-    roots: Vec<Complex64>,
+    roots: Vec<Complex32>,
 }
 
 #[wasm_bindgen]
 impl Polynomial {
     #[wasm_bindgen(constructor)]
     pub fn new(roots: &JsValue) -> Option<Polynomial> {
-        let roots: Vec<(f64, f64)> = match roots.into_serde() {
+        let roots: Vec<(f32, f32)> = match roots.into_serde() {
             Ok(v) => v,
             Err(_) => {
                 log!("Error getting roots from: {:?}", roots);
@@ -24,22 +27,22 @@ impl Polynomial {
         Some(Polynomial {
             roots: roots
                 .iter()
-                .map(|(re, im)| Complex64 { re: *re, im: *im })
+                .map(|(re, im)| Complex32 { re: *re, im: *im })
                 .collect(),
         })
     }
 
     #[wasm_bindgen]
-    pub fn add_root(&mut self, re: f64, im: f64) {
-        self.roots.push(Complex64 { re, im });
+    pub fn add_root(&mut self, re: f32, im: f32) {
+        self.roots.push(Complex32 { re, im });
     }
 
     #[wasm_bindgen]
-    pub fn get_closest_root_id(&self, re: f64, im: f64) -> JsValue {
-        let mut min_d = f64::MAX;
+    pub fn get_closest_root_id(&self, re: f32, im: f32) -> JsValue {
+        let mut min_d = f32::MAX;
         let mut idx = u32::MAX;
 
-        let p = Complex64::new(re, im);
+        let p = Complex32::new(re, im);
         for (i, root) in self.roots.iter().enumerate() {
             let d = p - root;
             let d = (d.re * d.re + d.im * d.im).sqrt();
@@ -64,20 +67,20 @@ impl Polynomial {
     }
 
     #[wasm_bindgen]
-    pub fn set_root_by_id(&mut self, id: usize, re: f64, im: f64) {
+    pub fn set_root_by_id(&mut self, id: usize, re: f32, im: f32) {
         if id > self.roots.len() {
             return;
         }
-        self.roots[id] = Complex64::new(re, im);
+        self.roots[id] = Complex32::new(re, im);
     }
 }
 
 impl Polynomial {
-    pub fn get_roots(&self) -> &[Complex64] {
+    pub fn get_roots(&self) -> &[Complex32] {
         &self.roots
     }
 
-    pub fn calculate(&self, z: Complex64) -> Option<Complex64> {
+    pub fn calculate(&self, z: Complex32) -> Option<Complex32> {
         let mut prod = match self.roots.get(0) {
             Some(v) => z - v,
             None => return None,
@@ -88,7 +91,7 @@ impl Polynomial {
         Some(prod)
     }
 
-    pub fn derivative(&self, z: Complex64) -> Option<Complex64> {
+    pub fn derivative(&self, z: Complex32) -> Option<Complex32> {
         let (mut prod, mut sum) = match self.roots.get(0) {
             Some(v) => (z - v, 1.0 / (z - v)),
             None => return None,
@@ -100,8 +103,8 @@ impl Polynomial {
         Some(prod * sum)
     }
 
-    pub fn newton_method_approx(&self, z: Complex64) -> Complex64 {
-        let mut sum = Complex64::new(0.0, 0.0);
+    pub fn newton_method_approx(&self, z: Complex32) -> Complex32 {
+        let mut sum = Complex32::new(0.0, 0.0);
         // let a = _mm_sqrt
         for root in self.roots.iter() {
             sum += 1.0 / (z - root);
@@ -111,4 +114,6 @@ impl Polynomial {
         }
         z - 1.0 / sum
     }
+
+    // pub fn newton_method_SIMD_approx(&self, z: Complex32)
 }

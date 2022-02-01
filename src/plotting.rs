@@ -1,6 +1,6 @@
 use super::polynomial::Polynomial;
 use js_sys::Math::sqrt;
-use num_complex::{Complex, Complex64};
+use num_complex::{Complex, Complex32};
 use wasm_bindgen::{prelude::*, Clamped};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
 
@@ -11,29 +11,29 @@ use nalgebra::{DMatrix, RawStorage};
 
 use super::logger::*;
 
-const SEARCH_TRESHOLD: f64 = 0.01;
+const SEARCH_TRESHOLD: f32 = 0.01;
 
 #[wasm_bindgen]
 #[derive(Clone, Copy)]
 pub struct Dimension {
-    pub width: f64,
-    pub height: f64,
-    pub x_range: f64,
-    pub y_range: f64,
-    pub x_offset: f64,
-    pub y_offset: f64,
+    pub width: f32,
+    pub height: f32,
+    pub x_range: f32,
+    pub y_range: f32,
+    pub x_offset: f32,
+    pub y_offset: f32,
 }
 
 #[wasm_bindgen]
 impl Dimension {
     #[wasm_bindgen(constructor)]
     pub fn new(
-        width: f64,
-        height: f64,
-        x_range: f64,
-        y_range: f64,
-        x_offset: f64,
-        y_offset: f64,
+        width: f32,
+        height: f32,
+        x_range: f32,
+        y_range: f32,
+        x_offset: f32,
+        y_offset: f32,
     ) -> Dimension {
         Dimension {
             width,
@@ -54,17 +54,17 @@ pub struct Plotter {
 }
 
 impl Plotter {
-    pub fn canvas_to_plot(&self, x: f64, y: f64) -> (f64, f64) {
+    pub fn canvas_to_plot(&self, x: f32, y: f32) -> (f32, f32) {
         (
             self.dimension.x_offset + x * self.dimension.x_range / self.dimension.width,
             self.dimension.y_offset + y * self.dimension.y_range / self.dimension.height,
         )
     }
 
-    pub fn plot_to_canvas(&self, x: f64, y: f64) -> (f64, f64) {
+    pub fn plot_to_canvas(&self, x: f32, y: f32) -> (f64, f64) {
         (
-            (x - self.dimension.x_offset) * self.dimension.width / self.dimension.x_range,
-            (y - self.dimension.y_offset) * self.dimension.height / self.dimension.y_range,
+            ((x - self.dimension.x_offset) * self.dimension.width / self.dimension.x_range) as f64,
+            ((y - self.dimension.y_offset) * self.dimension.height / self.dimension.y_range) as f64,
         )
     }
 
@@ -83,8 +83,8 @@ impl Plotter {
             .unwrap();
     }
 
-    pub fn adjust_color(color: u8, k: f64) -> u8 {
-        ((color as f64 / k) as u8).clamp(u8::MIN, u8::MAX)
+    pub fn adjust_color(color: u8, k: f32) -> u8 {
+        ((color as f32 / k) as u8).clamp(u8::MIN, u8::MAX)
     }
 }
 
@@ -106,7 +106,7 @@ impl Plotter {
     }
 
     #[wasm_bindgen]
-    pub fn canvas_to_plot_to_js(&self, x: f64, y: f64) -> JsValue {
+    pub fn canvas_to_plot_to_js(&self, x: f32, y: f32) -> JsValue {
         let p = self.canvas_to_plot(x, y);
         JsValue::from_serde(&p).unwrap()
     }
@@ -118,7 +118,7 @@ impl Plotter {
     }
 
     #[wasm_bindgen]
-    pub fn plot_point(&self, x: f64, y: f64, color: &JsValue, size: f64) {
+    pub fn plot_point(&self, x: f32, y: f32, color: &JsValue, size: f64) {
         let ctx = &self.context;
         let (canvas_x, canvas_y) = self.plot_to_canvas(x, y);
         ctx.move_to(canvas_x, canvas_y);
@@ -134,10 +134,10 @@ impl Plotter {
     #[wasm_bindgen]
     pub fn plot_points(
         &self,
-        step_x: f64,
-        step_y: f64,
+        step_x: f32,
+        step_y: f32,
         polynom: &Polynomial,
-        point_size: Option<f64>,
+        point_size: Option<f32>,
     ) {
         if polynom.get_roots().len() == 0 {
             return;
@@ -156,14 +156,14 @@ impl Plotter {
 
         let (x_range, y_range) = (self.dimension.x_range, self.dimension.y_range);
         // log!("x_range: {}, y_range: {}", x_range, y_range);
-        let size = ((step_x + step_y) / 2.0) * ((width + height) / 2.0) * point_size / 6.0;
+        let size = (((step_x + step_y) / 2.0) * ((width + height) / 2.0) * point_size / 6.0) as f64;
         ctx.set_fill_style(&"grey".into());
 
         let mut y = self.dimension.y_offset + step_y / 2.0;
         while y < y_range + step_y / 2.0 {
             let mut x = self.dimension.x_offset + step_x / 2.0;
             while x < x_range + step_x / 2.0 {
-                let z = Complex::<f64>::new(x, y);
+                let z = Complex::<f32>::new(x, y);
                 // log!("Original point: {:?}", z);
                 let z = polynom.calculate(z).unwrap();
                 // log!("Result point: {:?}", z);
@@ -219,10 +219,10 @@ impl Plotter {
         let roots = polynom.get_roots();
         // let root = roots[0];
         let new_data: DMatrix<u32> = DMatrix::from_fn(w_int, h_int, |x, y| {
-            let mut min_d = f64::MAX;
+            let mut min_d = f32::MAX;
             let mut closest_root_id: usize = 0;
-            let (xp, yp) = self.canvas_to_plot(x as f64, y as f64);
-            let mut p = Complex64::new(xp, yp);
+            let (xp, yp) = self.canvas_to_plot(x as f32, y as f32);
+            let mut p = Complex32::new(xp, yp);
             let mut i = 0;
             while i < iterations_count {
                 p = polynom.newton_method_approx(p);
@@ -281,22 +281,22 @@ impl Plotter {
             self.dimension.y_range / height,
         );
 
-        let iter_count_k = iterations_count as f64 + 1.0;
+        let iter_count_k = iterations_count as f32 + 1.0;
 
         let roots = polynom.get_roots();
         let mut index: usize = 0;
         for _ in 0..h_int {
             x = x0;
             for _ in 0..w_int {
-                let mut min_d = f64::MAX;
+                let mut min_d = f32::MAX;
                 let mut closest_root_id: usize = usize::MAX;
-                let mut p = Complex64::new(x, y);
+                let mut p = Complex32::new(x, y);
                 for _ in 0..iterations_count {
                     p = polynom.newton_method_approx(p);
                 }
                 for (i, root) in roots.iter().enumerate() {
                     let d = p - root;
-                    let d = sqrt(d.re * d.re + d.im * d.im);
+                    let d = (d.re * d.re + d.im * d.im).sqrt();
                     if d < min_d {
                         min_d = d;
                         closest_root_id = i;
