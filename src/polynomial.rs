@@ -4,7 +4,7 @@ use wasm_bindgen::prelude::*;
 use std::arch::wasm32::*;
 use std::mem::transmute;
 
-use crate::simd_complex32::SimdComplex32;
+use crate::simd_constants::SimdConstants;
 
 use super::logger::*;
 
@@ -128,7 +128,7 @@ impl Polynomial {
             let _roots = unsafe { v128_load(roots_chunk.as_ptr() as *const v128) };
 
             let _diff = f32x4_sub(_z, _roots);
-            let _diff_eq = f64x2_eq(_diff, SimdComplex32::F64_ZEROES);
+            let _diff_eq = f64x2_eq(_diff, SimdConstants::F64_ZEROES);
             if v128_any_true(_diff_eq) {
                 let root_check: i32 = i32x4_extract_lane::<0>(_diff_eq);
                 if root_check == -1 {
@@ -138,7 +138,7 @@ impl Polynomial {
             }
 
             // 2. inversion
-            let _numerator = f32x4_mul(_diff, SimdComplex32::INVERSION_NEG_MASK);
+            let _numerator = f32x4_mul(_diff, SimdConstants::INVERSION_NEG_MASK);
             let _squares = f32x4_mul(_diff, _diff);
             let _shifted_squares = i32x4_shuffle::<1, 0, 3, 2>(_squares, _squares);
             let _denumerator = f32x4_add(_squares, _shifted_squares);

@@ -1,5 +1,4 @@
 #![cfg(target_arch = "wasm32")]
-use std::{arch::wasm32::*, intrinsics::transmute};
 
 use num_complex::Complex32;
 use wasm_bindgen::prelude::*;
@@ -8,8 +7,7 @@ use wasm_bindgen::prelude::*;
 mod logger;
 use logger::*;
 
-pub mod simd_complex32;
-use core::arch::wasm32::*;
+pub mod simd_constants;
 
 pub mod polynomial;
 use polynomial::Polynomial;
