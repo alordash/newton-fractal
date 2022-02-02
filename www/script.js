@@ -62,6 +62,15 @@ function CanvasMouseMove(me) {
     polynom.set_root_by_id(holdingPointIndex, x, y);
     draw();
 }
+function simdTests() {
+    let z1 = new SimdComplex32(1, 2);
+    let z2 = new SimdComplex32(3, 4);
+    let simd_double_inversion = SimdComplex32.double_inversion_to_js(z1.re, z1.im, z2.re, z2.im);
+    console.log('simd_double_inversion :>> ', simd_double_inversion);
+    let z = new SimdComplex32(10, 10);
+    let simd_double_subtract = SimdComplex32.double_subtract_to_js(z.re, z.im, z1.re, z1.im, z2.re, z2.im);
+    console.log('simd_double_subtract :>> ', simd_double_subtract);
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         yield init();
@@ -73,10 +82,7 @@ function run() {
         plotter = new Plotter(dimension, myCanvas, myCanvasContext);
         plotter.resize_canvas();
         polynom = new Polynomial(startPoints);
-        let z1 = new SimdComplex32(1, 2);
-        let z2 = new SimdComplex32(3, 4);
-        let simd_res = SimdComplex32.double_inversion_to_js(z1.re, z1.im, z2.re, z2.im);
-        console.log('simd_res :>> ', simd_res);
+        simdTests();
         draw();
     });
 }
