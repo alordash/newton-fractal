@@ -113,4 +113,13 @@ impl Polynomial {
         }
         z - 1.0 / sum
     }
+
+    // pub fn simd_newton_method_approx(&self, z: Complex32) {
+    //     let mut _sum = f32x4_splat(0.0);
+    //     let mut roots_iter = self.roots.chunks_exact(2);
+    //     for (roots_chunk) in roots_iter {
+    //         let a = roots_chunk
+
+    //     }
+    // }
 }

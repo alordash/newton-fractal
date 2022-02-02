@@ -8,13 +8,11 @@ use std::mem::transmute;
 pub struct SimdComplex32;
 
 impl SimdComplex32 {
+    pub const INVERSION_NEG_MASK: v128 = f32x4(1.0, -1.0, 1.0, -1.0);
+
     pub fn double_inversion(two_complex: [f32; 4]) -> [f32; 4] {
-        let _numerator = f32x4(
-            two_complex[0],
-            -two_complex[1],
-            two_complex[2],
-            -two_complex[3],
-        );
+        let mut _numerator = unsafe { v128_load(two_complex.as_ptr() as *const v128) };
+        _numerator = f32x4_mul(_numerator, SimdComplex32::INVERSION_NEG_MASK);
         let _squares = f32x4_mul(_numerator, _numerator);
         let _shifted_squares = i32x4_shuffle::<1, 0, 3, 2>(_squares, _squares);
         let _denumerator = f32x4_add(_squares, _shifted_squares);
@@ -24,15 +22,15 @@ impl SimdComplex32 {
 
     pub fn double_subtract(minuend: [f32; 2], subtrahend: [f32; 4]) -> [f32; 4] {
         let _minuend = unsafe { v128_load64_splat(minuend.as_ptr() as *const u64) };
-        let _subtrahend = unsafe { v128_load(subtrahend.as_ptr() as *const v128) };
-        let _result = f32x4_sub(_minuend, _subtrahend);
+        let _subtrahends = unsafe { v128_load(subtrahend.as_ptr() as *const v128) };
+        let _result = f32x4_sub(_minuend, _subtrahends);
         unsafe { transmute(_result) }
     }
 
     pub fn double_add(base_term: [f32; 2], two_terms: [f32; 4]) -> [f32; 4] {
-        let _minuend = unsafe { v128_load64_splat(base_term.as_ptr() as *const u64) };
-        let _subtrahend = unsafe { v128_load(two_terms.as_ptr() as *const v128) };
-        let _result = f32x4_add(_minuend, _subtrahend);
+        let _base_term = unsafe { v128_load64_splat(base_term.as_ptr() as *const u64) };
+        let _terms = unsafe { v128_load(two_terms.as_ptr() as *const v128) };
+        let _result = f32x4_add(_base_term, _terms);
         unsafe { transmute(_result) }
     }
 }
