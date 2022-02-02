@@ -254,6 +254,7 @@ impl Plotter {
     }
 
     #[wasm_bindgen]
+    #[target_feature(enable = "simd128")]
     pub fn fill_pixels_simd_nalgebra(
         &self,
         polynom: &Polynomial,
@@ -285,15 +286,9 @@ impl Plotter {
             let mut closest_root_id: usize = 0;
             let (xp, yp) = self.canvas_to_plot(x as f32, y as f32);
             let mut p = Complex32::new(xp, yp);
-            let mut i = 0;
-            while i < iterations_count {
+            for _ in 0..iterations_count {
                 p = polynom.simd_newton_method_approx(p);
-                i += 1;
             }
-            // for _ in 0..iterations_count {
-            //     log!("computing next p");
-            //     p = polynom.newton_method_approx(p);
-            // }
             for (i, root) in roots.iter().enumerate() {
                 let d = (p - root).norm_sqr().sqrt();
                 if d < min_d {

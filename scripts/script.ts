@@ -1,5 +1,5 @@
-import init, { Dimension, Plotter, Polynomial, SimdComplex32 } from '../pkg/newton_fractal.js';
-import { simd_newton_method_test, newton_method_test } from '../pkg/newton_fractal.js';
+import init, { Dimension, Plotter, Polynomial } from '../pkg/newton_fractal.js';
+import { newton_method_test, simd_newton_method_test } from '../pkg/newton_fractal.js';
 
 let plotter: Plotter;
 
@@ -35,7 +35,8 @@ function CanvasClick(me: MouseEvent) {
     // // if (me.shiftKey) {
     // //     polynom.add_root(x, y);
     // // }
-    // let iterationsCount = parseInt(iterationsCountRange.value);
+
+    let iterationsCount = parseInt(iterationsCountRange.value);
 
     if (me.shiftKey) {
         console.log("SIMD");
@@ -77,20 +78,6 @@ function CanvasMouseMove(me: MouseEvent) {
     draw()
 }
 
-function simdTests() {
-    let z1 = [1, 2];
-    let z2 = [3, 4];
-    let simd_double_inversion = SimdComplex32.double_inversion_to_js(z1[0], z1[1], z2[0], z2[1]);
-    console.log('simd_double_inversion :>> ', simd_double_inversion);
-
-    let z = [100, 10];
-    let simd_double_subtract = SimdComplex32.double_subtract_to_js(z[0], z[1], z1[0], z1[1], z2[0], z2[1]);
-    console.log('simd_double_subtract :>> ', simd_double_subtract);
-
-    let simd_double_add = SimdComplex32.double_add_to_js(z[0], z[1], z1[0], z1[1], z2[0], z2[1]);
-    console.log('simd_double_add :>> ', simd_double_add);
-}
-
 async function run() {
     await init();
 
@@ -106,8 +93,6 @@ async function run() {
     plotter = new Plotter(dimension, myCanvas, myCanvasContext);
     plotter.resize_canvas();
     polynom = new Polynomial(startPoints);
-
-    simdTests();
 
     draw();
 }

@@ -2,7 +2,6 @@ use num_complex::Complex32;
 use wasm_bindgen::prelude::*;
 
 use std::arch::wasm32::*;
-use std::mem::transmute;
 
 use crate::simd_constants::SimdConstants;
 
