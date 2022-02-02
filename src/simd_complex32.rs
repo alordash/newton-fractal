@@ -40,6 +40,17 @@ impl SimdComplex32 {
         let _result = f32x4_sub(_minuend, _subtrahend);
         unsafe { transmute(_result) }
     }
+
+    pub fn double_add(
+        term: SimdComplex32,
+        SimdComplex32 { re: a, im: b }: SimdComplex32,
+        SimdComplex32 { re: c, im: d }: SimdComplex32,
+    ) -> (SimdComplex32, SimdComplex32) {
+        let _minuend = f32x4(term.re, term.im, term.re, term.im);
+        let _subtrahend = f32x4(a, b, c, d);
+        let _result = f32x4_add(_minuend, _subtrahend);
+        unsafe { transmute(_result) }
+    }
 }
 
 #[wasm_bindgen]
@@ -62,6 +73,19 @@ impl SimdComplex32 {
     #[wasm_bindgen]
     pub fn double_subtract_to_js(re: f32, im: f32, a: f32, b: f32, c: f32, d: f32) -> JsValue {
         let result = SimdComplex32::double_subtract(
+            SimdComplex32 { re, im },
+            SimdComplex32::new(a, b),
+            SimdComplex32::new(c, d),
+        );
+        JsValue::from_serde(&unsafe {
+            transmute::<(SimdComplex32, SimdComplex32), [f32; 4]>(result)
+        })
+        .unwrap()
+    }
+
+    #[wasm_bindgen]
+    pub fn double_add_to_js(re: f32, im: f32, a: f32, b: f32, c: f32, d: f32) -> JsValue {
+        let result = SimdComplex32::double_add(
             SimdComplex32 { re, im },
             SimdComplex32::new(a, b),
             SimdComplex32::new(c, d),

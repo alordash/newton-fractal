@@ -75,6 +75,9 @@ function simdTests() {
     let z = new SimdComplex32(10, 10);
     let simd_double_subtract = SimdComplex32.double_subtract_to_js(z.re, z.im, z1.re, z1.im, z2.re, z2.im);
     console.log('simd_double_subtract :>> ', simd_double_subtract);
+
+    let simd_double_add = SimdComplex32.double_add_to_js(z.re, z.im, z1.re, z1.im, z2.re, z2.im);
+    console.log('simd_double_add :>> ', simd_double_add);
 }
 
 async function run() {
