@@ -254,6 +254,68 @@ impl Plotter {
     }
 
     #[wasm_bindgen]
+    pub fn fill_pixels_simd_nalgebra(
+        &self,
+        polynom: &Polynomial,
+        iterations_count: usize,
+        colors: JsValue,
+    ) {
+        let colors: Vec<[u8; 4]> = match colors.into_serde() {
+            Ok(v) => v,
+            Err(e) => {
+                log!("Error parsing provided colors info: {}", e);
+                return;
+            }
+        };
+
+        let colors_len = colors.len();
+        let colors =
+            unsafe { std::slice::from_raw_parts(colors.as_ptr().cast::<u32>(), colors_len) };
+        let mut colors_iter = colors.iter().cycle();
+
+        let (w_int, h_int) = (
+            self.dimension.width as usize,
+            self.dimension.height as usize,
+        );
+
+        let roots = polynom.get_roots();
+        // let root = roots[0];
+        let new_data: DMatrix<u32> = DMatrix::from_fn(w_int, h_int, |x, y| {
+            let mut min_d = f32::MAX;
+            let mut closest_root_id: usize = 0;
+            let (xp, yp) = self.canvas_to_plot(x as f32, y as f32);
+            let mut p = Complex32::new(xp, yp);
+            let mut i = 0;
+            while i < iterations_count {
+                p = polynom.simd_newton_method_approx(p);
+                i += 1;
+            }
+            // for _ in 0..iterations_count {
+            //     log!("computing next p");
+            //     p = polynom.newton_method_approx(p);
+            // }
+            for (i, root) in roots.iter().enumerate() {
+                let d = (p - root).norm_sqr().sqrt();
+                if d < min_d {
+                    min_d = d;
+                    closest_root_id = i;
+                }
+            }
+            colors[closest_root_id % colors_len]
+            // *colors_iter.next().unwrap() + v
+        });
+
+        let new_data = unsafe {
+            std::slice::from_raw_parts(
+                std::mem::transmute::<*const u32, *const u8>(new_data.data.ptr()),
+                new_data.len() << 2,
+            )
+        };
+
+        self.draw_raw_data(Clamped(new_data));
+    }
+
+    #[wasm_bindgen]
     pub fn draw_newtons_fractal(
         &self,
         polynom: &Polynomial,

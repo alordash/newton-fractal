@@ -1,9 +1,12 @@
 import init, { Dimension, Plotter, Polynomial, SimdComplex32 } from '../pkg/newton_fractal.js';
+import { simd_newton_method_test, newton_method_test } from '../pkg/newton_fractal.js';
 
 let plotter: Plotter;
 
 let polynom: Polynomial;
-let startPoints = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25], [0.5, 0.5]];
+let startPoints = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25]
+    // , [0.5, 0.5]
+];
 
 const HOLD_POINT_DST_THRESHOLD = 0.125;
 let holdingPointIndex = -1;
@@ -24,17 +27,25 @@ function MapPoints(x: number, y: number): { x: number, y: number } {
 }
 
 function CanvasClick(me: MouseEvent) {
-    if (holdingPointIndex != -1) return;
-    let { x, y } = MapPoints(me.offsetX, me.offsetY);
+    // if (holdingPointIndex != -1) return;
+    // let { x, y } = MapPoints(me.offsetX, me.offsetY);
 
-    let id_and_dst = polynom.get_closest_root_id(x, y);
-    let id = id_and_dst[0];
-    console.log("Filling with nalgebra");
+    // let id_and_dst = polynom.get_closest_root_id(x, y);
+    // let id = id_and_dst[0];
+    // // if (me.shiftKey) {
+    // //     polynom.add_root(x, y);
+    // // }
+    // let iterationsCount = parseInt(iterationsCountRange.value);
+
     if (me.shiftKey) {
-        polynom.add_root(x, y);
+        console.log("SIMD");
+        simd_newton_method_test(polynom);
+        // plotter.fill_pixels_simd_nalgebra(polynom, iterationsCount, regionColors);
+    } else {
+        console.log("SCALAR");
+        newton_method_test(polynom);
+        // plotter.fill_pixels_nalgebra(polynom, iterationsCount, regionColors);
     }
-    let iterationsCount = parseInt(iterationsCountRange.value);
-    plotter.fill_pixels_nalgebra(polynom, iterationsCount, regionColors);
 
     // draw();
 }

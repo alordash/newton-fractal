@@ -8,9 +8,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import init, { Dimension, Plotter, Polynomial, SimdComplex32 } from '../pkg/newton_fractal.js';
+import { simd_newton_method_test, newton_method_test } from '../pkg/newton_fractal.js';
 let plotter;
 let polynom;
-let startPoints = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25], [0.5, 0.5]];
+let startPoints = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25]
+];
 const HOLD_POINT_DST_THRESHOLD = 0.125;
 let holdingPointIndex = -1;
 let regionColors = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], [255, 255, 0, 255], [255, 0, 255, 255], [0, 255, 255, 255]];
@@ -27,17 +29,14 @@ function MapPoints(x, y) {
     return { x: p[0], y: p[1] };
 }
 function CanvasClick(me) {
-    if (holdingPointIndex != -1)
-        return;
-    let { x, y } = MapPoints(me.offsetX, me.offsetY);
-    let id_and_dst = polynom.get_closest_root_id(x, y);
-    let id = id_and_dst[0];
-    console.log("Filling with nalgebra");
     if (me.shiftKey) {
-        polynom.add_root(x, y);
+        console.log("SIMD");
+        simd_newton_method_test(polynom);
     }
-    let iterationsCount = parseInt(iterationsCountRange.value);
-    plotter.fill_pixels_nalgebra(polynom, iterationsCount, regionColors);
+    else {
+        console.log("SCALAR");
+        newton_method_test(polynom);
+    }
 }
 function CanvasMouseDown(me) {
     let { x, y } = MapPoints(me.offsetX, me.offsetY);
@@ -63,7 +62,7 @@ function CanvasMouseMove(me) {
     draw();
 }
 function simdTests() {
-    let z1 = [10, 2];
+    let z1 = [1, 2];
     let z2 = [3, 4];
     let simd_double_inversion = SimdComplex32.double_inversion_to_js(z1[0], z1[1], z2[0], z2[1]);
     console.log('simd_double_inversion :>> ', simd_double_inversion);

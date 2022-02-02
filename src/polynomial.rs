@@ -1,8 +1,10 @@
-use num_complex::{Complex32};
+use num_complex::Complex32;
 use wasm_bindgen::prelude::*;
 
 use std::arch::wasm32::*;
 use std::mem::transmute;
+
+use crate::simd_complex32::SimdComplex32;
 
 use super::logger::*;
 
@@ -23,7 +25,7 @@ impl Polynomial {
                 return None;
             }
         };
-        
+
         Some(Polynomial {
             roots: roots
                 .iter()
@@ -105,21 +107,51 @@ impl Polynomial {
 
     pub fn newton_method_approx(&self, z: Complex32) -> Complex32 {
         let mut sum = Complex32::new(0.0, 0.0);
-        for root in self.roots.iter() {
-            sum += 1.0 / (z - root);
-            if sum.is_nan() {
-                return root.clone();
+        for roots in self.roots.chunks_exact(2) {
+            for root in roots {
+                sum += 1.0 / (z - root);
+                if sum.is_nan() {
+                    return root.clone();
+                }
             }
         }
         z - 1.0 / sum
     }
 
-    // pub fn simd_newton_method_approx(&self, z: Complex32) {
-    //     let mut _sum = f32x4_splat(0.0);
-    //     let mut roots_iter = self.roots.chunks_exact(2);
-    //     for (roots_chunk) in roots_iter {
-    //         let a = roots_chunk
+    #[inline]
+    #[target_feature(enable = "simd128")]
+    pub fn simd_newton_method_approx(&self, z: Complex32) -> Complex32 {
+        let mut _sum = f32x4_splat(0.0);
+        let _z = unsafe { v128_load64_splat(([z.re, z.im]).as_ptr() as *const u64) };
+        for roots_chunk in self.roots.chunks_exact(2) {
+            // 1. subtract
+            let _roots = unsafe { v128_load(roots_chunk.as_ptr() as *const v128) };
 
-    //     }
-    // }
+            let _diff = f32x4_sub(_z, _roots);
+            let _diff_eq = f64x2_eq(_diff, SimdComplex32::F64_ZEROES);
+            if v128_any_true(_diff_eq) {
+                let root_check: i32 = i32x4_extract_lane::<0>(_diff_eq);
+                if root_check == -1 {
+                    return roots_chunk[0];
+                }
+                return roots_chunk[1];
+            }
+
+            // 2. inversion
+            let _numerator = f32x4_mul(_diff, SimdComplex32::INVERSION_NEG_MASK);
+            let _squares = f32x4_mul(_diff, _diff);
+            let _shifted_squares = i32x4_shuffle::<1, 0, 3, 2>(_squares, _squares);
+            let _denumerator = f32x4_add(_squares, _shifted_squares);
+
+            let _inversion = f32x4_div(_numerator, _denumerator);
+            // 3. add
+            _sum = f32x4_add(_sum, _inversion);
+        }
+
+        let sum = Complex32::new(
+            f32x4_extract_lane::<0>(_sum) + f32x4_extract_lane::<1>(_sum),
+            f32x4_extract_lane::<2>(_sum) + f32x4_extract_lane::<3>(_sum),
+        );
+        z - 1.0 / sum
+    }
 }
