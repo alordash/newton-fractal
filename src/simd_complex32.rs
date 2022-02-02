@@ -5,23 +5,10 @@ use std::arch::wasm32::*;
 use std::mem::transmute;
 
 #[wasm_bindgen]
-#[derive(Debug)]
-pub struct SimdComplex32 {
-    pub re: f32,
-    pub im: f32,
-}
-
-impl From<Complex32> for SimdComplex32 {
-    fn from(z: Complex32) -> Self {
-        Self { re: z.re, im: z.im }
-    }
-}
+pub struct SimdComplex32;
 
 impl SimdComplex32 {
-    pub fn double_inversion(
-        SimdComplex32 { re: a, im: b }: SimdComplex32,
-        SimdComplex32 { re: c, im: d }: SimdComplex32,
-    ) -> (SimdComplex32, SimdComplex32) {
+    pub fn double_inversion(a: f32, b: f32, c: f32, d: f32) -> [f32; 4] {
         let _numerator = f32x4(a, -b, c, -d);
         let _squares = f32x4_mul(_numerator, _numerator);
         let _shifted_squares = i32x4_shuffle::<1, 0, 3, 2>(_squares, _squares);
@@ -30,23 +17,15 @@ impl SimdComplex32 {
         unsafe { transmute(_result) }
     }
 
-    pub fn double_subtract(
-        minuend: SimdComplex32,
-        SimdComplex32 { re: a, im: b }: SimdComplex32,
-        SimdComplex32 { re: c, im: d }: SimdComplex32,
-    ) -> (SimdComplex32, SimdComplex32) {
-        let _minuend = f32x4(minuend.re, minuend.im, minuend.re, minuend.im);
+    pub fn double_subtract(mre: f32, mim: f32, a: f32, b: f32, c: f32, d: f32) -> [f32; 4] {
+        let _minuend = f32x4(mre, mim, mre, mim);
         let _subtrahend = f32x4(a, b, c, d);
         let _result = f32x4_sub(_minuend, _subtrahend);
         unsafe { transmute(_result) }
     }
 
-    pub fn double_add(
-        term: SimdComplex32,
-        SimdComplex32 { re: a, im: b }: SimdComplex32,
-        SimdComplex32 { re: c, im: d }: SimdComplex32,
-    ) -> (SimdComplex32, SimdComplex32) {
-        let _minuend = f32x4(term.re, term.im, term.re, term.im);
+    pub fn double_add(tre: f32, tim: f32, a: f32, b: f32, c: f32, d: f32) -> [f32; 4] {
+        let _minuend = f32x4(tre, tim, tre, tim);
         let _subtrahend = f32x4(a, b, c, d);
         let _result = f32x4_add(_minuend, _subtrahend);
         unsafe { transmute(_result) }
@@ -55,44 +34,21 @@ impl SimdComplex32 {
 
 #[wasm_bindgen]
 impl SimdComplex32 {
-    #[wasm_bindgen(constructor)]
-    pub fn new(re: f32, im: f32) -> SimdComplex32 {
-        SimdComplex32 { re, im }
-    }
-
     #[wasm_bindgen]
     pub fn double_inversion_to_js(a: f32, b: f32, c: f32, d: f32) -> JsValue {
-        let result =
-            SimdComplex32::double_inversion(SimdComplex32::new(a, b), SimdComplex32::new(c, d));
-        JsValue::from_serde(&unsafe {
-            transmute::<(SimdComplex32, SimdComplex32), [f32; 4]>(result)
-        })
-        .unwrap()
+        let result = SimdComplex32::double_inversion(a, b, c, d);
+        JsValue::from_serde(&result).unwrap()
     }
 
     #[wasm_bindgen]
-    pub fn double_subtract_to_js(re: f32, im: f32, a: f32, b: f32, c: f32, d: f32) -> JsValue {
-        let result = SimdComplex32::double_subtract(
-            SimdComplex32 { re, im },
-            SimdComplex32::new(a, b),
-            SimdComplex32::new(c, d),
-        );
-        JsValue::from_serde(&unsafe {
-            transmute::<(SimdComplex32, SimdComplex32), [f32; 4]>(result)
-        })
-        .unwrap()
+    pub fn double_subtract_to_js(mre: f32, mim: f32, a: f32, b: f32, c: f32, d: f32) -> JsValue {
+        let result = SimdComplex32::double_subtract(mre, mim, a, b, c, d);
+        JsValue::from_serde(&result).unwrap()
     }
 
     #[wasm_bindgen]
-    pub fn double_add_to_js(re: f32, im: f32, a: f32, b: f32, c: f32, d: f32) -> JsValue {
-        let result = SimdComplex32::double_add(
-            SimdComplex32 { re, im },
-            SimdComplex32::new(a, b),
-            SimdComplex32::new(c, d),
-        );
-        JsValue::from_serde(&unsafe {
-            transmute::<(SimdComplex32, SimdComplex32), [f32; 4]>(result)
-        })
-        .unwrap()
+    pub fn double_add_to_js(tre: f32, tim: f32, a: f32, b: f32, c: f32, d: f32) -> JsValue {
+        let result = SimdComplex32::double_add(tre, tim, a, b, c, d);
+        JsValue::from_serde(&result).unwrap()
     }
 }

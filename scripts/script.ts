@@ -67,16 +67,16 @@ function CanvasMouseMove(me: MouseEvent) {
 }
 
 function simdTests() {
-    let z1 = new SimdComplex32(1, 2);
-    let z2 = new SimdComplex32(3, 4);
-    let simd_double_inversion = SimdComplex32.double_inversion_to_js(z1.re, z1.im, z2.re, z2.im);
+    let z1 = [1, 2];
+    let z2 = [3, 4];
+    let simd_double_inversion = SimdComplex32.double_inversion_to_js(z1[0], z1[1], z2[0], z2[1]);
     console.log('simd_double_inversion :>> ', simd_double_inversion);
 
-    let z = new SimdComplex32(10, 10);
-    let simd_double_subtract = SimdComplex32.double_subtract_to_js(z.re, z.im, z1.re, z1.im, z2.re, z2.im);
+    let z = [10, 10];
+    let simd_double_subtract = SimdComplex32.double_subtract_to_js(z[0], z[1], z1[0], z1[1], z2[0], z2[1]);
     console.log('simd_double_subtract :>> ', simd_double_subtract);
 
-    let simd_double_add = SimdComplex32.double_add_to_js(z.re, z.im, z1.re, z1.im, z2.re, z2.im);
+    let simd_double_add = SimdComplex32.double_add_to_js(z[0], z[1], z1[0], z1[1], z2[0], z2[1]);
     console.log('simd_double_add :>> ', simd_double_add);
 }
 
