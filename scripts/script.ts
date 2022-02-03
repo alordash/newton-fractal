@@ -4,8 +4,8 @@ import init, { Dimension, Plotter, Polynomial } from '../pkg/newton_fractal.js';
 let plotter: Plotter;
 
 let polynom: Polynomial;
-let startPoints = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25]
-    // , [0.5, 0.5]
+let startRoots = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25]
+    , [-0.85, 0.5]
 ];
 
 const HOLD_POINT_DST_THRESHOLD = 0.125;
@@ -92,7 +92,7 @@ async function run() {
     let dimension = new Dimension(1919, 1001, 4, 2, -2, -1);
     plotter = new Plotter(dimension, myCanvas, myCanvasContext);
     plotter.resize_canvas();
-    polynom = new Polynomial(startPoints);
+    polynom = new Polynomial(startRoots);
 
     draw();
 }
