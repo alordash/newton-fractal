@@ -3,7 +3,7 @@ use wasm_bindgen::prelude::*;
 
 use std::arch::wasm32::*;
 
-use crate::simd_constants::SimdConstants;
+use crate::simd_constants::SimdHelper;
 
 use super::logger::*;
 
@@ -118,6 +118,15 @@ impl Polynomial {
     // #[inline]
     #[target_feature(enable = "simd128")]
     pub fn simd_newton_method_approx(&self, z: Complex32) -> Complex32 {
+        let (
+            mut _diff,
+            mut _diff_eq,
+            mut _numerator,
+            mut _squares,
+            mut _shifted_squares,
+            mut _denumerator,
+            mut _inversion,
+        ): (v128, v128, v128, v128, v128, v128, v128);
         let mut _sum = f32x4_splat(0.0);
         let _z = unsafe { v128_load64_splat(std::ptr::addr_of!(z) as *const u64) };
         let roots_chunks_iter = self.roots.chunks_exact(2);
@@ -125,8 +134,8 @@ impl Polynomial {
         for roots_chunk in roots_chunks_iter {
             unsafe {
                 // 1. subtract
-                let _diff = f32x4_sub(_z, *(roots_chunk.as_ptr() as *const v128));
-                let _diff_eq = f64x2_eq(_diff, SimdConstants::F64_ZEROES);
+                _diff = f32x4_sub(_z, *(roots_chunk.as_ptr() as *const v128));
+                _diff_eq = f64x2_eq(_diff, SimdHelper::F64_ZEROES);
                 if v128_any_true(_diff_eq) {
                     let root_check: i32 = i32x4_extract_lane::<0>(_diff_eq);
                     if root_check == -1 {
@@ -136,12 +145,8 @@ impl Polynomial {
                 }
 
                 // 2. inversion
-                let _numerator = f32x4_mul(_diff, SimdConstants::INVERSION_NEG_MASK);
-                let _squares = f32x4_mul(_diff, _diff);
-                let _shifted_squares = i32x4_shuffle::<1, 0, 3, 2>(_squares, _squares);
-                let _denumerator = f32x4_add(_squares, _shifted_squares);
+                _inversion = SimdHelper::complex_number_inversion(_diff);
 
-                let _inversion = f32x4_div(_numerator, _denumerator);
                 // 3. add
                 _sum = f32x4_add(_sum, _inversion);
             }
@@ -149,17 +154,12 @@ impl Polynomial {
         let _sum_shift = i64x2_shuffle::<1, 0>(_sum, _sum);
         if let Some(rem) = rem.get(0) {
             unsafe {
-                let _diff = f32x4_sub(_z, v128_load64_zero(std::ptr::addr_of!(*rem) as *const u64));
-                let _diff_eq = f64x2_eq(_diff, SimdConstants::F64_ZEROES);
+                _diff = f32x4_sub(_z, v128_load64_zero(std::ptr::addr_of!(*rem) as *const u64));
+                _diff_eq = f64x2_eq(_diff, SimdHelper::F64_ZEROES);
                 if v128_any_true(_diff_eq) {
                     return *rem;
                 }
-                let _numerator = f32x4_mul(_diff, SimdConstants::INVERSION_NEG_MASK);
-                let _squares = f32x4_mul(_diff, _diff);
-                let _shifted_squares = i32x4_shuffle::<1, 0, 3, 2>(_squares, _squares);
-                let _denumerator = f32x4_add(_squares, _shifted_squares);
-
-                let _inversion = f32x4_div(_numerator, _denumerator);
+                _inversion = SimdHelper::complex_number_inversion(_diff);
 
                 _sum = f32x4_add(_sum, _inversion);
             }
@@ -173,13 +173,9 @@ impl Polynomial {
 
         _sum = f32x4_add(_sum, _sum_shift);
         unsafe {
-            let _numerator = f32x4_mul(_sum, SimdConstants::INVERSION_NEG_MASK);
-            let _squares = f32x4_mul(_numerator, _numerator);
-            let _shifted_squares = i32x4_shuffle::<1, 0, 0, 0>(_squares, _squares);
-            let _denumerator = f32x4_add(_squares, _shifted_squares);
-            let _div = f32x4_div(_numerator, _denumerator);
+            _inversion = SimdHelper::complex_number_inversion(_sum);
             // *(&f32x4_sub(_z, _div) as *const v128 as *const Complex32)
-            let _sub = f32x4_sub(_z, _div);
+            let _sub = f32x4_sub(_z, _inversion);
             *(std::ptr::addr_of!(_sub) as *const Complex32)
         }
         // let sum = unsafe { *(std::ptr::addr_of!(_sum) as *const Complex32) };

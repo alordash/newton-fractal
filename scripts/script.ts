@@ -48,6 +48,7 @@ function CanvasClick(me: MouseEvent) {
         plotter.fill_pixels_nalgebra(polynom, iterationsCount, regionColors);
     }
 
+    console.log("END");
     // draw();
 }
 

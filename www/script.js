@@ -38,6 +38,7 @@ function CanvasClick(me) {
         console.log("SCALAR");
         plotter.fill_pixels_nalgebra(polynom, iterationsCount, regionColors);
     }
+    console.log("END");
 }
 function CanvasMouseDown(me) {
     let { x, y } = MapPoints(me.offsetX, me.offsetY);
