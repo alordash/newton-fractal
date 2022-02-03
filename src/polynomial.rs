@@ -160,8 +160,8 @@ impl Polynomial {
         // Process odd root
         if let Some(rem) = rem.get(0) {
             unsafe {
-                // This is same as processing of two roots, except second
-                // complex value in vector is equal to 0 <=> vector: [a, b, 0, 0];
+                // This process is same as the processing of two roots, except second
+                // complex value in vector is equal to 0 <=> vector: [A, B, 0, 0];
                 let _diff = f32x4_sub(_z, v128_load64_zero(std::ptr::addr_of!(*rem) as *const u64));
                 let _diff_eq = f64x2_eq(_diff, SimdHelper::F64_ZEROES);
                 if v128_any_true(_diff_eq) {
