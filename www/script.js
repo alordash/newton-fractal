@@ -8,7 +8,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import init, { Dimension, Plotter, Polynomial } from '../pkg/newton_fractal.js';
-import { newton_method_test, simd_newton_method_test } from '../pkg/newton_fractal.js';
 let plotter;
 let polynom;
 let startPoints = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25]
@@ -32,11 +31,11 @@ function CanvasClick(me) {
     let iterationsCount = parseInt(iterationsCountRange.value);
     if (me.shiftKey) {
         console.log("SIMD");
-        simd_newton_method_test(polynom);
+        plotter.fill_pixels_simd_nalgebra(polynom, iterationsCount, regionColors);
     }
     else {
         console.log("SCALAR");
-        newton_method_test(polynom);
+        plotter.fill_pixels_nalgebra(polynom, iterationsCount, regionColors);
     }
 }
 function CanvasMouseDown(me) {

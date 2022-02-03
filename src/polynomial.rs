@@ -117,40 +117,57 @@ impl Polynomial {
         z - 1.0 / sum
     }
 
-    #[inline]
+    // #[inline]
     #[target_feature(enable = "simd128")]
     pub fn simd_newton_method_approx(&self, z: Complex32) -> Complex32 {
         let mut _sum = f32x4_splat(0.0);
-        let _z = unsafe { v128_load64_splat(([z.re, z.im]).as_ptr() as *const u64) };
+        let _z = unsafe { v128_load64_splat(std::ptr::addr_of!(z) as *const u64) };
         for roots_chunk in self.roots.chunks_exact(2) {
-            // 1. subtract
-            let _roots = unsafe { v128_load(roots_chunk.as_ptr() as *const v128) };
+            unsafe {
+                // 1. subtract
 
-            let _diff = f32x4_sub(_z, _roots);
-            let _diff_eq = f64x2_eq(_diff, SimdConstants::F64_ZEROES);
-            if v128_any_true(_diff_eq) {
-                let root_check: i32 = i32x4_extract_lane::<0>(_diff_eq);
-                if root_check == -1 {
-                    return roots_chunk[0];
+                let _diff = f32x4_sub(_z, *(roots_chunk.as_ptr() as *const v128));
+                let _diff_eq = f64x2_eq(_diff, SimdConstants::F64_ZEROES);
+                if v128_any_true(_diff_eq) {
+                    let root_check: i32 = i32x4_extract_lane::<0>(_diff_eq);
+                    if root_check == -1 {
+                        return roots_chunk[0];
+                    }
+                    return roots_chunk[1];
                 }
-                return roots_chunk[1];
+
+                // 2. inversion
+                let _numerator = f32x4_mul(_diff, SimdConstants::INVERSION_NEG_MASK);
+                let _squares = f32x4_mul(_diff, _diff);
+                let _shifted_squares = i32x4_shuffle::<1, 0, 3, 2>(_squares, _squares);
+                let _denumerator = f32x4_add(_squares, _shifted_squares);
+
+                let _inversion = f32x4_div(_numerator, _denumerator);
+                // 3. add
+                _sum = f32x4_add(_sum, _inversion);
             }
-
-            // 2. inversion
-            let _numerator = f32x4_mul(_diff, SimdConstants::INVERSION_NEG_MASK);
-            let _squares = f32x4_mul(_diff, _diff);
-            let _shifted_squares = i32x4_shuffle::<1, 0, 3, 2>(_squares, _squares);
-            let _denumerator = f32x4_add(_squares, _shifted_squares);
-
-            let _inversion = f32x4_div(_numerator, _denumerator);
-            // 3. add
-            _sum = f32x4_add(_sum, _inversion);
         }
 
-        let sum = Complex32::new(
-            f32x4_extract_lane::<0>(_sum) + f32x4_extract_lane::<1>(_sum),
-            f32x4_extract_lane::<2>(_sum) + f32x4_extract_lane::<3>(_sum),
-        );
-        z - 1.0 / sum
+        // this gives fancy effect (swapped sum indexes):
+        // let sum = Complex32::new(
+        //     f32x4_extract_lane::<0>(_sum) + f32x4_extract_lane::<1>(_sum),
+        //     f32x4_extract_lane::<2>(_sum) + f32x4_extract_lane::<3>(_sum),
+        // );
+
+        let _sum_shift = i64x2_shuffle::<1, 0>(_sum, _sum);
+        _sum = f32x4_add(_sum, _sum_shift);
+        unsafe {
+            let _numerator = f32x4_mul(_sum, SimdConstants::INVERSION_NEG_MASK);
+            let _squares = f32x4_mul(_numerator, _numerator);
+            let _shifted_squares = i32x4_shuffle::<1, 0, 0, 0>(_squares, _squares);
+            let _denumerator = f32x4_add(_squares, _shifted_squares);
+            let _div = f32x4_div(_numerator, _denumerator);
+            // *(&f32x4_sub(_z, _div) as *const v128 as *const Complex32)
+            let _sub = f32x4_sub(_z, _div);
+            *(std::ptr::addr_of!(_sub) as *const Complex32)
+        }
+        // let sum = unsafe { *(std::ptr::addr_of!(_sum) as *const Complex32) };
+
+        // z - 1.0 / sum
     }
 }
