@@ -1,3 +1,5 @@
+use crate::simd_constants::SimdHelper;
+
 use super::polynomial::Polynomial;
 use num_complex::{Complex, Complex32};
 use wasm_bindgen::{prelude::*, Clamped};
@@ -60,7 +62,9 @@ impl Plotter {
             self.dimension.y_offset + y * self.dimension.y_range / self.dimension.height,
         )
     }
-    pub fn simd_canvas_to_plot(&self, x1: f32, y1: f32, x2: f32, y2: f32) -> [f32; 4] {
+
+    #[target_feature(enable = "simd128")]
+    pub fn simd_canvas_to_plot(&self, x1: f32, y1: f32, x2: f32, y2: f32) -> v128 {
         // Formula:
         // x = x_offset + x * x_range / width
         // y = y_offset + y * y_range / height
@@ -73,8 +77,7 @@ impl Plotter {
                 v128_load64_splat(std::ptr::addr_of!(self.dimension.x_offset) as *const u64);
             let _mul = f32x4_mul(_source_points, _ranges);
             let _div = f32x4_div(_mul, _sizes);
-            let _sum = f32x4_add(_div, _offsets);
-            transmute(*(std::ptr::addr_of!(_sum) as *const [f32; 4]))
+            f32x4_add(_div, _offsets)
         }
     }
 
@@ -290,43 +293,46 @@ impl Plotter {
         let colors =
             unsafe { std::slice::from_raw_parts(colors.as_ptr().cast::<u32>(), colors_len) };
 
-        let Dimension {
-            width,
-            height,
-            x_range,
-            y_range,
-            x_offset,
-            y_offset,
-        } = self.dimension;
+        let Dimension { width, height, .. } = self.dimension;
 
         let (w_int, h_int) = (width as usize, height as usize);
 
         let roots = polynom.get_roots();
 
-        let new_data: DMatrix<u32> = DMatrix::from_fn(w_int, h_int, |x, y| {
-            let mut min_d = f32::MAX;
-            let mut closest_root_id: usize = 0;
-            // let (xp, yp) = self.canvas_to_plot(x as f32, y as f32);
-            let points = self.simd_canvas_to_plot(x as f32, y as f32, x as f32, y as f32);
-            let (xp, yp) = (points[0], points[1]);
-            let mut p = Complex32::new(xp, yp);
+        let new_data: DMatrix<u64> = DMatrix::from_fn(w_int / 2, h_int, |x, y| {
+            let mut _min_distances = SimdHelper::F32_MAXIMUMS;
+            let mut _closest_root_ids = SimdHelper::I32_ZEROES;
+            let (x, y) = (2.0 * x as f32, y as f32);
+            let mut _points = self.simd_canvas_to_plot(x, y, x + 1.0, y);
             for _ in 0..iterations_count {
-                p = polynom.simd_newton_method_approx(p);
-            }
-            for (i, root) in roots.iter().enumerate() {
-                let d = (p - root).norm_sqr().sqrt();
-                if d < min_d {
-                    min_d = d;
-                    closest_root_id = i;
+                unsafe {
+                    _points = polynom.simd_newton_method_approx_for_two_numbers(_points);
                 }
             }
-            colors[closest_root_id % colors_len]
+            unsafe {
+                for (i, root) in roots.iter().enumerate() {
+                    let _ids = i32x4_splat(i as i32);
+                    let _root = v128_load64_splat(std::ptr::addr_of!(*root) as *const u64);
+                    let _diff = f32x4_sub(_points, _root);
+                    let _squares = f32x4_mul(_diff, _diff);
+                    let _shifted_squares = i32x4_shuffle::<1, 0, 3, 2>(_squares, _squares);
+                    let _sum = f32x4_add(_squares, _shifted_squares);
+                    let _sqrt = f32x4_sqrt(_sum);
+                    let _distance = i32x4_shuffle::<0, 2, 0, 2>(_sqrt, _sqrt);
+                    let _le_check = f32x4_lt(_distance, _min_distances);
+                    _min_distances = f32x4_pmin(_distance, _min_distances);
+                    _closest_root_ids = v128_bitselect(_ids, _closest_root_ids, _le_check);
+                }
+            }
+            let (id1, id2): (usize, usize) =
+                unsafe { transmute(i64x2_extract_lane::<0>(_closest_root_ids)) };
+            unsafe { transmute([colors[id1 % colors_len], colors[id2 % colors_len]]) }
         });
 
         let new_data = unsafe {
             std::slice::from_raw_parts(
-                std::mem::transmute::<*const u32, *const u8>(new_data.data.ptr()),
-                new_data.len() << 2,
+                std::mem::transmute::<*const u64, *const u8>(new_data.as_ptr()),
+                new_data.len() << 3,
             )
         };
 

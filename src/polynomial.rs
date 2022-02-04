@@ -1,7 +1,7 @@
 use num_complex::Complex32;
 use wasm_bindgen::prelude::*;
 
-use std::arch::wasm32::*;
+use std::{arch::wasm32::*, intrinsics::transmute};
 
 use crate::simd_constants::SimdHelper;
 
@@ -115,9 +115,27 @@ impl Polynomial {
         z - 1.0 / sum
     }
 
+    #[target_feature(enable = "simd128")]
+    pub unsafe fn simd_newton_method_approx_for_two_numbers(&self, two_z: v128) -> v128 {
+        // let first: (i32, i32) = transmute(*(std::ptr::addr_of!(two_z) as *const u64));
+        // let second: (i32, i32) = transmute(*((std::ptr::addr_of!(two_z) as *const u64).offset(1)));
+        // log!(
+        //     "two_z: {:?}, first: {:?}, second: {:?}",
+        //     two_z,
+        //     first,
+        //     second
+        // );
+        let _res = u64x2(
+            self.simd_newton_method_approx(*(std::ptr::addr_of!(two_z) as *const u64)),
+            self.simd_newton_method_approx(*((std::ptr::addr_of!(two_z) as *const u64).offset(1))),
+        );
+        // log!("_res: {:?}", _res);
+        _res
+    }
+
     // #[inline]
     #[target_feature(enable = "simd128")]
-    pub fn simd_newton_method_approx(&self, z: Complex32) -> Complex32 {
+    pub fn simd_newton_method_approx(&self, z: u64) -> u64 {
         // In scalar implementation we process only one root at a time.
         // In simd implementation we process two roots at the same time.
         // We have f32x4 [A, B, C, D], in which (A, B): re and im parts
@@ -141,10 +159,10 @@ impl Polynomial {
                     let root_check: i32 = i32x4_extract_lane::<0>(_diff_eq);
                     // If z == first root
                     if root_check == -1 {
-                        return roots_chunk[0];
+                        return *(std::ptr::addr_of!(roots_chunk[0]) as *const u64);
                     }
                     // If z == second root
-                    return roots_chunk[1];
+                    return *(std::ptr::addr_of!(roots_chunk[1]) as *const u64);
                 }
 
                 // 2. Inversion (1.0 / _diff <=> 1.0 / (z - root))
@@ -165,7 +183,7 @@ impl Polynomial {
                 let _diff = f32x4_sub(_z, v128_load64_zero(std::ptr::addr_of!(*rem) as *const u64));
                 let _diff_eq = f64x2_eq(_diff, SimdHelper::F64_ZEROES);
                 if v128_any_true(_diff_eq) {
-                    return *rem;
+                    return *(rem as *const _ as *const u64);
                 }
                 let _inversion = SimdHelper::complex_number_inversion(_diff);
 
@@ -173,7 +191,7 @@ impl Polynomial {
             }
         }
 
-        // this gives fancy effect (due to swapped sum indexes):
+        // This gives fancy effect (due to swapped sum indexes):
         // let sum = Complex32::new(
         //     f32x4_extract_lane::<0>(_sum) + f32x4_extract_lane::<1>(_sum),
         //     f32x4_extract_lane::<2>(_sum) + f32x4_extract_lane::<3>(_sum),
@@ -186,7 +204,7 @@ impl Polynomial {
         unsafe {
             let _inversion = SimdHelper::complex_number_inversion(_sum);
             let _sub = f32x4_sub(_z, _inversion);
-            *(std::ptr::addr_of!(_sub) as *const Complex32)
+            *(std::ptr::addr_of!(_sub) as *const u64)
         }
     }
 }
