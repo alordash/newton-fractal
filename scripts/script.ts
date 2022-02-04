@@ -79,6 +79,12 @@ function CanvasMouseMove(me: MouseEvent) {
     draw()
 }
 
+const width = 1920;
+const height = 1080;
+const k = height / width;
+const x_range = 4;
+const x_offset = -2;
+
 async function run() {
     await init();
 
@@ -90,7 +96,7 @@ async function run() {
     // myCanvas.addEventListener("mousemove", CanvasMouseMove);
 
     console.log('myCanvas :>> ', myCanvas);
-    let dimension = new Dimension(1919, 1001, 4, 2, -2, -1);
+    let dimension = new Dimension(width, height, x_range, x_range * k, x_offset, x_offset * k);
     plotter = new Plotter(dimension, myCanvas, myCanvasContext);
     plotter.resize_canvas();
     polynom = new Polynomial(startRoots);

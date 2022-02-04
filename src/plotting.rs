@@ -1,5 +1,4 @@
 use super::polynomial::Polynomial;
-use js_sys::Math::sqrt;
 use num_complex::{Complex, Complex32};
 use wasm_bindgen::{prelude::*, Clamped};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
@@ -15,6 +14,7 @@ const SEARCH_TRESHOLD: f32 = 0.01;
 
 #[wasm_bindgen]
 #[derive(Clone, Copy)]
+#[repr(C)]
 pub struct Dimension {
     pub width: f32,
     pub height: f32,
@@ -59,6 +59,23 @@ impl Plotter {
             self.dimension.x_offset + x * self.dimension.x_range / self.dimension.width,
             self.dimension.y_offset + y * self.dimension.y_range / self.dimension.height,
         )
+    }
+    pub fn simd_canvas_to_plot(&self, x1: f32, y1: f32, x2: f32, y2: f32) -> [f32; 4] {
+        // Formula:
+        // x = x_offset + x * x_range / width
+        // y = y_offset + y * y_range / height
+        unsafe {
+            let _source_points = f32x4(x1, y1, x2, y2);
+            let _ranges =
+                v128_load64_splat(std::ptr::addr_of!(self.dimension.x_range) as *const u64);
+            let _sizes = v128_load64_splat(std::ptr::addr_of!(self.dimension.width) as *const u64);
+            let _offsets =
+                v128_load64_splat(std::ptr::addr_of!(self.dimension.x_offset) as *const u64);
+            let _mul = f32x4_mul(_source_points, _ranges);
+            let _div = f32x4_div(_mul, _sizes);
+            let _sum = f32x4_add(_div, _offsets);
+            transmute(*(std::ptr::addr_of!(_sum) as *const [f32; 4]))
+        }
     }
 
     pub fn plot_to_canvas(&self, x: f32, y: f32) -> (f64, f64) {
@@ -272,19 +289,26 @@ impl Plotter {
         let colors_len = colors.len();
         let colors =
             unsafe { std::slice::from_raw_parts(colors.as_ptr().cast::<u32>(), colors_len) };
-        let mut colors_iter = colors.iter().cycle();
 
-        let (w_int, h_int) = (
-            self.dimension.width as usize,
-            self.dimension.height as usize,
-        );
+        let Dimension {
+            width,
+            height,
+            x_range,
+            y_range,
+            x_offset,
+            y_offset,
+        } = self.dimension;
+
+        let (w_int, h_int) = (width as usize, height as usize);
 
         let roots = polynom.get_roots();
-        // let root = roots[0];
+
         let new_data: DMatrix<u32> = DMatrix::from_fn(w_int, h_int, |x, y| {
             let mut min_d = f32::MAX;
             let mut closest_root_id: usize = 0;
-            let (xp, yp) = self.canvas_to_plot(x as f32, y as f32);
+            // let (xp, yp) = self.canvas_to_plot(x as f32, y as f32);
+            let points = self.simd_canvas_to_plot(x as f32, y as f32, x as f32, y as f32);
+            let (xp, yp) = (points[0], points[1]);
             let mut p = Complex32::new(xp, yp);
             for _ in 0..iterations_count {
                 p = polynom.simd_newton_method_approx(p);
@@ -297,7 +321,6 @@ impl Plotter {
                 }
             }
             colors[closest_root_id % colors_len]
-            // *colors_iter.next().unwrap() + v
         });
 
         let new_data = unsafe {

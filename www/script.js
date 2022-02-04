@@ -63,6 +63,11 @@ function CanvasMouseMove(me) {
     polynom.set_root_by_id(holdingPointIndex, x, y);
     draw();
 }
+const width = 1920;
+const height = 1080;
+const k = height / width;
+const x_range = 4;
+const x_offset = -2;
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         yield init();
@@ -70,7 +75,7 @@ function run() {
         let myCanvasContext = myCanvas.getContext("2d");
         myCanvas.addEventListener("click", CanvasClick);
         console.log('myCanvas :>> ', myCanvas);
-        let dimension = new Dimension(1919, 1001, 4, 2, -2, -1);
+        let dimension = new Dimension(width, height, x_range, x_range * k, x_offset, x_offset * k);
         plotter = new Plotter(dimension, myCanvas, myCanvasContext);
         plotter.resize_canvas();
         polynom = new Polynomial(startRoots);
