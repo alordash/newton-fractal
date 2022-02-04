@@ -19,4 +19,13 @@ impl SimdHelper {
 
         f32x4_div(_numerator, _denumerator)
     }
+
+    #[target_feature(enable = "simd128")]
+    pub fn calculate_distance(_points1: v128, _points2: v128) -> v128 {
+        let _diff = f32x4_sub(_points1, _points2);
+        let _squares = f32x4_mul(_diff, _diff);
+        let _shifted_squares = i32x4_shuffle::<1, 0, 3, 2>(_squares, _squares);
+        let _sum = f32x4_add(_squares, _shifted_squares);
+        f32x4_sqrt(_sum)
+    }
 }

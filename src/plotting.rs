@@ -26,6 +26,10 @@ pub struct Dimension {
     pub y_offset: f32,
 }
 
+#[repr(C)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+struct ColorsPack(u32, u32, u32, u32);
+
 #[wasm_bindgen]
 impl Dimension {
     #[wasm_bindgen(constructor)]
@@ -299,40 +303,47 @@ impl Plotter {
 
         let roots = polynom.get_roots();
 
-        let new_data: DMatrix<u64> = DMatrix::from_fn(w_int / 2, h_int, |x, y| {
+        let new_data: DMatrix<ColorsPack> = DMatrix::from_fn(w_int / 4, h_int, |x, y| {
             let mut _min_distances = SimdHelper::F32_MAXIMUMS;
             let mut _closest_root_ids = SimdHelper::I32_ZEROES;
-            let (x, y) = (2.0 * x as f32, y as f32);
-            let mut _points = self.simd_canvas_to_plot(x, y, x + 1.0, y);
+            let (x, y) = (4.0 * x as f32, y as f32);
+            let mut _points1 = self.simd_canvas_to_plot(x, y, x + 1.0, y);
+            let mut _points2 = self.simd_canvas_to_plot(x + 2.0, y, x + 3.0, y);
             for _ in 0..iterations_count {
                 unsafe {
-                    _points = polynom.simd_newton_method_approx_for_two_numbers(_points);
+                    _points1 = polynom.simd_newton_method_approx_for_two_numbers(_points1);
+                    _points2 = polynom.simd_newton_method_approx_for_two_numbers(_points2);
                 }
             }
             unsafe {
                 for (i, root) in roots.iter().enumerate() {
                     let _ids = i32x4_splat(i as i32);
                     let _root = v128_load64_splat(std::ptr::addr_of!(*root) as *const u64);
-                    let _diff = f32x4_sub(_points, _root);
-                    let _squares = f32x4_mul(_diff, _diff);
-                    let _shifted_squares = i32x4_shuffle::<1, 0, 3, 2>(_squares, _squares);
-                    let _sum = f32x4_add(_squares, _shifted_squares);
-                    let _sqrt = f32x4_sqrt(_sum);
-                    let _distance = i32x4_shuffle::<0, 2, 0, 2>(_sqrt, _sqrt);
+                    let _sqrt1 = SimdHelper::calculate_distance(_points1, _root);
+                    let _sqrt2 = SimdHelper::calculate_distance(_points2, _root);
+                    // insert two more points (add another sqrt)
+                    let _distance = i32x4_shuffle::<0, 2, 4, 6>(_sqrt1, _sqrt2);
                     let _le_check = f32x4_lt(_distance, _min_distances);
                     _min_distances = f32x4_pmin(_distance, _min_distances);
                     _closest_root_ids = v128_bitselect(_ids, _closest_root_ids, _le_check);
                 }
             }
-            let (id1, id2): (usize, usize) =
-                unsafe { transmute(i64x2_extract_lane::<0>(_closest_root_ids)) };
-            unsafe { transmute([colors[id1 % colors_len], colors[id2 % colors_len]]) }
+            unsafe {
+                let (id1, id2, id3, id4): (usize, usize, usize, usize) =
+                    transmute(_closest_root_ids);
+                transmute([
+                    colors[id1 % colors_len],
+                    colors[id2 % colors_len],
+                    colors[id3 % colors_len],
+                    colors[id4 % colors_len],
+                ])
+            }
         });
 
         let new_data = unsafe {
             std::slice::from_raw_parts(
-                std::mem::transmute::<*const u64, *const u8>(new_data.as_ptr()),
-                new_data.len() << 3,
+                std::mem::transmute::<*const ColorsPack, *const u8>(new_data.as_ptr()),
+                new_data.len() << 4,
             )
         };
 
