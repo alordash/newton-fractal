@@ -180,7 +180,6 @@ impl Plotter {
         ctx.clear_rect(0f64, 0f64, canvas.width().into(), canvas.height().into());
 
         let (x_range, y_range) = (self.dimension.x_range, self.dimension.y_range);
-        // log!("x_range: {}, y_range: {}", x_range, y_range);
         let size = (((step_x + step_y) / 2.0) * ((width + height) / 2.0) * point_size / 6.0) as f64;
         ctx.set_fill_style(&"grey".into());
 
@@ -189,11 +188,8 @@ impl Plotter {
             let mut x = self.dimension.x_offset + step_x / 2.0;
             while x < x_range + step_x / 2.0 {
                 let z = Complex::<f32>::new(x, y);
-                // log!("Original point: {:?}", z);
                 let z = polynom.calculate(z).unwrap();
-                // log!("Result point: {:?}", z);
                 let (canvas_x, canvas_y) = self.plot_to_canvas(z.re, z.im);
-                // log!("Remapped point: ({}, {})", canvas_x, canvas_y);
 
                 ctx.move_to(canvas_x, canvas_y);
                 ctx.begin_path();
@@ -242,7 +238,7 @@ impl Plotter {
         );
 
         let roots = polynom.get_roots();
-        // let root = roots[0];
+
         let new_data: DMatrix<u32> = DMatrix::from_fn(w_int, h_int, |x, y| {
             let mut min_d = f32::MAX;
             let mut closest_root_id: usize = 0;
@@ -253,10 +249,7 @@ impl Plotter {
                 p = polynom.newton_method_approx(p);
                 i += 1;
             }
-            // for _ in 0..iterations_count {
-            //     log!("computing next p");
-            //     p = polynom.newton_method_approx(p);
-            // }
+            
             for (i, root) in roots.iter().enumerate() {
                 let d = (p - root).norm_sqr().sqrt();
                 if d < min_d {
@@ -265,7 +258,6 @@ impl Plotter {
                 }
             }
             colors[closest_root_id % colors_len]
-            // *colors_iter.next().unwrap() + v
         });
 
         let new_data = unsafe {
@@ -322,7 +314,6 @@ impl Plotter {
                     let _root = v128_load64_splat(addr_of!(*root) as *const u64);
                     let _sqrt1 = SimdHelper::calculate_distance(_points1, _root);
                     let _sqrt2 = SimdHelper::calculate_distance(_points2, _root);
-                    // insert two more points (add another sqrt)
                     let _distance = i32x4_shuffle::<0, 2, 4, 6>(_sqrt1, _sqrt2);
                     let _le_check = f32x4_lt(_distance, _min_distances);
                     _min_distances = f32x4_pmin(_distance, _min_distances);

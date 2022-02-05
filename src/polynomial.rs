@@ -116,6 +116,7 @@ impl Polynomial {
         z - 1.0 / sum
     }
 
+    #[inline]
     #[target_feature(enable = "simd128")]
     pub unsafe fn simd_newton_method_approx_for_two_numbers(&self, two_z: v128) -> v128 {
         // let first: (i32, i32) = transmute(*(addr_of!(two_z) as *const u64));
@@ -134,7 +135,7 @@ impl Polynomial {
         _res
     }
 
-    // #[inline]
+    #[inline]
     #[target_feature(enable = "simd128")]
     pub fn simd_newton_method_approx(&self, z: u64) -> u64 {
         // In scalar implementation we process only one root at a time.
