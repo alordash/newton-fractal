@@ -144,6 +144,7 @@ impl Polynomial {
         // (A + C, B + D)
 
         let mut _sum = f32x4_splat(0.0);
+        // Pass another root
         let _z = unsafe { v128_load64_splat(std::ptr::addr_of!(z) as *const u64) };
         let roots_chunks_iter = self.roots.chunks_exact(2);
         let rem = roots_chunks_iter.remainder();
@@ -156,13 +157,7 @@ impl Polynomial {
                 // 1*. Check if difference == 0 <=> z == one of roots
                 let _diff_eq = f64x2_eq(_diff, SimdHelper::F64_ZEROES);
                 if v128_any_true(_diff_eq) {
-                    let root_check: i32 = i32x4_extract_lane::<0>(_diff_eq);
-                    // If z == first root
-                    if root_check == -1 {
-                        return *(std::ptr::addr_of!(roots_chunk[0]) as *const u64);
-                    }
-                    // If z == second root
-                    return *(std::ptr::addr_of!(roots_chunk[1]) as *const u64);
+                    return z;
                 }
 
                 // 2. Inversion (1.0 / _diff <=> 1.0 / (z - root))
