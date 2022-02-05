@@ -145,7 +145,7 @@ impl Polynomial {
 
         let mut _sum = f32x4_splat(0.0);
         // Pass another root
-        let _z = unsafe { v128_load64_splat(std::ptr::addr_of!(z)) };
+        let _z = unsafe { v128_load64_splat(&z) };
         let roots_chunks_iter = self.roots.chunks_exact(2);
         let rem = roots_chunks_iter.remainder();
         for roots_chunk in roots_chunks_iter {
