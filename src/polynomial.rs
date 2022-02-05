@@ -138,14 +138,13 @@ impl Polynomial {
     #[target_feature(enable = "simd128")]
     pub fn simd_newton_method_approx(&self, z: u64) -> u64 {
         // In scalar implementation we process only one root at a time.
-        // In simd implementation we process two roots at the same time.
+        // When using SIMDs, we process two roots at the same time.
         // We have f32x4 [A, B, C, D], in which (A, B): re and im parts
         // of first complex value and (C, D): re and im parts of second
-        // complex value. To get single complex value we need to sum
-        // (A + C, B + D)
+        // complex value.
+        // To get single complex value we need to sum (A + C, B + D)
 
         let mut _sum = f32x4_splat(0.0);
-        // Pass another root
         let _z = unsafe { v128_load64_splat(&z) };
         let roots_chunks_iter = self.roots.chunks_exact(2);
         let rem = roots_chunks_iter.remainder();
@@ -176,6 +175,7 @@ impl Polynomial {
             unsafe {
                 // This process is same as the processing of two roots, except second
                 // complex value in vector is equal to 0 <=> vector: [A, B, 0, 0];
+
                 let _diff = f32x4_sub(_z, v128_load64_zero(addr_of!(*rem) as *const u64));
                 let _diff_eq = f64x2_eq(_diff, SimdHelper::F64_ZEROES);
                 if v128_any_true(_diff_eq) {
@@ -186,12 +186,6 @@ impl Polynomial {
                 _sum = f32x4_add(_sum, _inversion);
             }
         }
-
-        // This gives fancy effect (due to swapped sum indexes):
-        // let sum = Complex32::new(
-        //     f32x4_extract_lane::<0>(_sum) + f32x4_extract_lane::<1>(_sum),
-        //     f32x4_extract_lane::<2>(_sum) + f32x4_extract_lane::<3>(_sum),
-        // );
 
         // Sum first and second complex values
         _sum = f32x4_add(_sum, _sum_shift);
