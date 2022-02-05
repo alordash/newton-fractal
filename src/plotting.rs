@@ -7,6 +7,7 @@ use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
 
 use std::arch::wasm32::*;
 use std::mem::transmute;
+use std::ptr::addr_of;
 
 use nalgebra::{DMatrix, RawStorage};
 
@@ -75,10 +76,10 @@ impl Plotter {
         unsafe {
             let _source_points = f32x4(x1, y1, x2, y2);
             let _ranges =
-                v128_load64_splat(std::ptr::addr_of!(self.dimension.x_range) as *const u64);
-            let _sizes = v128_load64_splat(std::ptr::addr_of!(self.dimension.width) as *const u64);
+                v128_load64_splat(addr_of!(self.dimension.x_range) as *const u64);
+            let _sizes = v128_load64_splat(addr_of!(self.dimension.width) as *const u64);
             let _offsets =
-                v128_load64_splat(std::ptr::addr_of!(self.dimension.x_offset) as *const u64);
+                v128_load64_splat(addr_of!(self.dimension.x_offset) as *const u64);
             let _mul = f32x4_mul(_source_points, _ranges);
             let _div = f32x4_div(_mul, _sizes);
             f32x4_add(_div, _offsets)
@@ -318,7 +319,7 @@ impl Plotter {
             unsafe {
                 for (i, root) in roots.iter().enumerate() {
                     let _ids = i32x4_splat(i as i32);
-                    let _root = v128_load64_splat(std::ptr::addr_of!(*root) as *const u64);
+                    let _root = v128_load64_splat(addr_of!(*root) as *const u64);
                     let _sqrt1 = SimdHelper::calculate_distance(_points1, _root);
                     let _sqrt2 = SimdHelper::calculate_distance(_points2, _root);
                     // insert two more points (add another sqrt)
