@@ -75,11 +75,9 @@ impl Plotter {
         // y = y_offset + y * y_range / height
         unsafe {
             let _source_points = f32x4(x1, y1, x2, y2);
-            let _ranges =
-                v128_load64_splat(addr_of!(self.dimension.x_range) as *const u64);
+            let _ranges = v128_load64_splat(addr_of!(self.dimension.x_range) as *const u64);
             let _sizes = v128_load64_splat(addr_of!(self.dimension.width) as *const u64);
-            let _offsets =
-                v128_load64_splat(addr_of!(self.dimension.x_offset) as *const u64);
+            let _offsets = v128_load64_splat(addr_of!(self.dimension.x_offset) as *const u64);
             let _mul = f32x4_mul(_source_points, _ranges);
             let _div = f32x4_div(_mul, _sizes);
             f32x4_add(_div, _offsets)
@@ -249,7 +247,7 @@ impl Plotter {
                 p = polynom.newton_method_approx(p);
                 i += 1;
             }
-            
+
             for (i, root) in roots.iter().enumerate() {
                 let d = (p - root).norm_sqr().sqrt();
                 if d < min_d {
@@ -323,12 +321,7 @@ impl Plotter {
             unsafe {
                 let (id1, id2, id3, id4): (usize, usize, usize, usize) =
                     transmute(_closest_root_ids);
-                transmute([
-                    colors[id1 % colors_len],
-                    colors[id2 % colors_len],
-                    colors[id3 % colors_len],
-                    colors[id4 % colors_len],
-                ])
+                transmute([colors[id1], colors[id2], colors[id3], colors[id4]])
             }
         });
 
