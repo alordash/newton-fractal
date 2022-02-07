@@ -335,7 +335,15 @@ impl Plotter {
         colors: JsValue,
         apply_effect: bool,
     ) {
-        let (colors, colors_len) = Plotter::convert_colors_array(colors).unwrap();
+        let colors: Vec<[u8; 4]> = match colors.into_serde() {
+            Ok(v) => v,
+            Err(e) => {
+                log!("Error parsing provided colors info: {}", e);
+                return;
+            }
+        };
+
+        let colors_len = colors.len();
 
         let (width, height) = (self.dimension.width, self.dimension.height);
         let (w_int, h_int) = (width as u32, height as u32);
