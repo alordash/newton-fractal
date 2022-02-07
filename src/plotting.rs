@@ -61,6 +61,21 @@ pub struct Plotter {
 }
 
 impl Plotter {
+    pub fn convert_colors_array<'a>(colors: JsValue) -> Option<(&'a [u32], usize)> {
+        let colors: Vec<[u8; 4]> = match colors.into_serde() {
+            Ok(v) => v,
+            Err(e) => {
+                log!("Error parsing provided colors info: {}", e);
+                return None;
+            }
+        };
+        let colors_len = colors.len();
+        Some((
+            unsafe { std::slice::from_raw_parts(colors.as_ptr() as *const u32, colors_len) },
+            colors_len,
+        ))
+    }
+
     pub fn canvas_point_to_plot(&self, x: f32, y: f32) -> (f32, f32) {
         (
             self.dimension.x_offset + x * self.dimension.x_range / self.dimension.width,
@@ -216,17 +231,7 @@ impl Plotter {
         iterations_count: usize,
         colors: JsValue,
     ) {
-        let colors: Vec<[u8; 4]> = match colors.into_serde() {
-            Ok(v) => v,
-            Err(e) => {
-                log!("Error parsing provided colors info: {}", e);
-                return;
-            }
-        };
-
-        let colors_len = colors.len();
-        let colors =
-            unsafe { std::slice::from_raw_parts(colors.as_ptr().cast::<u32>(), colors_len) };
+        let (colors, colors_len) = Plotter::convert_colors_array(colors).unwrap();
 
         let Dimension { width, height, .. } = self.dimension;
         let (w_int, h_int) = (width as usize, height as usize);
@@ -274,17 +279,7 @@ impl Plotter {
         iterations_count: usize,
         colors: JsValue,
     ) {
-        let colors: Vec<[u8; 4]> = match colors.into_serde() {
-            Ok(v) => v,
-            Err(e) => {
-                log!("Error parsing provided colors info: {}", e);
-                return;
-            }
-        };
-
-        let colors_len = colors.len();
-        let colors =
-            unsafe { std::slice::from_raw_parts(colors.as_ptr() as *const u32, colors_len) };
+        let (colors, colors_len) = Plotter::convert_colors_array(colors).unwrap();
 
         let Dimension { width, height, .. } = self.dimension;
         let (w_int, h_int) = (width as usize, height as usize);
@@ -340,15 +335,7 @@ impl Plotter {
         colors: JsValue,
         apply_effect: bool,
     ) {
-        let colors: Vec<[u8; 4]> = match colors.into_serde() {
-            Ok(v) => v,
-            Err(e) => {
-                log!("Error parsing provided colors info: {}", e);
-                return;
-            }
-        };
-
-        let colors_num = colors.len();
+        let (colors, colors_len) = Plotter::convert_colors_array(colors).unwrap();
 
         let (width, height) = (self.dimension.width, self.dimension.height);
         let (w_int, h_int) = (width as u32, height as u32);
@@ -388,7 +375,7 @@ impl Plotter {
                         }
                     }
                 }
-                let color = &colors[closest_root_id % colors_num];
+                let color = &colors[closest_root_id % colors_len];
                 if apply_effect {
                     let k = (min_d.sqrt() * iter_count_k * iter_count_k).sqrt();
                     for i in 0..=2 {
