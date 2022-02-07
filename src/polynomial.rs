@@ -47,7 +47,7 @@ impl Polynomial {
         let p = Complex32::new(re, im);
         for (i, root) in self.roots.iter().enumerate() {
             let d = p - root;
-            let d = (d.re * d.re + d.im * d.im).sqrt();
+            let d = d.norm_sqr().sqrt();
             if d < min_d {
                 min_d = d;
                 idx = i as u32;
@@ -108,10 +108,11 @@ impl Polynomial {
     pub fn newton_method_approx(&self, z: Complex32) -> Complex32 {
         let mut sum = Complex32::new(0.0, 0.0);
         for root in self.roots.iter() {
-            sum += 1.0 / (z - root);
-            if sum.is_nan() {
-                return root.clone();
+            let diff = z - root;
+            if diff.re == 0.0 && diff.im == 0.0 {
+                return z;
             }
+            sum += 1.0 / diff;
         }
         z - 1.0 / sum
     }
@@ -119,20 +120,10 @@ impl Polynomial {
     #[inline]
     #[target_feature(enable = "simd128")]
     pub unsafe fn simd_newton_method_approx_for_two_numbers(&self, two_z: v128) -> v128 {
-        // let first: (i32, i32) = transmute(*(addr_of!(two_z) as *const u64));
-        // let second: (i32, i32) = transmute(*((addr_of!(two_z) as *const u64).offset(1)));
-        // log!(
-        //     "two_z: {:?}, first: {:?}, second: {:?}",
-        //     two_z,
-        //     first,
-        //     second
-        // );
-        let _res = u64x2(
+        u64x2(
             self.simd_newton_method_approx(*(addr_of!(two_z) as *const u64)),
             self.simd_newton_method_approx(*((addr_of!(two_z) as *const u64).offset(1))),
-        );
-        // log!("_res: {:?}", _res);
-        _res
+        )
     }
 
     #[inline]

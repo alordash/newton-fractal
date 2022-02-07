@@ -61,7 +61,7 @@ pub struct Plotter {
 }
 
 impl Plotter {
-    pub fn canvas_to_plot(&self, x: f32, y: f32) -> (f32, f32) {
+    pub fn canvas_point_to_plot(&self, x: f32, y: f32) -> (f32, f32) {
         (
             self.dimension.x_offset + x * self.dimension.x_range / self.dimension.width,
             self.dimension.y_offset + y * self.dimension.y_range / self.dimension.height,
@@ -69,7 +69,7 @@ impl Plotter {
     }
 
     #[target_feature(enable = "simd128")]
-    pub fn simd_canvas_to_plot(&self, x1: f32, y1: f32, x2: f32, y2: f32) -> v128 {
+    pub fn simd_canvas_point_to_plot(&self, x1: f32, y1: f32, x2: f32, y2: f32) -> v128 {
         // Formula:
         // x = x_offset + x * x_range / width
         // y = y_offset + y * y_range / height
@@ -84,7 +84,7 @@ impl Plotter {
         }
     }
 
-    pub fn plot_to_canvas(&self, x: f32, y: f32) -> (f64, f64) {
+    pub fn plot_point_to_canvas(&self, x: f32, y: f32) -> (f64, f64) {
         (
             ((x - self.dimension.x_offset) * self.dimension.width / self.dimension.x_range) as f64,
             ((y - self.dimension.y_offset) * self.dimension.height / self.dimension.y_range) as f64,
@@ -129,9 +129,8 @@ impl Plotter {
     }
 
     #[wasm_bindgen]
-    pub fn canvas_to_plot_to_js(&self, x: f32, y: f32) -> JsValue {
-        let p = self.canvas_to_plot(x, y);
-        JsValue::from_serde(&p).unwrap()
+    pub fn canvas_point_to_plot_to_js(&self, x: f32, y: f32) -> JsValue {
+        JsValue::from_serde(&self.canvas_point_to_plot(x, y)).unwrap()
     }
 
     #[wasm_bindgen]
@@ -143,7 +142,7 @@ impl Plotter {
     #[wasm_bindgen]
     pub fn plot_point(&self, x: f32, y: f32, color: &JsValue, size: f64) {
         let ctx = &self.context;
-        let (canvas_x, canvas_y) = self.plot_to_canvas(x, y);
+        let (canvas_x, canvas_y) = self.plot_point_to_canvas(x, y);
         ctx.move_to(canvas_x, canvas_y);
         ctx.begin_path();
         ctx.arc(canvas_x, canvas_y, size, 0f64, 2f64 * std::f64::consts::PI)
@@ -187,7 +186,7 @@ impl Plotter {
             while x < x_range + step_x / 2.0 {
                 let z = Complex::<f32>::new(x, y);
                 let z = polynom.calculate(z).unwrap();
-                let (canvas_x, canvas_y) = self.plot_to_canvas(z.re, z.im);
+                let (canvas_x, canvas_y) = self.plot_point_to_canvas(z.re, z.im);
 
                 ctx.move_to(canvas_x, canvas_y);
                 ctx.begin_path();
@@ -228,7 +227,6 @@ impl Plotter {
         let colors_len = colors.len();
         let colors =
             unsafe { std::slice::from_raw_parts(colors.as_ptr().cast::<u32>(), colors_len) };
-        let mut colors_iter = colors.iter().cycle();
 
         let (w_int, h_int) = (
             self.dimension.width as usize,
@@ -240,12 +238,10 @@ impl Plotter {
         let new_data: DMatrix<u32> = DMatrix::from_fn(w_int, h_int, |x, y| {
             let mut min_d = f32::MAX;
             let mut closest_root_id: usize = 0;
-            let (xp, yp) = self.canvas_to_plot(x as f32, y as f32);
+            let (xp, yp) = self.canvas_point_to_plot(x as f32, y as f32);
             let mut p = Complex32::new(xp, yp);
-            let mut i = 0;
-            while i < iterations_count {
+            for _ in 0..iterations_count {
                 p = polynom.newton_method_approx(p);
-                i += 1;
             }
 
             for (i, root) in roots.iter().enumerate() {
@@ -261,7 +257,7 @@ impl Plotter {
         let new_data = unsafe {
             std::slice::from_raw_parts(
                 std::mem::transmute::<*const u32, *const u8>(new_data.data.ptr()),
-                new_data.len() << 2,
+                new_data.len() * 4,
             )
         };
 
@@ -286,7 +282,7 @@ impl Plotter {
 
         let colors_len = colors.len();
         let colors =
-            unsafe { std::slice::from_raw_parts(colors.as_ptr().cast::<u32>(), colors_len) };
+            unsafe { std::slice::from_raw_parts(colors.as_ptr() as *const u32, colors_len) };
 
         let Dimension { width, height, .. } = self.dimension;
 
@@ -298,8 +294,8 @@ impl Plotter {
             let mut _min_distances = SimdHelper::F32_MAXIMUMS;
             let mut _closest_root_ids = SimdHelper::I32_ZEROES;
             let (x, y) = (4.0 * x as f32, y as f32);
-            let mut _points1 = self.simd_canvas_to_plot(x, y, x + 1.0, y);
-            let mut _points2 = self.simd_canvas_to_plot(x + 2.0, y, x + 3.0, y);
+            let mut _points1 = self.simd_canvas_point_to_plot(x, y, x + 1.0, y);
+            let mut _points2 = self.simd_canvas_point_to_plot(x + 2.0, y, x + 3.0, y);
             for _ in 0..iterations_count {
                 unsafe {
                     _points1 = polynom.simd_newton_method_approx_for_two_numbers(_points1);
@@ -307,9 +303,9 @@ impl Plotter {
                 }
             }
             unsafe {
-                for (i, root) in roots.iter().enumerate() {
+                for (i, &root) in roots.iter().enumerate() {
                     let _ids = i32x4_splat(i as i32);
-                    let _root = v128_load64_splat(addr_of!(*root) as *const u64);
+                    let _root = v128_load64_splat(addr_of!(root) as *const u64);
                     let _sqrt1 = SimdHelper::calculate_distance(_points1, _root);
                     let _sqrt2 = SimdHelper::calculate_distance(_points2, _root);
                     let _distance = i32x4_shuffle::<0, 2, 4, 6>(_sqrt1, _sqrt2);
@@ -328,7 +324,7 @@ impl Plotter {
         let new_data = unsafe {
             std::slice::from_raw_parts(
                 std::mem::transmute::<*const ColorsPack, *const u8>(new_data.as_ptr()),
-                new_data.len() << 4,
+                new_data.len() * 16,
             )
         };
 

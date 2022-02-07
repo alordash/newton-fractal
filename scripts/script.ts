@@ -22,7 +22,7 @@ function DimColors(colors: number[][]) {
 DimColors(regionColors);
 
 function MapPoints(x: number, y: number): { x: number, y: number } {
-    let p = plotter.canvas_to_plot_to_js(x, y);
+    let p = plotter.canvas_point_to_plot_to_js(x, y);
     return { x: p[0], y: p[1] };
 }
 
