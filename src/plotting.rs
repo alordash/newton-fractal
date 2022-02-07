@@ -228,10 +228,8 @@ impl Plotter {
         let colors =
             unsafe { std::slice::from_raw_parts(colors.as_ptr().cast::<u32>(), colors_len) };
 
-        let (w_int, h_int) = (
-            self.dimension.width as usize,
-            self.dimension.height as usize,
-        );
+        let Dimension { width, height, .. } = self.dimension;
+        let (w_int, h_int) = (width as usize, height as usize);
 
         let roots = polynom.get_roots();
 
@@ -241,7 +239,11 @@ impl Plotter {
             let (xp, yp) = self.canvas_point_to_plot(x as f32, y as f32);
             let mut p = Complex32::new(xp, yp);
             for _ in 0..iterations_count {
-                p = polynom.newton_method_approx(p);
+                let (stop, new_point) = polynom.newton_method_approx(p);
+                if stop {
+                    break;
+                }
+                p = new_point;
             }
 
             for (i, root) in roots.iter().enumerate() {
@@ -285,7 +287,6 @@ impl Plotter {
             unsafe { std::slice::from_raw_parts(colors.as_ptr() as *const u32, colors_len) };
 
         let Dimension { width, height, .. } = self.dimension;
-
         let (w_int, h_int) = (width as usize, height as usize);
 
         let roots = polynom.get_roots();
@@ -370,7 +371,11 @@ impl Plotter {
                 let mut closest_root_id: usize = usize::MAX;
                 let mut p = Complex32::new(x, y);
                 for _ in 0..iterations_count {
-                    p = polynom.newton_method_approx(p);
+                    let (stop, new_point) = polynom.newton_method_approx(p);
+                    if stop {
+                        break;
+                    }
+                    p = new_point;
                 }
                 for (i, root) in roots.iter().enumerate() {
                     let d = p - root;

@@ -105,16 +105,16 @@ impl Polynomial {
         Some(prod * sum)
     }
 
-    pub fn newton_method_approx(&self, z: Complex32) -> Complex32 {
+    pub fn newton_method_approx(&self, z: Complex32) -> (bool, Complex32) {
         let mut sum = Complex32::new(0.0, 0.0);
         for root in self.roots.iter() {
             let diff = z - root;
             if diff.re == 0.0 && diff.im == 0.0 {
-                return z;
+                return (true, z);
             }
             sum += 1.0 / diff;
         }
-        z - 1.0 / sum
+        (false, z - 1.0 / sum)
     }
 
     #[inline]
