@@ -61,19 +61,16 @@ pub struct Plotter {
 }
 
 impl Plotter {
-    pub fn convert_colors_array<'a>(colors: JsValue) -> Option<(&'a [u32], usize)> {
+    pub fn convert_colors_array(colors: JsValue) -> (Vec<u32>, usize) {
         let colors: Vec<[u8; 4]> = match colors.into_serde() {
             Ok(v) => v,
             Err(e) => {
                 log!("Error parsing provided colors info: {}", e);
-                return None;
+                vec![[0, 0, 0, 0]]
             }
         };
         let colors_len = colors.len();
-        Some((
-            unsafe { std::slice::from_raw_parts(colors.as_ptr() as *const u32, colors_len) },
-            colors_len,
-        ))
+        (unsafe { transmute(colors) }, colors_len)
     }
 
     pub fn canvas_point_to_plot(&self, x: f32, y: f32) -> (f32, f32) {
@@ -175,7 +172,7 @@ impl Plotter {
         iterations_count: usize,
         colors: JsValue,
     ) {
-        let (colors, colors_len) = Plotter::convert_colors_array(colors).unwrap();
+        let (colors, colors_len) = Plotter::convert_colors_array(colors);
 
         let Dimension { width, height, .. } = self.dimension;
         let (w_int, h_int) = (width as usize, height as usize);
@@ -205,11 +202,8 @@ impl Plotter {
             colors[closest_root_id % colors_len]
         });
 
-        let new_data = unsafe {
-            std::slice::from_raw_parts(
-                std::mem::transmute::<*const u32, *const u8>(new_data.data.ptr()),
-                new_data.len() * 4,
-            )
+        let new_data: &[u8] = unsafe {
+            std::slice::from_raw_parts(std::mem::transmute(new_data.data.ptr()), new_data.len() * 4)
         };
 
         self.draw_raw_data(Clamped(new_data));
@@ -223,7 +217,7 @@ impl Plotter {
         iterations_count: usize,
         colors: JsValue,
     ) {
-        let (colors, colors_len) = Plotter::convert_colors_array(colors).unwrap();
+        let (colors, colors_len) = Plotter::convert_colors_array(colors);
 
         let Dimension { width, height, .. } = self.dimension;
         let (w_int, h_int) = (width as usize, height as usize);
@@ -261,11 +255,8 @@ impl Plotter {
             }
         });
 
-        let new_data = unsafe {
-            std::slice::from_raw_parts(
-                std::mem::transmute::<*const ColorsPack, *const u8>(new_data.as_ptr()),
-                new_data.len() * 16,
-            )
+        let new_data: &[u8] = unsafe {
+            std::slice::from_raw_parts(std::mem::transmute(new_data.as_ptr()), new_data.len() * 16)
         };
 
         self.draw_raw_data(Clamped(new_data));
