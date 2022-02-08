@@ -1,6 +1,5 @@
 #![cfg(target_arch = "wasm32")]
 
-use num_complex::Complex32;
 use wasm_bindgen::prelude::*;
 
 #[macro_use]
@@ -10,7 +9,6 @@ use logger::*;
 pub mod simd_constants;
 
 pub mod polynomial;
-use polynomial::Polynomial;
 
 pub mod plotting;
 

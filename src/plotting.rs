@@ -169,62 +169,6 @@ impl Plotter {
     }
 
     #[wasm_bindgen]
-    pub fn plot_points(
-        &self,
-        step_x: f32,
-        step_y: f32,
-        polynom: &Polynomial,
-        point_size: Option<f32>,
-    ) {
-        if polynom.get_roots().len() == 0 {
-            return;
-        }
-
-        let (width, height) = (self.dimension.width, self.dimension.height);
-
-        let point_size = match point_size {
-            Some(v) => v,
-            None => 0.5,
-        };
-
-        let ctx = &self.context;
-        let canvas = &self.canvas;
-        ctx.clear_rect(0f64, 0f64, canvas.width().into(), canvas.height().into());
-
-        let (x_range, y_range) = (self.dimension.x_range, self.dimension.y_range);
-        let size = (((step_x + step_y) / 2.0) * ((width + height) / 2.0) * point_size / 6.0) as f64;
-        ctx.set_fill_style(&"grey".into());
-
-        let mut y = self.dimension.y_offset + step_y / 2.0;
-        while y < y_range + step_y / 2.0 {
-            let mut x = self.dimension.x_offset + step_x / 2.0;
-            while x < x_range + step_x / 2.0 {
-                let z = Complex::<f32>::new(x, y);
-                let z = polynom.calculate(z).unwrap();
-                let (canvas_x, canvas_y) = self.plot_point_to_canvas(z.re, z.im);
-
-                ctx.move_to(canvas_x, canvas_y);
-                ctx.begin_path();
-                match ctx.arc(canvas_x, canvas_y, size, 0f64, 2f64 * std::f64::consts::PI) {
-                    Ok(_) => (),
-                    Err(_) => (),
-                };
-                ctx.fill();
-                ctx.stroke();
-                ctx.close_path();
-
-                x += step_x;
-            }
-            y += step_y;
-        }
-
-        for root in polynom.get_roots().iter() {
-            let p = root.clone();
-            self.plot_point(p.re, p.im, &"red".into(), 4.0 * size);
-        }
-    }
-
-    #[wasm_bindgen]
     pub fn fill_pixels_nalgebra(
         &self,
         polynom: &Polynomial,
