@@ -87,8 +87,11 @@ impl Plotter {
         // y = y_offset + y * y_range / height
         unsafe {
             let _source_points = f32x4(x1, y1, x2, y2);
+            // _ranges = [x_range, y_range, x_range, y_range]
             let _ranges = v128_load64_splat(addr_of!(self.dimension.x_range) as *const u64);
+            // _sizes = [width, height, width, height]
             let _sizes = v128_load64_splat(addr_of!(self.dimension.width) as *const u64);
+            // _offsets = [x_offset, y_offset, x_offset, y_offset]
             let _offsets = v128_load64_splat(addr_of!(self.dimension.x_offset) as *const u64);
             let _mul = f32x4_mul(_source_points, _ranges);
             let _div = f32x4_div(_mul, _sizes);
