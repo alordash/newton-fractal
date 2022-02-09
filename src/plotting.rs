@@ -188,9 +188,9 @@ impl Plotter {
             let (xp, yp) = self.canvas_point_to_plot(x as f32, y as f32);
             let mut p = Complex32::new(xp, yp);
             for _ in 0..iterations_count {
-                let (stop, new_point) = polynom.newton_method_approx(p);
-                if stop {
-                    break;
+                let (id, new_point) = polynom.newton_method_approx(p);
+                if (id & (1 << 31)) == 0 {
+                    return colors[id];
                 }
                 p = new_point;
             }
@@ -202,7 +202,7 @@ impl Plotter {
                     closest_root_id = i;
                 }
             }
-            colors[closest_root_id % colors_len]
+            colors[closest_root_id]
         });
 
         let new_data: &[u8] = unsafe {
@@ -305,7 +305,7 @@ impl Plotter {
                 let mut p = Complex32::new(x, y);
                 for _ in 0..iterations_count {
                     let (stop, new_point) = polynom.newton_method_approx(p);
-                    if stop {
+                    if stop != usize::MAX {
                         break;
                     }
                     p = new_point;
