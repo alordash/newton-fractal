@@ -1,4 +1,5 @@
 import init, { Dimension, Plotter, Polynomial } from '../pkg/newton_fractal.js';
+import { regionColors } from './colors.js';
 
 let plotter: Plotter;
 
@@ -27,31 +28,21 @@ drawingModeSelect.onchange = () => {
 const HOLD_POINT_DST_THRESHOLD = 0.125;
 let holdingPointIndex = -1;
 
-let regionColors = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], [255, 255, 0, 255], [255, 0, 255, 255], [0, 255, 255, 255]];
-const DIM_COEFFICIENT = 1.25;
-function DimColors(colors: number[][]) {
-    for (let i = 0; i < colors.length; i++) {
-        for (let j = 0; j < 3; j++) {
-            colors[i][j] /= DIM_COEFFICIENT;
-        }
-    }
-}
-DimColors(regionColors);
-
 function MapPoints(x: number, y: number): { x: number, y: number } {
     let p = plotter.canvas_point_to_plot_to_js(x, y);
     return { x: p[0], y: p[1] };
 }
 
 function CanvasClick(me: MouseEvent) {
-    // if (holdingPointIndex != -1) return;
-    // let { x, y } = MapPoints(me.offsetX, me.offsetY);
+    if (holdingPointIndex != -1) return;
+    let { x, y } = MapPoints(me.offsetX, me.offsetY);
 
-    // let id_and_dst = polynom.get_closest_root_id(x, y);
-    // let id = id_and_dst[0];
-    // // if (me.shiftKey) {
-    // //     polynom.add_root(x, y);
-    // // }
+    let id_and_dst = polynom.get_closest_root_id(x, y);
+    let id = id_and_dst[0];
+    if (me.shiftKey) {
+        console.log(`Added new root at: (${x}, ${y})`);
+        polynom.add_root(x, y);
+    }
 
     let iterationsCount = parseInt(iterationsCountRange.value);
 
@@ -111,9 +102,9 @@ async function run() {
     let myCanvas = <HTMLCanvasElement>document.getElementById("main-canvas");
     let myCanvasContext = myCanvas.getContext("2d");
 
-    // myCanvas.addEventListener("mousedown", CanvasMouseDown)
+    myCanvas.addEventListener("mousedown", CanvasMouseDown)
     myCanvas.addEventListener("click", CanvasClick);
-    // myCanvas.addEventListener("mousemove", CanvasMouseMove);
+    myCanvas.addEventListener("mousemove", CanvasMouseMove);
 
     console.log('myCanvas :>> ', myCanvas);
     let dimension = new Dimension(width, height, x_range, x_range * k, x_offset, x_offset * k);
