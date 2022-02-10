@@ -1,5 +1,4 @@
 import init, { Dimension, Plotter, Polynomial } from '../pkg/newton_fractal.js';
-// import { newton_method_test, simd_newton_method_test } from '../pkg/newton_fractal.js';
 
 let plotter: Plotter;
 
@@ -8,14 +7,32 @@ let startRoots = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25]
     , [-0.85, 0.5]
 ];
 
+enum DrawingModes {
+    CPU_SCALAR = "CPU (scalar)",
+    CPU_SIMD = "CPU (simd)"
+}
+
+let drawingModeSelect = <HTMLSelectElement>document.getElementById("drawingModeSelect");
+for(const [key, value] of Object.entries(DrawingModes)) {
+    let option = <HTMLOptionElement>document.createElement("option");
+    option.value = key;
+    option.innerText = value;
+    drawingModeSelect.options.add(option);
+}
+
+drawingModeSelect.onchange = () => {
+    console.log('drawingModeSelect.value :>> ', drawingModeSelect.value);
+}
+
 const HOLD_POINT_DST_THRESHOLD = 0.125;
 let holdingPointIndex = -1;
 
 let regionColors = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], [255, 255, 0, 255], [255, 0, 255, 255], [0, 255, 255, 255]];
+const DIM_COEFFICIENT = 1.25;
 function DimColors(colors: number[][]) {
     for (let i = 0; i < colors.length; i++) {
         for (let j = 0; j < 3; j++) {
-            colors[i][j] /= 1.25
+            colors[i][j] /= DIM_COEFFICIENT;
         }
     }
 }

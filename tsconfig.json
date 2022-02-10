@@ -5,7 +5,7 @@
     "preserveConstEnums": true,
     "removeComments": true,
     "sourceMap": true,
-    "target": "ES6",
+    "target": "ES2021",
     "outDir": "www"
   }
 }

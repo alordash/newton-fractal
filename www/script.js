@@ -1,25 +1,33 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 import init, { Dimension, Plotter, Polynomial } from '../pkg/newton_fractal.js';
 let plotter;
 let polynom;
 let startRoots = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25],
     [-0.85, 0.5]
 ];
+var DrawingModes;
+(function (DrawingModes) {
+    DrawingModes["CPU_SCALAR"] = "CPU (scalar)";
+    DrawingModes["CPU_SIMD"] = "CPU (simd)";
+})(DrawingModes || (DrawingModes = {}));
+let drawingModeSelect = document.getElementById("drawingModeSelect");
+for (const [key, value] of Object.entries(DrawingModes)) {
+    let option = document.createElement("option");
+    option.value = key;
+    option.innerText = value;
+    console.log('DrawingModes :>> ', DrawingModes);
+    drawingModeSelect.options.add(option);
+}
+drawingModeSelect.onchange = () => {
+    console.log('drawingModeSelect.value :>> ', drawingModeSelect.value);
+};
 const HOLD_POINT_DST_THRESHOLD = 0.125;
 let holdingPointIndex = -1;
 let regionColors = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], [255, 255, 0, 255], [255, 0, 255, 255], [0, 255, 255, 255]];
+const DIM_COEFFICIENT = 1.25;
 function DimColors(colors) {
     for (let i = 0; i < colors.length; i++) {
         for (let j = 0; j < 3; j++) {
-            colors[i][j] /= 1.25;
+            colors[i][j] /= DIM_COEFFICIENT;
         }
     }
 }
@@ -68,19 +76,17 @@ const height = 1080;
 const k = height / width;
 const x_range = 4;
 const x_offset = -2;
-function run() {
-    return __awaiter(this, void 0, void 0, function* () {
-        yield init();
-        let myCanvas = document.getElementById("main-canvas");
-        let myCanvasContext = myCanvas.getContext("2d");
-        myCanvas.addEventListener("click", CanvasClick);
-        console.log('myCanvas :>> ', myCanvas);
-        let dimension = new Dimension(width, height, x_range, x_range * k, x_offset, x_offset * k);
-        plotter = new Plotter(dimension, myCanvas, myCanvasContext);
-        plotter.resize_canvas();
-        polynom = new Polynomial(startRoots);
-        draw();
-    });
+async function run() {
+    await init();
+    let myCanvas = document.getElementById("main-canvas");
+    let myCanvasContext = myCanvas.getContext("2d");
+    myCanvas.addEventListener("click", CanvasClick);
+    console.log('myCanvas :>> ', myCanvas);
+    let dimension = new Dimension(width, height, x_range, x_range * k, x_offset, x_offset * k);
+    plotter = new Plotter(dimension, myCanvas, myCanvasContext);
+    plotter.resize_canvas();
+    polynom = new Polynomial(startRoots);
+    draw();
 }
 run();
 let iterationsCountRange = document.getElementById("iterationsCount");
