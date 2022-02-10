@@ -10,15 +10,14 @@ var DrawingModes;
     DrawingModes["CPU_SIMD"] = "CPU (simd)";
 })(DrawingModes || (DrawingModes = {}));
 let drawingModeSelect = document.getElementById("drawingModeSelect");
-for (const [key, value] of Object.entries(DrawingModes)) {
+for (const value of Object.values(DrawingModes)) {
     let option = document.createElement("option");
-    option.value = key;
+    option.value = value;
     option.innerText = value;
-    console.log('DrawingModes :>> ', DrawingModes);
     drawingModeSelect.options.add(option);
 }
 drawingModeSelect.onchange = () => {
-    console.log('drawingModeSelect.value :>> ', drawingModeSelect.value);
+    let value = drawingModeSelect.value;
 };
 const HOLD_POINT_DST_THRESHOLD = 0.125;
 let holdingPointIndex = -1;
@@ -38,15 +37,18 @@ function MapPoints(x, y) {
 }
 function CanvasClick(me) {
     let iterationsCount = parseInt(iterationsCountRange.value);
-    if (me.shiftKey) {
-        console.log("SIMD");
-        plotter.fill_pixels_simd_nalgebra(polynom, iterationsCount, regionColors);
+    console.log(`Drawing technic: ${drawingModeSelect.value}`);
+    switch (drawingModeSelect.value) {
+        case DrawingModes.CPU_SCALAR:
+            plotter.fill_pixels_nalgebra(polynom, iterationsCount, regionColors);
+            break;
+        case DrawingModes.CPU_SIMD:
+            plotter.fill_pixels_simd_nalgebra(polynom, iterationsCount, regionColors);
+            break;
+        default:
+            break;
     }
-    else {
-        console.log("SCALAR");
-        plotter.fill_pixels_nalgebra(polynom, iterationsCount, regionColors);
-    }
-    console.log("END");
+    console.log("Done drawing.");
 }
 function CanvasMouseDown(me) {
     let { x, y } = MapPoints(me.offsetX, me.offsetY);
@@ -71,8 +73,8 @@ function CanvasMouseMove(me) {
     polynom.set_root_by_id(holdingPointIndex, x, y);
     draw();
 }
-const width = 1920;
-const height = 1080;
+const width = Math.round(window.innerWidth * 0.9 / 4) * 4;
+const height = Math.round(window.innerHeight * 0.75);
 const k = height / width;
 const x_range = 4;
 const x_offset = -2;
@@ -91,6 +93,7 @@ async function run() {
 run();
 let iterationsCountRange = document.getElementById("iterationsCount");
 let iterationsCountDisplay = document.getElementById("iterationsCountDisplay");
+iterationsCountDisplay.value = iterationsCountRange.value;
 iterationsCountRange.addEventListener("change", () => {
     iterationsCountDisplay.value = iterationsCountRange.value;
     draw();

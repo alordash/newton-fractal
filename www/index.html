@@ -2,20 +2,33 @@
 
 <head>
     <meta charset="utf-8" />
+    <title>Newton's fractal</title>
+    <style>
+        body {
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
 </head>
 
 <body>
-    <select id="drawingModeSelect">
-    </select>
     <canvas id="main-canvas" style="border: black 2px solid;"></canvas>
     <br />
-    Newton's method iterations: <output id="iterationsCountDisplay">0</output>
-    <br />
+    Select drawing technic:
+    <select id="drawingModeSelect" style="padding: 2px; margin-bottom: 10px;">
+    </select>
+    <div>Newton's method iterations: <output id="iterationsCountDisplay">0</output></div>
     <input type="range" min="0" max="15" step="1" value="11" id="iterationsCount">
     <br />
     <button id="newtonFractal">Draw Newton's fractal</button>
     <br />
-    <input type="checkbox" id="applyEffect"> Apply fancy effect
+    <div>Apply fancy effect <input type="checkbox" id="applyEffect"></div>
     <script src="./script.js" type="module"></script>
 </body>
 

@@ -16,7 +16,7 @@ use super::logger::*;
 const SEARCH_TRESHOLD: f32 = 0.01;
 
 #[wasm_bindgen]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 #[repr(C)]
 pub struct Dimension {
     pub width: f32,

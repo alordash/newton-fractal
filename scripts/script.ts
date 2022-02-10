@@ -13,15 +13,15 @@ enum DrawingModes {
 }
 
 let drawingModeSelect = <HTMLSelectElement>document.getElementById("drawingModeSelect");
-for(const [key, value] of Object.entries(DrawingModes)) {
+for (const value of Object.values(DrawingModes)) {
     let option = <HTMLOptionElement>document.createElement("option");
-    option.value = key;
+    option.value = value;
     option.innerText = value;
     drawingModeSelect.options.add(option);
 }
 
 drawingModeSelect.onchange = () => {
-    console.log('drawingModeSelect.value :>> ', drawingModeSelect.value);
+    let value = drawingModeSelect.value;
 }
 
 const HOLD_POINT_DST_THRESHOLD = 0.125;
@@ -55,17 +55,20 @@ function CanvasClick(me: MouseEvent) {
 
     let iterationsCount = parseInt(iterationsCountRange.value);
 
-    if (me.shiftKey) {
-        console.log("SIMD");
-        // simd_newton_method_test(polynom);
-        plotter.fill_pixels_simd_nalgebra(polynom, iterationsCount, regionColors);
-    } else {
-        console.log("SCALAR");
-        // newton_method_test(polynom);
-        plotter.fill_pixels_nalgebra(polynom, iterationsCount, regionColors);
+    console.log(`Drawing technic: ${drawingModeSelect.value}`);
+    switch (drawingModeSelect.value) {
+        case DrawingModes.CPU_SCALAR:
+            plotter.fill_pixels_nalgebra(polynom, iterationsCount, regionColors);
+            break;
+        case DrawingModes.CPU_SIMD:
+            plotter.fill_pixels_simd_nalgebra(polynom, iterationsCount, regionColors);
+            break;
+
+        default:
+            break;
     }
 
-    console.log("END");
+    console.log("Done drawing.");
     // draw();
 }
 
@@ -96,8 +99,8 @@ function CanvasMouseMove(me: MouseEvent) {
     draw()
 }
 
-const width = 1920;
-const height = 1080;
+const width = Math.round(window.innerWidth * 0.9 / 4) * 4;
+const height = Math.round(window.innerHeight * 0.75);
 const k = height / width;
 const x_range = 4;
 const x_offset = -2;
@@ -125,6 +128,7 @@ run();
 
 let iterationsCountRange = <HTMLInputElement>document.getElementById("iterationsCount");
 let iterationsCountDisplay = <HTMLOutputElement>document.getElementById("iterationsCountDisplay");
+iterationsCountDisplay.value = iterationsCountRange.value;
 
 iterationsCountRange.addEventListener("change", () => {
     iterationsCountDisplay.value = iterationsCountRange.value;
