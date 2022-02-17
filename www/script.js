@@ -1,5 +1,6 @@
 import init, { Dimension, Plotter, Polynomial } from '../pkg/newton_fractal.js';
 import { regionColors } from './colors.js';
+import { fillPixelsJavascript } from './calculation.js';
 let plotter;
 let polynom;
 let startRoots = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25],
@@ -7,8 +8,9 @@ let startRoots = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25],
 ];
 var DrawingModes;
 (function (DrawingModes) {
-    DrawingModes["CPU_SCALAR"] = "CPU (scalar)";
-    DrawingModes["CPU_SIMD"] = "CPU (simd)";
+    DrawingModes["CPU_JS_SCALAR"] = "CPU-js-scalar";
+    DrawingModes["CPU_WASM_SCALAR"] = "CPU-wasm-scalar";
+    DrawingModes["CPU_WASM_SIMD"] = "CPU-wasm-simd";
 })(DrawingModes || (DrawingModes = {}));
 let drawingModeSelect = document.getElementById("drawingModeSelect");
 for (const value of Object.values(DrawingModes)) {
@@ -100,10 +102,13 @@ function draw(enableLogging) {
         console.log(`Drawing technic: ${drawingModeSelect.value}`);
     }
     switch (drawingModeSelect.value) {
-        case DrawingModes.CPU_SCALAR:
+        case DrawingModes.CPU_JS_SCALAR:
+            fillPixelsJavascript(plotter, polynom, iterationsCount, regionColors);
+            break;
+        case DrawingModes.CPU_WASM_SCALAR:
             plotter.fill_pixels_nalgebra(polynom, iterationsCount, regionColors);
             break;
-        case DrawingModes.CPU_SIMD:
+        case DrawingModes.CPU_WASM_SIMD:
             plotter.fill_pixels_simd_nalgebra(polynom, iterationsCount, regionColors);
             break;
         default:

@@ -186,17 +186,17 @@ impl Plotter {
             let mut min_d = f32::MAX;
             let mut closest_root_id: usize = 0;
             let (xp, yp) = self.canvas_point_to_plot(x as f32, y as f32);
-            let mut p = Complex32::new(xp, yp);
+            let mut z = Complex32::new(xp, yp);
             for _ in 0..iterations_count {
-                let (id, new_point) = polynom.newton_method_approx(p);
+                let (id, new_point) = polynom.newton_method_approx(z);
                 if (id & (1 << 31)) == 0 {
                     return colors[id];
                 }
-                p = new_point;
+                z = new_point;
             }
 
             for (i, root) in roots.iter().enumerate() {
-                let d = (p - root).norm_sqr().sqrt();
+                let d = (z - root).norm_sqr().sqrt();
                 if d < min_d {
                     min_d = d;
                     closest_root_id = i;
@@ -347,5 +347,10 @@ impl Plotter {
             let p = root.clone();
             self.plot_point(p.re, p.im, &"wheat".into(), 4.0);
         }
+    }
+
+    #[wasm_bindgen]
+    pub fn put_image_data_from_js(&self, image_data: ImageData) {
+        self.context.put_image_data(&image_data, 0.0, 0.0).unwrap();
     }
 }
