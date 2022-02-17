@@ -32,7 +32,7 @@ class Complex32 {
 }
 
 function newtonMethodApprox(roots: Complex32[], z: Complex32): {
-    i: number;
+    idx: number;
     z: Complex32;
 } {
     let sum = new Complex32(0, 0);
@@ -40,11 +40,11 @@ function newtonMethodApprox(roots: Complex32[], z: Complex32): {
         const root = roots[i];
         const diff = z.subtract(root);
         if (diff.re == 0 && diff.im == 0) {
-            return { i: +i, z };
+            return { idx: +i, z };
         }
         sum = sum.add(diff.invert());
     }
-    return { i: -1, z: z.subtract(sum.invert()) };
+    return { idx: -1, z: z.subtract(sum.invert()) };
 }
 
 function fillPixelsJavascript(plotter: Plotter, polynom: Polynomial, iterationsCount: number, colors: number[][]) {
@@ -66,9 +66,9 @@ function fillPixelsJavascript(plotter: Plotter, polynom: Polynomial, iterationsC
             let z = new Complex32(xp, yp);
             let colorId = -1;
             for (let i = 0; i < iterationsCount; i++) {
-                let { i, z: zNew } = newtonMethodApprox(roots, z);
-                if (i != -1) {
-                    colorId = i;
+                let { idx, z: zNew } = newtonMethodApprox(roots, z);
+                if (idx != -1) {
+                    colorId = idx;
                     break;
                 }
                 z = zNew;

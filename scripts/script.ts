@@ -75,7 +75,7 @@ function CanvasMouseMove(me: MouseEvent) {
     draw(false)
 }
 
-const width = Math.round(window.innerWidth * 0.9 / 4) * 4;
+const width = Math.round(window.innerWidth * 0.65 / 4) * 4;
 const height = Math.round(window.innerHeight * 0.75);
 const k = height / width;
 const x_range = 4;
