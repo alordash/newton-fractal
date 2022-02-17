@@ -134,12 +134,13 @@ impl Plotter {
         canvas: HtmlCanvasElement,
         context: CanvasRenderingContext2d,
     ) -> Plotter {
-        let plotter = Plotter {
+        let mut plotter = Plotter {
             dimension,
             canvas,
             context,
         };
         plotter.context.set_image_smoothing_enabled(false);
+        plotter.resize_canvas(&dimension);
         plotter
     }
 
@@ -149,7 +150,8 @@ impl Plotter {
     }
 
     #[wasm_bindgen]
-    pub fn resize_canvas(&self) {
+    pub fn resize_canvas(&mut self, dimension: &Dimension) {
+        self.dimension = *dimension;
         self.canvas.set_width(self.dimension.width as u32);
         self.canvas.set_height(self.dimension.height as u32);
     }

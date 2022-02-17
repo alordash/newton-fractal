@@ -19,9 +19,6 @@ for (const value of Object.values(DrawingModes)) {
     option.innerText = value;
     drawingModeSelect.options.add(option);
 }
-drawingModeSelect.onchange = () => {
-    let value = drawingModeSelect.value;
-};
 const HOLD_POINT_DST_THRESHOLD = 0.125;
 let holdingPointIndex = -1;
 function MapPoints(x, y) {
@@ -61,11 +58,14 @@ function CanvasMouseMove(me) {
     polynom.set_root_by_id(holdingPointIndex, x, y);
     draw(false);
 }
-const width = Math.round(window.innerWidth * 0.65 / 4) * 4;
-const height = Math.round(window.innerHeight * 0.75);
-const k = height / width;
-const x_range = 4;
-const x_offset = -2;
+function calcDimension() {
+    const width = Math.round(window.innerWidth * 0.65 / 4) * 4;
+    const height = Math.round(window.innerHeight * 0.75);
+    const k = height / width;
+    const x_range = 4;
+    const x_offset = -2;
+    return new Dimension(width, height, x_range, x_range * k, x_offset, x_offset * k);
+}
 async function run() {
     await init();
     let myCanvas = document.getElementById("main-canvas");
@@ -74,9 +74,8 @@ async function run() {
     myCanvas.addEventListener("click", CanvasClick);
     myCanvas.addEventListener("mousemove", CanvasMouseMove);
     console.log('myCanvas :>> ', myCanvas);
-    let dimension = new Dimension(width, height, x_range, x_range * k, x_offset, x_offset * k);
+    let dimension = calcDimension();
     plotter = new Plotter(dimension, myCanvas, myCanvasContext);
-    plotter.resize_canvas();
     polynom = new Polynomial(startRoots);
     draw(true, DrawingModes.CPU_WASM_SCALAR);
 }
@@ -121,4 +120,9 @@ FPS: ${fps}`;
     loggerDiv.innerText = msg;
     plotter.display_roots(polynom);
 }
+window.addEventListener("resize", () => {
+    let dimension = calcDimension();
+    plotter.resize_canvas(dimension);
+    draw(true);
+});
 //# sourceMappingURL=ui_logic.js.map
