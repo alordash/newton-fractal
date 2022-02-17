@@ -8,9 +8,9 @@ let startRoots = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25],
 ];
 var DrawingModes;
 (function (DrawingModes) {
-    DrawingModes["CPU_JS_SCALAR"] = "CPU-js-scalar";
-    DrawingModes["CPU_WASM_SCALAR"] = "CPU-wasm-scalar";
     DrawingModes["CPU_WASM_SIMD"] = "CPU-wasm-simd";
+    DrawingModes["CPU_WASM_SCALAR"] = "CPU-wasm-scalar";
+    DrawingModes["CPU_JS_SCALAR"] = "CPU-js-scalar";
 })(DrawingModes || (DrawingModes = {}));
 let drawingModeSelect = document.getElementById("drawingModeSelect");
 for (const value of Object.values(DrawingModes)) {

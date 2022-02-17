@@ -4,6 +4,12 @@
     <meta charset="utf-8" />
     <title>Newton's fractal</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@100;500&family=Roboto+Serif:wght@500&family=Roboto:wght@400;500;900&display=swap');
+
+        * {
+            font-family: 'Roboto', sans-serif;
+        }
+
         body {
             top: 0;
             left: 0;
@@ -34,12 +40,11 @@
     border-block-start: 0px
     ">
         Select drawing technic:
-        <select id="drawingModeSelect" style="padding: 2px; margin-bottom: 10px;">
+        <select id="drawingModeSelect" style="padding: 2px; margin-bottom: 10px; font-weight: 500;">
         </select>
         <div>Newton's method iterations: <output id="iterationsCountDisplay">0</output></div>
         <input type="range" min="0" max="15" step="1" value="11" id="iterationsCount">
-        <br />
-        <button id="newtonFractal">Draw Newton's fractal</button>
+        <button id="newtonFractal" style="font-size: 100%; margin-top: 10px; font-weight: 500;">Draw</button>
     </div>
     <script src="./ui_logic.js" type="module"></script>
 </body>

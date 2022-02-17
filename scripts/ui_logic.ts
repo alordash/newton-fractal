@@ -11,9 +11,9 @@ let startRoots = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25]
 
 
 enum DrawingModes {
-    CPU_JS_SCALAR = "CPU-js-scalar",
+    CPU_WASM_SIMD = "CPU-wasm-simd",
     CPU_WASM_SCALAR = "CPU-wasm-scalar",
-    CPU_WASM_SIMD = "CPU-wasm-simd"
+    CPU_JS_SCALAR = "CPU-js-scalar",
 }
 
 let drawingModeSelect = <HTMLSelectElement>document.getElementById("drawingModeSelect");
