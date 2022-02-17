@@ -125,9 +125,10 @@ impl Polynomial {
     #[inline]
     #[target_feature(enable = "simd128")]
     pub unsafe fn simd_newton_method_approx_for_two_numbers(&self, two_z: v128) -> v128 {
+        let ptr = addr_of!(two_z) as *const u64;
         u64x2(
-            self.simd_newton_method_approx(*(addr_of!(two_z) as *const u64)),
-            self.simd_newton_method_approx(*((addr_of!(two_z) as *const u64).offset(1))),
+            self.simd_newton_method_approx(*ptr),
+            self.simd_newton_method_approx(*(ptr.offset(1))),
         )
     }
 
@@ -173,10 +174,11 @@ impl Polynomial {
                 // This process is same as the processing of two roots, except second
                 // complex value in vector is equal to 0 <=> vector: [A, B, 0, 0];
 
-                let _diff = f32x4_sub(_z, v128_load64_zero(addr_of!(*rem) as *const u64));
+                let rem_as_u64 = addr_of!(*rem) as *const u64;
+                let _diff = f32x4_sub(_z, v128_load64_zero(rem_as_u64));
                 let _diff_eq = f64x2_eq(_diff, SimdHelper::F64_ZEROES);
                 if v128_any_true(_diff_eq) {
-                    return *(rem as *const _ as *const u64);
+                    return *rem_as_u64;
                 }
                 let _inversion = SimdHelper::complex_number_inversion(_diff);
 

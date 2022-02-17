@@ -231,7 +231,7 @@ impl Plotter {
             let mut _min_distances = SimdHelper::F32_MAXIMUMS;
             let mut _closest_root_ids = SimdHelper::I32_ZEROES;
             let (x, y) = (4.0 * x as f32, y as f32);
-            let mut _points1 = self.simd_canvas_point_to_plot(x, y, x + 1.0, y);
+            let mut _points1 = self.simd_canvas_point_to_plot(x + 0.0, y, x + 1.0, y);
             let mut _points2 = self.simd_canvas_point_to_plot(x + 2.0, y, x + 3.0, y);
             for _ in 0..iterations_count {
                 unsafe {
