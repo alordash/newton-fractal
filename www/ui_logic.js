@@ -90,11 +90,13 @@ iterationsCountRange.addEventListener("change", () => {
 });
 let newtonFractalButton = document.getElementById("newtonFractal");
 newtonFractalButton.addEventListener("click", () => draw(true));
+let loggerDiv = document.getElementById("logger");
 function draw(enableLogging, drawingMode = drawingModeSelect.value) {
     let iterationsCount = parseInt(iterationsCountRange.value);
     if (enableLogging) {
         console.log(`Drawing technic: ${drawingMode}`);
     }
+    let start = new Date();
     switch (drawingMode) {
         case DrawingModes.CPU_JS_SCALAR:
             fillPixelsJavascript(plotter, polynom, iterationsCount, regionColors);
@@ -108,9 +110,15 @@ function draw(enableLogging, drawingMode = drawingModeSelect.value) {
         default:
             break;
     }
+    let end = new Date();
+    let elapsedMs = end.getTime() - start.getTime();
+    let fps = Math.round(10000 / elapsedMs) / 10;
+    let msg = `Done drawing, took: ${elapsedMs}ms
+FPS: ${fps}`;
     if (enableLogging) {
-        console.log("Done drawing fractal.");
+        console.log(msg);
     }
+    loggerDiv.innerText = msg;
     plotter.display_roots(polynom);
 }
 //# sourceMappingURL=ui_logic.js.map

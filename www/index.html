@@ -27,24 +27,38 @@
             align-items: center;
             justify-content: center;
         }
+
+        #logger {
+            margin: 7px;
+            padding: 5px;
+            background-color: rgb(245, 228, 204);
+            border: 1px rgb(240, 182, 59) dashed;
+            font-size: smaller;
+            color: gray;
+        }
     </style>
 </head>
 
 <body>
     <canvas id="main-canvas" style="border: black 2px solid; image-rendering: pixelated; border-radius: 3px;"></canvas>
-    <div class="controlPanel" style="
+    <div style="display: flex; flex-direction: row;">
+        <div class="controlPanel" style="
     border: 2px black solid;
     padding: 10px;
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
     border-block-start: 0px
     ">
-        Select drawing technic:
-        <select id="drawingModeSelect" style="padding: 2px; margin-bottom: 10px; font-weight: 500;">
-        </select>
-        <div>Newton's method iterations: <output id="iterationsCountDisplay">0</output></div>
-        <input type="range" min="0" max="15" step="1" value="11" id="iterationsCount">
-        <button id="newtonFractal" style="font-size: 100%; margin-top: 10px; font-weight: 500;">Draw</button>
+            Select drawing technic:
+            <select id="drawingModeSelect" style="padding: 2px; margin-bottom: 10px; font-weight: 500;">
+            </select>
+            <div>Newton's method iterations: <output id="iterationsCountDisplay">0</output></div>
+            <input type="range" min="0" max="15" step="1" value="11" id="iterationsCount">
+            <button id="newtonFractal" style="font-size: 100%; margin-top: 10px; font-weight: 500;">Draw</button>
+        </div>
+        <div style="position: relative; display: inline-block; width: 0; height: 0px;">
+            <div id="logger" style="position: absolute; display: inline-block; width: 225px;">...</div>
+        </div>
     </div>
     <script src="./ui_logic.js" type="module"></script>
 </body>
