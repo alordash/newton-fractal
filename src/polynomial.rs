@@ -35,6 +35,11 @@ impl Polynomial {
     }
 
     #[wasm_bindgen]
+    pub fn get_roots_to_js(&self) -> JsValue {
+        JsValue::from_serde(&self.roots.iter().map(|z| (z.re, z.im)).collect::<Vec<(f32, f32)>>()).unwrap()
+    }
+
+    #[wasm_bindgen]
     pub fn add_root(&mut self, re: f32, im: f32) {
         self.roots.push(Complex32 { re, im });
     }
