@@ -97,7 +97,7 @@ async function run() {
     plotter.resize_canvas();
     polynom = new Polynomial(startRoots);
 
-    draw(true);
+    draw(true, DrawingModes.CPU_WASM_SCALAR);
 }
 
 run();
@@ -115,22 +115,13 @@ let newtonFractalButton = <HTMLButtonElement>document.getElementById("newtonFrac
 
 newtonFractalButton.addEventListener("click", () => draw(true));
 
-let applyEffectCheckbox = <HTMLInputElement>document.getElementById("applyEffect");
-
-applyEffectCheckbox.addEventListener("change", () => draw(false));
-
-function drawNewtonsFractal() {
-    let iterationsCount = parseInt(iterationsCountRange.value);
-    plotter.draw_newtons_fractal(polynom, iterationsCount, regionColors, applyEffectCheckbox.checked);
-}
-
-function draw(enableLogging: Boolean) {
+function draw(enableLogging: Boolean, drawingMode: DrawingModes = <DrawingModes>drawingModeSelect.value) {
     let iterationsCount = parseInt(iterationsCountRange.value);
 
     if (enableLogging) {
-        console.log(`Drawing technic: ${drawingModeSelect.value}`);
+        console.log(`Drawing technic: ${drawingMode}`);
     }
-    switch (drawingModeSelect.value) {
+    switch (drawingMode) {
         case DrawingModes.CPU_JS_SCALAR:
             fillPixelsJavascript(plotter, polynom, iterationsCount, regionColors);
             break;
