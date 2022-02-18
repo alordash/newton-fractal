@@ -15,7 +15,6 @@ let holdingPointIndex = -1;
 let drawingModeSelect = document.getElementById("drawingModeSelect");
 let iterationsCountRange = document.getElementById("iterationsCount");
 let iterationsCountDisplay = document.getElementById("iterationsCountDisplay");
-let newtonFractalButton = document.getElementById("newtonFractal");
 let loggerDiv = document.getElementById("logger");
 function addRoot(xMapped, yMapped) {
     console.log(`Added new root at: (${xMapped}, ${yMapped})`);
@@ -53,13 +52,19 @@ function draw(enableLogging, drawingMode = drawingModeSelect.value) {
     }
     let end = new Date();
     let elapsedMs = end.getTime() - start.getTime();
-    let fps = Math.round(10000 / elapsedMs) / 10;
-    let msg = `Done drawing, took: ${elapsedMs}ms
-FPS: ${fps}`;
-    if (enableLogging) {
-        console.log(msg);
+    let fps = 1000 / elapsedMs;
+    let precisionPower = 10;
+    if (fps < 1) {
+        precisionPower = 100;
     }
-    loggerDiv.innerText = msg;
+    fps = Math.round(fps * precisionPower) / precisionPower;
+    let msg = `Drawing technic: ${drawingMode}</br>
+Took: ${elapsedMs}ms</br>
+<b>FPS: ${fps}</b>`;
+    loggerDiv.innerHTML = msg;
+    if (enableLogging) {
+        console.log(`Done drawing, took: ${elapsedMs}ms`);
+    }
     plotter.display_roots(polynom);
 }
 window.addEventListener("resize", () => {
@@ -112,7 +117,6 @@ iterationsCountRange.addEventListener("change", () => {
     iterationsCountDisplay.value = iterationsCountRange.value;
     draw(true);
 });
-newtonFractalButton.addEventListener("click", () => draw(true));
 async function run() {
     await init();
     let myCanvas = document.getElementById("main-canvas");
@@ -120,11 +124,10 @@ async function run() {
     myCanvas.addEventListener("mousedown", CanvasMouseDown);
     myCanvas.addEventListener("click", CanvasClick);
     myCanvas.addEventListener("mousemove", CanvasMouseMove);
-    console.log('myCanvas :>> ', myCanvas);
     let dimension = calcDimension();
     plotter = new Plotter(dimension, myCanvas, myCanvasContext);
     polynom = new Polynomial(startRoots);
-    draw(true, DrawingModes.CPU_WASM_SCALAR);
+    draw(true);
 }
 run();
 //# sourceMappingURL=ui_logic.js.map

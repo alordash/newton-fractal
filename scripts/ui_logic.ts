@@ -19,7 +19,6 @@ let holdingPointIndex = -1;
 let drawingModeSelect = <HTMLSelectElement>document.getElementById("drawingModeSelect");
 let iterationsCountRange = <HTMLInputElement>document.getElementById("iterationsCount");
 let iterationsCountDisplay = <HTMLOutputElement>document.getElementById("iterationsCountDisplay");
-let newtonFractalButton = <HTMLButtonElement>document.getElementById("newtonFractal");
 let loggerDiv = document.getElementById("logger");
 
 function addRoot(xMapped: number, yMapped: number) {
@@ -45,6 +44,7 @@ function draw(enableLogging: Boolean, drawingMode: DrawingModes = <DrawingModes>
     if (enableLogging) {
         console.log(`Drawing technic: ${drawingMode}`);
     }
+
     let start = new Date();
     switch (drawingMode) {
         case DrawingModes.CPU_JS_SCALAR:
@@ -62,13 +62,22 @@ function draw(enableLogging: Boolean, drawingMode: DrawingModes = <DrawingModes>
     }
     let end = new Date();
     let elapsedMs = end.getTime() - start.getTime();
-    let fps = Math.round(10000 / elapsedMs) / 10;
-    let msg = `Done drawing, took: ${elapsedMs}ms
-FPS: ${fps}`;
-    if (enableLogging) {
-        console.log(msg);
+
+    let fps = 1000 / elapsedMs;
+    let precisionPower = 10;
+    if (fps < 1) {
+        precisionPower = 100;
     }
-    loggerDiv.innerText = msg;
+    fps = Math.round(fps * precisionPower) / precisionPower;
+
+    let msg = `Drawing technic: ${drawingMode}</br>
+Took: ${elapsedMs}ms</br>
+<b>FPS: ${fps}</b>`;
+    loggerDiv.innerHTML = msg;
+
+    if (enableLogging) {
+        console.log(`Done drawing, took: ${elapsedMs}ms`);
+    }
     plotter.display_roots(polynom);
 }
 
@@ -130,8 +139,6 @@ iterationsCountRange.addEventListener("change", () => {
     draw(true);
 });
 
-newtonFractalButton.addEventListener("click", () => draw(true));
-
 async function run() {
     await init();
 
@@ -146,7 +153,7 @@ async function run() {
     plotter = new Plotter(dimension, myCanvas, myCanvasContext);
     polynom = new Polynomial(startRoots);
 
-    draw(true, DrawingModes.CPU_WASM_SCALAR);
+    draw(true);
 }
 
 run();
