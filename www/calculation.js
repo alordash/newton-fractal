@@ -32,6 +32,9 @@ function newtonMethodApprox(roots, z) {
     }
     return { idx: -1, z: z.subtract(sum.invert()) };
 }
+function mapPoints(p, x, y) {
+    return p.canvas_point_to_plot_to_js(x, y);
+}
 function fillPixelsJavascript(plotter, polynom, iterationsCount, colors) {
     let { width, height } = plotter.dimension;
     let [w_int, h_int] = [Math.round(width), Math.round(height)];
@@ -44,7 +47,7 @@ function fillPixelsJavascript(plotter, polynom, iterationsCount, colors) {
         for (let x = 0; x < w_int; x++) {
             let minDistance = Number.MAX_SAFE_INTEGER;
             let closestRootId = 0;
-            let [xp, yp] = plotter.canvas_point_to_plot_to_js(x, y);
+            let [xp, yp] = mapPoints(plotter, x, y);
             let z = new Complex32(xp, yp);
             let colorId = -1;
             for (let i = 0; i < iterationsCount; i++) {
@@ -74,5 +77,5 @@ function fillPixelsJavascript(plotter, polynom, iterationsCount, colors) {
     let imageData = new ImageData(uint8Data, w_int, h_int);
     plotter.put_image_data_from_js(imageData);
 }
-export { fillPixelsJavascript };
+export { mapPoints, fillPixelsJavascript };
 //# sourceMappingURL=calculation.js.map
