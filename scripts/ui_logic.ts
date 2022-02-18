@@ -13,7 +13,7 @@ enum DrawingModes {
     CPU_JS_SCALAR = "CPU-js-scalar",
 }
 
-const HOLD_POINT_DST_THRESHOLD = 0.125;
+const CLICK_POINT_DISTANCE = 0.125;
 let holdingPointIndex = -1;
 
 let drawingModeSelect = <HTMLSelectElement>document.getElementById("drawingModeSelect");
@@ -80,10 +80,15 @@ window.addEventListener("resize", () => {
 
 function CanvasClick(me: MouseEvent) {
     if (holdingPointIndex != -1) return;
+    let [x, y] = mapPoints(plotter, me.offsetX, me.offsetY);
+    console.log('me :>> ', me);
 
     if (me.shiftKey) {
-        let [x, y] = mapPoints(plotter, me.offsetX, me.offsetY);
         addRoot(x, y);
+    } else if (me.ctrlKey) {
+        let [idx, _] = polynom.get_closest_root_id(x, y);
+        console.log(`Ctrl click at (${x}, ${y}), id: ${idx}`);
+        polynom.remove_root_by_id(idx);
     }
 
     draw(true);
@@ -92,11 +97,9 @@ function CanvasClick(me: MouseEvent) {
 function CanvasMouseDown(me: MouseEvent) {
     let [x, y] = mapPoints(plotter, me.offsetX, me.offsetY);
 
-    let id_and_dst = polynom.get_closest_root_id(x, y);
-    let id = id_and_dst[0];
-    let dst = id_and_dst[1];
-    if (dst < HOLD_POINT_DST_THRESHOLD) {
-        holdingPointIndex = id;
+    let [idx, dst] = polynom.get_closest_root_id(x, y);
+    if (dst < CLICK_POINT_DISTANCE) {
+        holdingPointIndex = idx;
     } else {
         holdingPointIndex = -1;
     }
