@@ -28,7 +28,7 @@
             justify-content: center;
         }
 
-        #logger {
+        .info {
             margin: 7px;
             padding: 5px;
             background-color: rgb(245, 228, 204);
@@ -42,6 +42,14 @@
 <body>
     <canvas id="main-canvas" style="border: black 2px solid; image-rendering: pixelated; border-radius: 3px;"></canvas>
     <div style="display: flex; flex-direction: row;">
+        <div style="position: relative; display: inline-block; width: 0; height: 0px;">
+            <div class="info" style="position: absolute; display: inline-block; width: 225px; right: 0px;">Controls<br/>
+            <b>Click</b> to update<br/>
+            <b>Hold LMB</b> to move points<br/>
+            <b>Shift-click</b> to add point<br/>
+            <b>Ctrl-click</b> to remove point<br/>
+        </div>
+        </div>
         <div class="controlPanel" style="
     border: 2px black solid;
     padding: 10px;
@@ -57,7 +65,7 @@
             <button id="newtonFractal" style="font-size: 100%; margin-top: 10px; font-weight: 400;">Draw</button>
         </div>
         <div style="position: relative; display: inline-block; width: 0; height: 0px;">
-            <div id="logger" style="position: absolute; display: inline-block; width: 225px;">...</div>
+            <div id="logger" class="info" style="position: absolute; display: inline-block; width: 225px;">...</div>
         </div>
     </div>
     <script src="./ui_logic.js" type="module"></script>

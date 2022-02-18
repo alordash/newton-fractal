@@ -71,13 +71,11 @@ function CanvasClick(me) {
     if (holdingPointIndex != -1)
         return;
     let [x, y] = mapPoints(plotter, me.offsetX, me.offsetY);
-    console.log('me :>> ', me);
     if (me.shiftKey) {
         addRoot(x, y);
     }
     else if (me.ctrlKey) {
         let [idx, _] = polynom.get_closest_root_id(x, y);
-        console.log(`Ctrl click at (${x}, ${y}), id: ${idx}`);
         polynom.remove_root_by_id(idx);
     }
     draw(true);
