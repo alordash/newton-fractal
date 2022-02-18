@@ -35,6 +35,11 @@ impl Polynomial {
     }
 
     #[wasm_bindgen]
+    pub fn get_roots_count(&self) -> usize {
+        self.roots.len()
+    }
+
+    #[wasm_bindgen]
     pub fn get_roots_to_js(&self) -> JsValue {
         JsValue::from_serde(&self.roots.iter().map(|z| (z.re, z.im)).collect::<Vec<(f32, f32)>>()).unwrap()
     }
@@ -140,7 +145,6 @@ impl Polynomial {
         // We have f32x4 [A, B, C, D], in which (A, B): re and im parts
         // of first complex value and (C, D): re and im parts of second
         // complex value.
-        // To get single complex value we need to sum (A + C, B + D)
 
         let mut _sum = f32x4_splat(0.0);
         let _z = unsafe { v128_load64_splat(&z) };

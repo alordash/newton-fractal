@@ -1,5 +1,5 @@
 import init, { Dimension, Plotter, Polynomial } from '../pkg/newton_fractal.js';
-import { regionColors } from './colors.js';
+import { GenerateColor, regionColors } from './colors.js';
 import { fillPixelsJavascript } from './calculation.js';
 
 let plotter: Plotter;
@@ -27,25 +27,31 @@ for (const value of Object.values(DrawingModes)) {
 const HOLD_POINT_DST_THRESHOLD = 0.125;
 let holdingPointIndex = -1;
 
-function MapPoints(x: number, y: number): { x: number, y: number } {
-    let p = plotter.canvas_point_to_plot_to_js(x, y);
-    return { x: p[0], y: p[1] };
+function MapPoints(x: number, y: number) : [number, number] {
+    return <[number, number]>plotter.canvas_point_to_plot_to_js(x, y);
+}
+
+function AddRoot(xMapped: number, yMapped: number) {
+    console.log(`Added new root at: (${xMapped}, ${yMapped})`);
+    polynom.add_root(xMapped, yMapped);
+    if (regionColors.length < polynom.get_roots_count()) {
+        regionColors.push(GenerateColor());
+    }
 }
 
 function CanvasClick(me: MouseEvent) {
     if (holdingPointIndex != -1) return;
-    let { x, y } = MapPoints(me.offsetX, me.offsetY);
 
     if (me.shiftKey) {
-        console.log(`Added new root at: (${x}, ${y})`);
-        polynom.add_root(x, y);
+        let [x, y] = MapPoints(me.offsetX, me.offsetY);
+        AddRoot(x, y);
     }
 
     draw(true);
 }
 
 function CanvasMouseDown(me: MouseEvent) {
-    let { x, y } = MapPoints(me.offsetX, me.offsetY);
+    let [x, y] = MapPoints(me.offsetX, me.offsetY);
 
     let id_and_dst = polynom.get_closest_root_id(x, y);
     let id = id_and_dst[0];
@@ -64,8 +70,7 @@ function CanvasMouseMove(me: MouseEvent) {
         return;
     }
 
-    let { x, y } = MapPoints(me.offsetX, me.offsetY);
-
+    let [x, y] = MapPoints(me.offsetX, me.offsetY);
     polynom.set_root_by_id(holdingPointIndex, x, y);
 
     draw(false)

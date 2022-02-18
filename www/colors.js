@@ -7,6 +7,15 @@ function DimColors(colors) {
         }
     }
 }
+function GenerateShade() {
+    return Math.round(Math.sqrt(Math.random() * Math.random() * Math.random()) * 255);
+}
+function GenerateColor() {
+    const r = GenerateShade();
+    const g = GenerateShade();
+    const b = GenerateShade();
+    return [r, g, b, 255];
+}
 DimColors(regionColors);
-export { regionColors };
+export { DimColors, GenerateColor, regionColors };
 //# sourceMappingURL=colors.js.map
