@@ -103,9 +103,7 @@ function fillPixelsJavascript(plotter: Plotter, polynom: Polynomial, iterationsC
     let uint8Data = new Uint8ClampedArray(uint32Data.buffer);
 
     let imageData = new ImageData(uint8Data, w_int, h_int);
-    console.log('fill pixels from js imageData :>> ', imageData);
     return imageData;
-    // plotter.put_image_data_from_js(imageData);
 }
 
 export {

@@ -84,7 +84,6 @@ function fillPixelsJavascript(plotter, polynom, iterationsCount, colors) {
     }
     let uint8Data = new Uint8ClampedArray(uint32Data.buffer);
     let imageData = new ImageData(uint8Data, w_int, h_int);
-    console.log('fill pixels from js imageData :>> ', imageData);
     return imageData;
 }
 export { calcDimension, mapPoints, fillPixelsJavascript };

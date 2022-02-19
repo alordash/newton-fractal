@@ -93,12 +93,6 @@ function postCustomMessage(message: WorkerResult) {
 }
 
 onmessage = async function (e: MessageEvent<WorkerMessage>) {
-    console.log(`Got message, e.data: ${JSON.stringify(e.data)}`);
-    let typeOfData = typeof (e.data);
-    if (typeOfData != 'object') {
-        console.log('Returning, data type :>> ', typeOfData);
-        return;
-    }
     let { data } = e;
     let command = data.command;
     switch (command) {
