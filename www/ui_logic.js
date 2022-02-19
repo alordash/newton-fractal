@@ -12,21 +12,22 @@ let drawingModeSelect = document.getElementById("drawingModeSelect");
 let iterationsCountRange = document.getElementById("iterationsCount");
 let iterationsCountDisplay = document.getElementById("iterationsCountDisplay");
 let loggerDiv = document.getElementById("logger");
-function runDrawingWorker(enableLogging, drawingMode = drawingModeSelect.value) {
+function formDrawingConfig(drawingMode = drawingModeSelect.value) {
     let iterationsCount = parseInt(iterationsCountRange.value);
+    return {
+        drawingMode,
+        iterationsCount,
+        regionColors
+    };
+}
+function runDrawingWorker(drawingMode = drawingModeSelect.value) {
+    let drawingConfig = formDrawingConfig(drawingMode);
     loggerDiv.innerHTML = `Drawing technic: ${drawingMode}</br>
     Took: ...ms</br>
     <b>FPS: ...</b>`;
-    if (enableLogging) {
-        console.log(`Drawing technic: ${drawingMode}`);
-    }
     sendMessageToWorker({
         command: WorkerCommands.Draw,
-        drawingConfig: {
-            drawingMode,
-            iterationsCount,
-            regionColors
-        }
+        drawingConfig
     });
 }
 function drawingCallback(drawingResult) {
@@ -43,12 +44,19 @@ Took: ${elapsedMs}ms</br>
     mainCanvasContext.putImageData(imageData, 0, 0);
     console.log(`Done drawing, took: ${elapsedMs}ms`);
 }
+function resizeCanvas(width, height) {
+    mainCanvas.width = width;
+    mainCanvas.height = height;
+}
 function drawingWorkerCallback(e) {
     let { data } = e;
     let command = data.command;
     switch (command) {
         case WorkerCommands.Init:
-            runDrawingWorker(false, DrawingModes.CPU_WASM_SIMD);
+        case WorkerCommands.Resize:
+            let { width, height } = data.dimension;
+            resizeCanvas(width, height);
+            runDrawingWorker(DrawingModes.CPU_WASM_SIMD);
             break;
         case WorkerCommands.Draw:
             drawingCallback(data.drawingResult);
@@ -57,14 +65,25 @@ function drawingWorkerCallback(e) {
             break;
     }
 }
-window.addEventListener("resize", () => {
-});
 function CanvasClick(me) {
-    runDrawingWorker(true);
+    runDrawingWorker();
 }
 function CanvasMouseDown(me) {
 }
 function CanvasMouseMove(me) {
+}
+function WindowResize() {
+    let { innerWidth, innerHeight } = window;
+    console.log(`Resizing (${innerWidth}, ${innerHeight})`);
+    let drawingConfig = formDrawingConfig();
+    sendMessageToWorker({
+        command: WorkerCommands.Resize,
+        initConfig: {
+            innerWidth,
+            innerHeight
+        },
+        drawingConfig
+    });
 }
 for (const value of Object.values(DrawingModes)) {
     let option = document.createElement("option");
@@ -75,7 +94,7 @@ for (const value of Object.values(DrawingModes)) {
 iterationsCountDisplay.value = iterationsCountRange.value;
 iterationsCountRange.addEventListener("change", () => {
     iterationsCountDisplay.value = iterationsCountRange.value;
-    runDrawingWorker(true);
+    runDrawingWorker();
 });
 async function run() {
     drawingWorker = new Worker("drawing_worker.js", { type: 'module' });
@@ -83,11 +102,14 @@ async function run() {
     let { innerWidth, innerHeight } = window;
     sendMessageToWorker({
         command: WorkerCommands.Init,
-        initConfig: { innerWidth, innerHeight }
+        initConfig: {
+            innerWidth, innerHeight
+        }
     });
     mainCanvas.addEventListener("mousedown", CanvasMouseDown);
     mainCanvas.addEventListener("click", CanvasClick);
     mainCanvas.addEventListener("mousemove", CanvasMouseMove);
+    window.addEventListener("resize", WindowResize);
 }
 run();
 //# sourceMappingURL=ui_logic.js.map

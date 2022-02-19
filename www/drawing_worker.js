@@ -6,6 +6,7 @@ var WorkerCommands;
 (function (WorkerCommands) {
     WorkerCommands[WorkerCommands["Init"] = 0] = "Init";
     WorkerCommands[WorkerCommands["Draw"] = 1] = "Draw";
+    WorkerCommands[WorkerCommands["Resize"] = 2] = "Resize";
 })(WorkerCommands || (WorkerCommands = {}));
 var DrawingModes;
 (function (DrawingModes) {
@@ -49,6 +50,7 @@ async function InitWasm(initConfig) {
     let dimension = calcDimension(innerWidth, innerHeight);
     plotter = new Plotter(dimension);
     polynom = new Polynomial(startRoots);
+    return dimension;
 }
 function postCustomMessage(message) {
     postMessage(message);
@@ -58,18 +60,35 @@ onmessage = async function (e) {
     let command = data.command;
     switch (command) {
         case WorkerCommands.Init:
-            await InitWasm(data.initConfig);
-            postCustomMessage({
-                command
-            });
+            {
+                let dimension = await InitWasm(data.initConfig);
+                console.log('dimension :>> ', dimension);
+                postCustomMessage({
+                    command,
+                    dimension: { width: dimension.width, height: dimension.height }
+                });
+            }
+            break;
+        case WorkerCommands.Resize:
+            {
+                let { innerWidth, innerHeight } = data.initConfig;
+                let dimension = calcDimension(innerWidth, innerHeight);
+                plotter.dimension = dimension;
+                postCustomMessage({
+                    command,
+                    dimension: { width: dimension.width, height: dimension.height }
+                });
+            }
             break;
         case WorkerCommands.Draw:
-            let { drawingConfig } = data;
-            let drawingResult = draw(drawingConfig);
-            postCustomMessage({
-                command,
-                drawingResult
-            });
+            {
+                let { drawingConfig } = data;
+                let drawingResult = draw(drawingConfig);
+                postCustomMessage({
+                    command,
+                    drawingResult
+                });
+            }
             break;
         default:
             break;

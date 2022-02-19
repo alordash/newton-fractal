@@ -127,8 +127,8 @@ impl Plotter {
 #[wasm_bindgen]
 impl Plotter {
     #[wasm_bindgen(constructor)]
-    pub fn new(dimension: Dimension) -> Plotter {
-        Plotter { dimension }
+    pub fn new(dimension: &Dimension) -> Plotter {
+        Plotter { dimension: *dimension }
     }
 
     #[wasm_bindgen]

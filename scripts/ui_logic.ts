@@ -1,4 +1,5 @@
 import { generateColor, regionColors } from './colors.js';
+import { calcDimension } from './calculation.js';
 import {
     WorkerCommands,
     InitConfig,
@@ -25,24 +26,25 @@ let iterationsCountRange = <HTMLInputElement>document.getElementById("iterations
 let iterationsCountDisplay = <HTMLOutputElement>document.getElementById("iterationsCountDisplay");
 let loggerDiv = document.getElementById("logger");
 
-function runDrawingWorker(enableLogging: Boolean, drawingMode: DrawingModes = <DrawingModes>drawingModeSelect.value) {
+function formDrawingConfig(drawingMode: DrawingModes = <DrawingModes>drawingModeSelect.value): DrawingConfig {
     let iterationsCount = parseInt(iterationsCountRange.value);
+    return {
+        drawingMode,
+        iterationsCount,
+        regionColors
+    };
+}
+
+function runDrawingWorker(drawingMode: DrawingModes = <DrawingModes>drawingModeSelect.value) {
+    let drawingConfig = formDrawingConfig(drawingMode);
 
     loggerDiv.innerHTML = `Drawing technic: ${drawingMode}</br>
     Took: ...ms</br>
     <b>FPS: ...</b>`;
 
-    if (enableLogging) {
-        console.log(`Drawing technic: ${drawingMode}`);
-    }
-
     sendMessageToWorker({
         command: WorkerCommands.Draw,
-        drawingConfig: {
-            drawingMode,
-            iterationsCount,
-            regionColors
-        }
+        drawingConfig
     });
 }
 
@@ -66,12 +68,20 @@ Took: ${elapsedMs}ms</br>
     // }
 }
 
+function resizeCanvas(width: number, height: number) {
+    mainCanvas.width = width;
+    mainCanvas.height = height;
+}
+
 function drawingWorkerCallback(e: MessageEvent<WorkerResult>) {
     let { data } = e;
     let command = data.command;
     switch (command) {
         case WorkerCommands.Init:
-            runDrawingWorker(false, DrawingModes.CPU_WASM_SIMD);
+        case WorkerCommands.Resize:
+            let { width, height } = data.dimension;
+            resizeCanvas(width, height);
+            runDrawingWorker(DrawingModes.CPU_WASM_SIMD);
             break;
         case WorkerCommands.Draw:
             drawingCallback(data.drawingResult);
@@ -81,12 +91,6 @@ function drawingWorkerCallback(e: MessageEvent<WorkerResult>) {
             break;
     }
 }
-
-window.addEventListener("resize", () => {
-    // let dimension = calcDimension();
-    // plotter.resize_canvas(dimension);
-    // draw(true);
-});
 
 function CanvasClick(me: MouseEvent) {
     // if (holdingPointIndex != -1) return;
@@ -99,7 +103,7 @@ function CanvasClick(me: MouseEvent) {
     //     polynom.remove_root_by_id(idx);
     // }
 
-    runDrawingWorker(true);
+    runDrawingWorker();
 }
 
 function CanvasMouseDown(me: MouseEvent) {
@@ -126,6 +130,21 @@ function CanvasMouseMove(me: MouseEvent) {
     // draw(false)
 }
 
+function WindowResize() {
+    let { innerWidth, innerHeight } = window;
+
+    console.log(`Resizing (${innerWidth}, ${innerHeight})`);
+    let drawingConfig = formDrawingConfig();
+    sendMessageToWorker({
+        command: WorkerCommands.Resize,
+        initConfig: {
+            innerWidth,
+            innerHeight
+        },
+        drawingConfig
+    });
+}
+
 for (const value of Object.values(DrawingModes)) {
     let option = <HTMLOptionElement>document.createElement("option");
     option.value = value;
@@ -137,7 +156,7 @@ iterationsCountDisplay.value = iterationsCountRange.value;
 
 iterationsCountRange.addEventListener("change", () => {
     iterationsCountDisplay.value = iterationsCountRange.value;
-    runDrawingWorker(true);
+    runDrawingWorker();
 });
 
 async function run() {
@@ -147,7 +166,9 @@ async function run() {
     let { innerWidth, innerHeight } = window;
     sendMessageToWorker({
         command: WorkerCommands.Init,
-        initConfig: { innerWidth, innerHeight }
+        initConfig: {
+            innerWidth, innerHeight
+        }
     });
     // drawingWorker.postMessage()
     // await init();
@@ -156,6 +177,8 @@ async function run() {
     mainCanvas.addEventListener("mousedown", CanvasMouseDown)
     mainCanvas.addEventListener("click", CanvasClick);
     mainCanvas.addEventListener("mousemove", CanvasMouseMove);
+
+    window.addEventListener("resize", WindowResize);
 
     // runDrawingWorker(true);
 }

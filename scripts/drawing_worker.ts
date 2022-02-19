@@ -1,12 +1,13 @@
 import init, { Dimension, Plotter, Polynomial } from '../pkg/newton_fractal.js';
 import { generateColor, regionColors } from './colors.js';
-import { calcDimension, mapPoints, fillPixelsJavascript } from './calculation.js';
+import { calcDimension, fillPixelsJavascript } from './calculation.js';
 
 const startRoots = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25], [-0.85, 0.5]];
 
 enum WorkerCommands {
     Init,
     Draw,
+    Resize
 }
 
 type InitConfig = {
@@ -40,7 +41,8 @@ type WorkerMessage = {
 
 type WorkerResult = {
     command: WorkerCommands,
-    drawingResult?: DrawingResult
+    drawingResult?: DrawingResult,
+    dimension?: { width: number, height: number }
 }
 
 let plotter: Plotter;
@@ -78,14 +80,15 @@ function draw(config: DrawingConfig): DrawingResult {
     return { drawingMode, elapsedMs, imageData };
 }
 
-async function InitWasm(initConfig: InitConfig) {
+async function InitWasm(initConfig: InitConfig): Promise<Dimension> {
     await init();
 
     let { innerWidth, innerHeight } = initConfig;
-
     let dimension = calcDimension(innerWidth, innerHeight);
     plotter = new Plotter(dimension);
     polynom = new Polynomial(startRoots);
+
+    return dimension;
 }
 
 function postCustomMessage(message: WorkerResult) {
@@ -95,20 +98,38 @@ function postCustomMessage(message: WorkerResult) {
 onmessage = async function (e: MessageEvent<WorkerMessage>) {
     let { data } = e;
     let command = data.command;
+
     switch (command) {
         case WorkerCommands.Init:
-            await InitWasm(data.initConfig);
-            postCustomMessage({
-                command
-            });
+            {
+                let dimension = await InitWasm(data.initConfig);
+                console.log('dimension :>> ', dimension);
+                postCustomMessage({
+                    command,
+                    dimension: { width: dimension.width, height: dimension.height }
+                });
+            }
+            break;
+        case WorkerCommands.Resize:
+            {
+                let { innerWidth, innerHeight } = data.initConfig;
+                let dimension = calcDimension(innerWidth, innerHeight);
+                plotter.dimension = dimension;
+                postCustomMessage({
+                    command,
+                    dimension: { width: dimension.width, height: dimension.height }
+                });
+            }
             break;
         case WorkerCommands.Draw:
-            let { drawingConfig } = data
-            let drawingResult = draw(drawingConfig);
-            postCustomMessage({
-                command,
-                drawingResult
-            });
+            {
+                let { drawingConfig } = data;
+                let drawingResult = draw(drawingConfig);
+                postCustomMessage({
+                    command,
+                    drawingResult
+                });
+            }
             break;
         default:
             break;
