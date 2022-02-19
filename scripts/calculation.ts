@@ -1,5 +1,4 @@
-import { Dimension, Plotter, Polynomial } from "../pkg/newton_fractal";
-import { memory } from '../pkg/newton_fractal_bg.wasm';
+import { Dimension, Plotter, Polynomial } from "../pkg/newton_fractal.js";
 
 class Complex32 {
     re: number;
@@ -47,11 +46,20 @@ function newtonMethodApprox(roots: Complex32[], z: Complex32): {
     return { idx: -1, z: z.subtract(sum.invert()) };
 }
 
-function mapPoints(p: Plotter, x: number, y: number) : [number, number] {
+function calcDimension(innerWidth: number, innerHeight: number): Dimension {
+    const width = Math.round(innerWidth * 0.65 / 4) * 4;
+    const height = Math.round(innerHeight * 0.75);
+    const k = height / width;
+    const x_range = 4;
+    const x_offset = -2;
+    return new Dimension(width, height, x_range, x_range * k, x_offset, x_offset * k);
+}
+
+function mapPoints(p: Plotter, x: number, y: number): [number, number] {
     return <[number, number]>p.canvas_point_to_plot_to_js(x, y);
 }
 
-function fillPixelsJavascript(plotter: Plotter, polynom: Polynomial, iterationsCount: number, colors: number[][]) {
+function fillPixelsJavascript(plotter: Plotter, polynom: Polynomial, iterationsCount: number, colors: number[][]): ImageData {
     let { width, height } = plotter.dimension;
     let [w_int, h_int] = [Math.round(width), Math.round(height)];
 
@@ -77,7 +85,7 @@ function fillPixelsJavascript(plotter: Plotter, polynom: Polynomial, iterationsC
                 }
                 z = zNew;
             }
-            if(colorId != -1) {
+            if (colorId != -1) {
                 uint32Data[index++] = colorPacks[colorId];
                 continue;
             }
@@ -95,10 +103,13 @@ function fillPixelsJavascript(plotter: Plotter, polynom: Polynomial, iterationsC
     let uint8Data = new Uint8ClampedArray(uint32Data.buffer);
 
     let imageData = new ImageData(uint8Data, w_int, h_int);
-    plotter.put_image_data_from_js(imageData);
+    console.log('fill pixels from js imageData :>> ', imageData);
+    return imageData;
+    // plotter.put_image_data_from_js(imageData);
 }
 
 export {
+    calcDimension,
     mapPoints,
     fillPixelsJavascript
 };

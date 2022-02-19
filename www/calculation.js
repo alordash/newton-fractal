@@ -1,3 +1,4 @@
+import { Dimension } from "../pkg/newton_fractal.js";
 class Complex32 {
     constructor(re, im) {
         this.re = re;
@@ -31,6 +32,14 @@ function newtonMethodApprox(roots, z) {
         sum = sum.add(diff.invert());
     }
     return { idx: -1, z: z.subtract(sum.invert()) };
+}
+function calcDimension(innerWidth, innerHeight) {
+    const width = Math.round(innerWidth * 0.65 / 4) * 4;
+    const height = Math.round(innerHeight * 0.75);
+    const k = height / width;
+    const x_range = 4;
+    const x_offset = -2;
+    return new Dimension(width, height, x_range, x_range * k, x_offset, x_offset * k);
 }
 function mapPoints(p, x, y) {
     return p.canvas_point_to_plot_to_js(x, y);
@@ -75,7 +84,8 @@ function fillPixelsJavascript(plotter, polynom, iterationsCount, colors) {
     }
     let uint8Data = new Uint8ClampedArray(uint32Data.buffer);
     let imageData = new ImageData(uint8Data, w_int, h_int);
-    plotter.put_image_data_from_js(imageData);
+    console.log('fill pixels from js imageData :>> ', imageData);
+    return imageData;
 }
-export { mapPoints, fillPixelsJavascript };
+export { calcDimension, mapPoints, fillPixelsJavascript };
 //# sourceMappingURL=calculation.js.map

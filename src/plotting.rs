@@ -3,7 +3,7 @@ use crate::simd_constants::SimdHelper;
 use super::polynomial::Polynomial;
 use num_complex::{Complex, Complex32};
 use wasm_bindgen::{prelude::*, Clamped};
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
+use web_sys::ImageData;
 
 use std::arch::wasm32::*;
 use std::mem::transmute;
@@ -56,8 +56,6 @@ impl Dimension {
 #[wasm_bindgen]
 pub struct Plotter {
     pub dimension: Dimension,
-    canvas: HtmlCanvasElement,
-    context: CanvasRenderingContext2d,
 }
 
 impl Plotter {
@@ -106,20 +104,20 @@ impl Plotter {
         )
     }
 
-    pub fn draw_raw_data(&self, data: Clamped<&[u8]>) {
-        self.context
-            .put_image_data(
-                &ImageData::new_with_u8_clamped_array_and_sh(
-                    data,
-                    self.dimension.width as u32,
-                    self.dimension.height as u32,
-                )
-                .unwrap(),
-                0.0,
-                0.0,
-            )
-            .unwrap();
-    }
+    // pub fn draw_raw_data(&self, data: Clamped<&[u8]>) {
+    //     self.context
+    //         .put_image_data(
+    //             &ImageData::new_with_u8_clamped_array_and_sh(
+    //                 data,
+    //                 self.dimension.width as u32,
+    //                 self.dimension.height as u32,
+    //             )
+    //             .unwrap(),
+    //             0.0,
+    //             0.0,
+    //         )
+    //         .unwrap();
+    // }
 
     pub fn adjust_color(color: u8, k: f32) -> u8 {
         ((color as f32 / k) as u8).clamp(u8::MIN, u8::MAX)
@@ -129,19 +127,8 @@ impl Plotter {
 #[wasm_bindgen]
 impl Plotter {
     #[wasm_bindgen(constructor)]
-    pub fn new(
-        dimension: Dimension,
-        canvas: HtmlCanvasElement,
-        context: CanvasRenderingContext2d,
-    ) -> Plotter {
-        let mut plotter = Plotter {
-            dimension,
-            canvas,
-            context,
-        };
-        plotter.context.set_image_smoothing_enabled(false);
-        plotter.resize_canvas(&dimension);
-        plotter
+    pub fn new(dimension: Dimension) -> Plotter {
+        Plotter { dimension }
     }
 
     #[wasm_bindgen]
@@ -149,26 +136,26 @@ impl Plotter {
         JsValue::from_serde(&self.canvas_point_to_plot(x, y)).unwrap()
     }
 
-    #[wasm_bindgen]
-    pub fn resize_canvas(&mut self, dimension: &Dimension) {
-        self.dimension = *dimension;
-        self.canvas.set_width(self.dimension.width as u32);
-        self.canvas.set_height(self.dimension.height as u32);
-    }
+    // #[wasm_bindgen]
+    // pub fn resize_canvas(&mut self, dimension: &Dimension) {
+    //     self.dimension = *dimension;
+    //     self.canvas.set_width(self.dimension.width as u32);
+    //     self.canvas.set_height(self.dimension.height as u32);
+    // }
 
-    #[wasm_bindgen]
-    pub fn plot_point(&self, x: f32, y: f32, color: &JsValue, size: f64) {
-        let ctx = &self.context;
-        let (canvas_x, canvas_y) = self.plot_point_to_canvas(x, y);
-        ctx.move_to(canvas_x, canvas_y);
-        ctx.begin_path();
-        ctx.arc(canvas_x, canvas_y, size, 0f64, 2f64 * std::f64::consts::PI)
-            .unwrap();
-        ctx.set_fill_style(color);
-        ctx.fill();
-        ctx.stroke();
-        ctx.close_path();
-    }
+    // #[wasm_bindgen]
+    // pub fn plot_point(&self, x: f32, y: f32, color: &JsValue, size: f64) {
+    //     let ctx = &self.context;
+    //     let (canvas_x, canvas_y) = self.plot_point_to_canvas(x, y);
+    //     ctx.move_to(canvas_x, canvas_y);
+    //     ctx.begin_path();
+    //     ctx.arc(canvas_x, canvas_y, size, 0f64, 2f64 * std::f64::consts::PI)
+    //         .unwrap();
+    //     ctx.set_fill_style(color);
+    //     ctx.fill();
+    //     ctx.stroke();
+    //     ctx.close_path();
+    // }
 
     #[wasm_bindgen]
     pub fn fill_pixels_nalgebra(
@@ -176,7 +163,7 @@ impl Plotter {
         polynom: &Polynomial,
         iterations_count: usize,
         colors: JsValue,
-    ) {
+    ) -> ImageData {
         let (colors, colors_len) = Plotter::convert_colors_array(colors);
 
         let Dimension { width, height, .. } = self.dimension;
@@ -184,7 +171,7 @@ impl Plotter {
 
         let roots = polynom.get_roots();
 
-        let new_data: DMatrix<u32> = DMatrix::from_fn(w_int, h_int, |x, y| {
+        let pixels_data: DMatrix<u32> = DMatrix::from_fn(w_int, h_int, |x, y| {
             let mut min_d = f32::MAX;
             let mut closest_root_id: usize = 0;
             let (xp, yp) = self.canvas_point_to_plot(x as f32, y as f32);
@@ -207,11 +194,24 @@ impl Plotter {
             colors[closest_root_id]
         });
 
-        let new_data: &[u8] = unsafe {
-            std::slice::from_raw_parts(std::mem::transmute(new_data.data.ptr()), new_data.len() * 4)
+        let pixels_data: &[u8] = unsafe {
+            std::slice::from_raw_parts(
+                std::mem::transmute(pixels_data.data.ptr()),
+                pixels_data.len() * 4,
+            )
         };
 
-        self.draw_raw_data(Clamped(new_data));
+        match ImageData::new_with_u8_clamped_array_and_sh(
+            Clamped(pixels_data),
+            self.dimension.width as u32,
+            self.dimension.height as u32,
+        ) {
+            Ok(v) => v,
+            Err(e) => {
+                log!("Error creating image data: {:?}, returning empty", e);
+                ImageData::new_with_sw(0, 0).unwrap()
+            }
+        }
     }
 
     #[wasm_bindgen]
@@ -221,7 +221,7 @@ impl Plotter {
         polynom: &Polynomial,
         iterations_count: usize,
         colors: JsValue,
-    ) {
+    ) -> ImageData {
         let (colors, colors_len) = Plotter::convert_colors_array(colors);
 
         let Dimension { width, height, .. } = self.dimension;
@@ -229,7 +229,7 @@ impl Plotter {
 
         let roots = polynom.get_roots();
 
-        let new_data: DMatrix<ColorsPack> = DMatrix::from_fn(w_int / 4, h_int, |x, y| {
+        let pixels_data: DMatrix<ColorsPack> = DMatrix::from_fn(w_int / 4, h_int, |x, y| {
             let mut _min_distances = SimdHelper::F32_MAXIMUMS;
             let mut _closest_root_ids = SimdHelper::I32_ZEROES;
             let (x, y) = (4.0 * x as f32, y as f32);
@@ -260,23 +260,36 @@ impl Plotter {
             }
         });
 
-        let new_data: &[u8] = unsafe {
-            std::slice::from_raw_parts(std::mem::transmute(new_data.as_ptr()), new_data.len() * 16)
+        let pixels_data: &[u8] = unsafe {
+            std::slice::from_raw_parts(
+                std::mem::transmute(pixels_data.as_ptr()),
+                pixels_data.len() * 16,
+            )
         };
 
-        self.draw_raw_data(Clamped(new_data));
-    }
-
-    #[wasm_bindgen]
-    pub fn display_roots(&self, polynom: &Polynomial) {
-        for root in polynom.get_roots().iter() {
-            let p = root.clone();
-            self.plot_point(p.re, p.im, &"wheat".into(), 4.0);
+        match ImageData::new_with_u8_clamped_array_and_sh(
+            Clamped(pixels_data),
+            self.dimension.width as u32,
+            self.dimension.height as u32,
+        ) {
+            Ok(v) => v,
+            Err(e) => {
+                log!("Error creating image data: {:?}, returning empty", e);
+                ImageData::new_with_sw(0, 0).unwrap()
+            }
         }
     }
 
-    #[wasm_bindgen]
-    pub fn put_image_data_from_js(&self, image_data: ImageData) {
-        self.context.put_image_data(&image_data, 0.0, 0.0).unwrap();
-    }
+    // #[wasm_bindgen]
+    // pub fn display_roots(&self, polynom: &Polynomial) {
+    //     for root in polynom.get_roots().iter() {
+    //         let p = root.clone();
+    //         self.plot_point(p.re, p.im, &"wheat".into(), 4.0);
+    //     }
+    // }
+
+    // #[wasm_bindgen]
+    // pub fn put_image_data_from_js(&self, image_data: ImageData) {
+    //     self.context.put_image_data(&image_data, 0.0, 0.0).unwrap();
+    // }
 }
