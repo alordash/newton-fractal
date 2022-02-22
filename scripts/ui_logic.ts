@@ -8,10 +8,11 @@ import {
     WorkerResult
 } from './drawing_worker.js';
 import { transformPointToPlotScale, transformPointToCanvasScale } from './newtons_fractal.js';
-import { PlotScale, roots } from './plotter.js';
+import { PlotScale, roots, addRoot, getClosestRoot } from './plotter.js';
 
 const rootPointSize = 4.0;
 
+let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
 const CLICK_POINT_DISTANCE = 0.125;
 let holdingPointIndex = -1;
 
@@ -47,7 +48,6 @@ function plotRoots(plotScale: PlotScale, roots: number[][]) {
 
 function formDrawingConfig(drawingMode: DrawingModes = <DrawingModes>drawingModeSelect.value): DrawingConfig {
     let iterationsCount = parseInt(iterationsCountRange.value);
-    let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
     return {
         drawingMode,
         plotScale,
@@ -86,7 +86,6 @@ Took: ${elapsedMs}ms</br>
 
     mainCanvasContext.putImageData(imageData, 0, 0);
     console.log(`Done drawing using "${drawingMode}", took: ${elapsedMs}ms`);
-    let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
     plotRoots(plotScale, roots);
 }
 
@@ -112,15 +111,15 @@ function drawingWorkerCallback(e: MessageEvent<WorkerResult>) {
 }
 
 function CanvasClick(me: MouseEvent) {
-    // if (holdingPointIndex != -1) return;
-    // let [x, y] = mapPoints(plotter, me.offsetX, me.offsetY);
+    if (holdingPointIndex != -1) return;
+    let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
 
-    // if (me.shiftKey) {
-    //     addRoot(x, y);
-    // } else if (me.ctrlKey) {
-    //     let [idx, _] = polynom.get_closest_root_id(x, y);
-    //     polynom.remove_root_by_id(idx);
-    // }
+    if (me.shiftKey) {
+        addRoot(x, y);
+    } else if (me.ctrlKey) {
+        let { id, dst } = getClosestRoot(x, y);
+        roots.splice(id, 1);
+    }
 
     runDrawingWorker();
 }
@@ -153,6 +152,7 @@ function WindowResize() {
     let { innerWidth, innerHeight } = window;
 
     console.log(`Resizing (${innerWidth}, ${innerHeight})`);
+    plotScale = PlotScale.calculatePlotScale(innerWidth, innerHeight);
     let drawingConfig = formDrawingConfig();
     resizeCanvas(
         drawingConfig.plotScale.x_display_range,

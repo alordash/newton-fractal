@@ -1,8 +1,9 @@
 import { regionColors } from './colors.js';
 import { WorkerCommands, DrawingModes } from './drawing_worker.js';
-import { transformPointToCanvasScale } from './newtons_fractal.js';
-import { PlotScale, roots } from './plotter.js';
+import { transformPointToPlotScale, transformPointToCanvasScale } from './newtons_fractal.js';
+import { PlotScale, roots, addRoot, getClosestRoot } from './plotter.js';
 const rootPointSize = 4.0;
+let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
 const CLICK_POINT_DISTANCE = 0.125;
 let holdingPointIndex = -1;
 let drawingWorker;
@@ -32,7 +33,6 @@ function plotRoots(plotScale, roots) {
 }
 function formDrawingConfig(drawingMode = drawingModeSelect.value) {
     let iterationsCount = parseInt(iterationsCountRange.value);
-    let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
     return {
         drawingMode,
         plotScale,
@@ -64,7 +64,6 @@ Took: ${elapsedMs}ms</br>
 <b>FPS: ${fps}</b>`;
     mainCanvasContext.putImageData(imageData, 0, 0);
     console.log(`Done drawing using "${drawingMode}", took: ${elapsedMs}ms`);
-    let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
     plotRoots(plotScale, roots);
 }
 function resizeCanvas(width, height) {
@@ -86,6 +85,16 @@ function drawingWorkerCallback(e) {
     }
 }
 function CanvasClick(me) {
+    if (holdingPointIndex != -1)
+        return;
+    let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
+    if (me.shiftKey) {
+        addRoot(x, y);
+    }
+    else if (me.ctrlKey) {
+        let { id, dst } = getClosestRoot(x, y);
+        roots.splice(id, 1);
+    }
     runDrawingWorker();
 }
 function CanvasMouseDown(me) {
@@ -95,6 +104,7 @@ function CanvasMouseMove(me) {
 function WindowResize() {
     let { innerWidth, innerHeight } = window;
     console.log(`Resizing (${innerWidth}, ${innerHeight})`);
+    plotScale = PlotScale.calculatePlotScale(innerWidth, innerHeight);
     let drawingConfig = formDrawingConfig();
     resizeCanvas(drawingConfig.plotScale.x_display_range, drawingConfig.plotScale.y_display_range);
     runDrawingWorker();

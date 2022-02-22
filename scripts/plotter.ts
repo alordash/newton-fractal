@@ -45,8 +45,24 @@ function addRoot(xMapped: number, yMapped: number) {
     }
 }
 
+function getClosestRoot(xMapped: number, yMapped: number) {
+    let id = 0;
+    let minDst = Number.MAX_SAFE_INTEGER;
+    for (let i = 0; i < roots.length; i++) {
+        let [x, y] = roots[i];
+        let [dx, dy] = [x - xMapped, y - yMapped];
+        let dst = Math.sqrt(dx * dx + dy * dy);
+        if(dst < minDst) {
+            minDst = dst;
+            id = i;
+        }
+    }
+    return {id, dst: minDst};
+}
+
 export {
     PlotScale,
     roots,
-    addRoot
+    addRoot,
+    getClosestRoot
 }
