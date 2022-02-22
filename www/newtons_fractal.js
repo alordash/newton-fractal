@@ -80,5 +80,5 @@ function fillPixelsJavascript(plotScale, roots, iterationsCount, colors) {
     let imageData = new ImageData(uint8Data, w_int, h_int);
     return imageData;
 }
-export { fillPixelsJavascript };
+export { transformPointToPlotScale, fillPixelsJavascript };
 //# sourceMappingURL=newtons_fractal.js.map

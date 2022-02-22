@@ -51,7 +51,7 @@ function transformPointToPlotScale(x: number, y: number, plotScale: PlotScale): 
     return [
         ((x - plotScale.x_offset) * plotScale.x_display_range / plotScale.x_value_range),
         ((y - plotScale.y_offset) * plotScale.y_display_range / plotScale.y_value_range),
-    ]
+    ];
 }
 
 function fillPixelsJavascript(plotScale: PlotScale, roots: number[][], iterationsCount: number, colors: number[][]): ImageData {
@@ -105,5 +105,6 @@ function fillPixelsJavascript(plotScale: PlotScale, roots: number[][], iteration
 }
 
 export {
+    transformPointToPlotScale,
     fillPixelsJavascript
 };

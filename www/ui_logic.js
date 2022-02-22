@@ -1,6 +1,8 @@
 import { regionColors } from './colors.js';
 import { WorkerCommands, DrawingModes } from './drawing_worker.js';
+import { transformPointToPlotScale } from './newtons_fractal.js';
 import { PlotScale, roots } from './plotter.js';
+const rootPointSize = 4.0;
 const CLICK_POINT_DISTANCE = 0.125;
 let holdingPointIndex = -1;
 let drawingWorker;
@@ -13,6 +15,21 @@ let drawingModeSelect = document.getElementById("drawingModeSelect");
 let iterationsCountRange = document.getElementById("iterationsCount");
 let iterationsCountDisplay = document.getElementById("iterationsCountDisplay");
 let loggerDiv = document.getElementById("logger");
+function plotPoint(x, y, size, plotScale) {
+    let [canvasX, canvasY] = transformPointToPlotScale(x, y, plotScale);
+    mainCanvasContext.moveTo(canvasX, canvasY);
+    mainCanvasContext.beginPath();
+    mainCanvasContext.arc(canvasX, canvasY, size, 0, Math.PI * 2);
+    mainCanvasContext.fillStyle = "wheat";
+    mainCanvasContext.fill();
+    mainCanvasContext.stroke();
+    mainCanvasContext.closePath();
+}
+function plotRoots(plotScale, roots) {
+    for (let [x, y] of roots) {
+        plotPoint(x, y, rootPointSize, plotScale);
+    }
+}
 function formDrawingConfig(drawingMode = drawingModeSelect.value) {
     let iterationsCount = parseInt(iterationsCountRange.value);
     let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
@@ -47,6 +64,8 @@ Took: ${elapsedMs}ms</br>
 <b>FPS: ${fps}</b>`;
     mainCanvasContext.putImageData(imageData, 0, 0);
     console.log(`Done drawing, took: ${elapsedMs}ms`);
+    let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
+    plotRoots(plotScale, roots);
 }
 function resizeCanvas(width, height) {
     mainCanvas.width = width;
@@ -57,6 +76,8 @@ function drawingWorkerCallback(e) {
     let command = data.command;
     switch (command) {
         case WorkerCommands.Init:
+            WindowResize();
+            break;
         case WorkerCommands.Draw:
             drawingCallback(data.drawingResult);
             break;
@@ -75,8 +96,7 @@ function WindowResize() {
     let { innerWidth, innerHeight } = window;
     console.log(`Resizing (${innerWidth}, ${innerHeight})`);
     let drawingConfig = formDrawingConfig();
-    mainCanvas.width = drawingConfig.plotScale.x_display_range;
-    mainCanvas.height = drawingConfig.plotScale.y_display_range;
+    resizeCanvas(drawingConfig.plotScale.x_display_range, drawingConfig.plotScale.y_display_range);
     sendMessageToWorker({
         command: WorkerCommands.Draw,
         drawingConfig
