@@ -65,7 +65,6 @@ function drawingCallback(drawingResult) {
 Took: ${elapsedMs}ms</br>
 <b>FPS: ${fps}</b>`;
     mainCanvasContext.putImageData(imageData, 0, 0);
-    console.log(`Done drawing using "${drawingMode}", took: ${elapsedMs}ms`);
     plotRoots(plotScale, roots);
     doneDrawing = true;
 }
