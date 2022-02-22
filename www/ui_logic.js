@@ -98,8 +98,26 @@ function CanvasClick(me) {
     runDrawingWorker();
 }
 function CanvasMouseDown(me) {
+    let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
+    let { id, dst } = getClosestRoot(x, y);
+    if (dst < CLICK_POINT_DISTANCE) {
+        holdingPointIndex = id;
+    }
+    else {
+        holdingPointIndex = -1;
+    }
 }
 function CanvasMouseMove(me) {
+    if (holdingPointIndex == -1) {
+        return;
+    }
+    if (me.buttons != 1) {
+        holdingPointIndex = -1;
+        return;
+    }
+    let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
+    roots[holdingPointIndex] = [x, y];
+    runDrawingWorker();
 }
 function WindowResize() {
     let { innerWidth, innerHeight } = window;

@@ -125,27 +125,29 @@ function CanvasClick(me: MouseEvent) {
 }
 
 function CanvasMouseDown(me: MouseEvent) {
-    // let [x, y] = mapPoints(plotter, me.offsetX, me.offsetY);
+    let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
 
-    // let [idx, dst] = polynom.get_closest_root_id(x, y);
-    // if (dst < CLICK_POINT_DISTANCE) {
-    //     holdingPointIndex = idx;
-    // } else {
-    //     holdingPointIndex = -1;
-    // }
+    let { id, dst } = getClosestRoot(x, y);
+    if (dst < CLICK_POINT_DISTANCE) {
+        holdingPointIndex = id;
+    } else {
+        holdingPointIndex = -1;
+    }
 }
 
 function CanvasMouseMove(me: MouseEvent) {
-    // if (holdingPointIndex == -1) return;
-    // if (me.buttons != 1) {
-    //     holdingPointIndex = -1;
-    //     return;
-    // }
+    if (holdingPointIndex == -1) {
+        return;
+    }
+    if (me.buttons != 1) {
+        holdingPointIndex = -1;
+        return;
+    }
 
-    // let [x, y] = mapPoints(plotter, me.offsetX, me.offsetY);
-    // polynom.set_root_by_id(holdingPointIndex, x, y);
-
-    // draw(false)
+    let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
+    roots[holdingPointIndex] = [x, y];
+    
+    runDrawingWorker();
 }
 
 function WindowResize() {
