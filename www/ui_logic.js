@@ -1,6 +1,6 @@
 import { regionColors } from './colors.js';
 import { WorkerCommands, DrawingModes } from './drawing_worker.js';
-import { transformPointToPlotScale } from './newtons_fractal.js';
+import { transformPointToCanvasScale } from './newtons_fractal.js';
 import { PlotScale, roots } from './plotter.js';
 const rootPointSize = 4.0;
 const CLICK_POINT_DISTANCE = 0.125;
@@ -16,7 +16,7 @@ let iterationsCountRange = document.getElementById("iterationsCount");
 let iterationsCountDisplay = document.getElementById("iterationsCountDisplay");
 let loggerDiv = document.getElementById("logger");
 function plotPoint(x, y, size, plotScale) {
-    let [canvasX, canvasY] = transformPointToPlotScale(x, y, plotScale);
+    let [canvasX, canvasY] = transformPointToCanvasScale(x, y, plotScale);
     mainCanvasContext.moveTo(canvasX, canvasY);
     mainCanvasContext.beginPath();
     mainCanvasContext.arc(canvasX, canvasY, size, 0, Math.PI * 2);
@@ -44,7 +44,7 @@ function formDrawingConfig(drawingMode = drawingModeSelect.value) {
 function runDrawingWorker(drawingMode = drawingModeSelect.value) {
     let drawingConfig = formDrawingConfig(drawingMode);
     loggerDiv.innerHTML = `Drawing technic: ${drawingMode}</br>
-    Took: ...ms</br>
+    Calculation in process...</br>
     <b>FPS: ...</b>`;
     sendMessageToWorker({
         command: WorkerCommands.Draw,
@@ -63,7 +63,7 @@ function drawingCallback(drawingResult) {
 Took: ${elapsedMs}ms</br>
 <b>FPS: ${fps}</b>`;
     mainCanvasContext.putImageData(imageData, 0, 0);
-    console.log(`Done drawing, took: ${elapsedMs}ms`);
+    console.log(`Done drawing using "${drawingMode}", took: ${elapsedMs}ms`);
     let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
     plotRoots(plotScale, roots);
 }
@@ -97,10 +97,7 @@ function WindowResize() {
     console.log(`Resizing (${innerWidth}, ${innerHeight})`);
     let drawingConfig = formDrawingConfig();
     resizeCanvas(drawingConfig.plotScale.x_display_range, drawingConfig.plotScale.y_display_range);
-    sendMessageToWorker({
-        command: WorkerCommands.Draw,
-        drawingConfig
-    });
+    runDrawingWorker();
 }
 for (const value of Object.values(DrawingModes)) {
     let option = document.createElement("option");

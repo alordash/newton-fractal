@@ -49,6 +49,13 @@ function newtonMethodApprox(roots: Complex32[], z: Complex32): {
 
 function transformPointToPlotScale(x: number, y: number, plotScale: PlotScale): number[] {
     return [
+        plotScale.x_offset + x * plotScale.x_value_range / plotScale.x_display_range,
+        plotScale.y_offset + y * plotScale.y_value_range / plotScale.y_display_range
+    ];
+}
+
+function transformPointToCanvasScale(x: number, y: number, plotScale: PlotScale): number[] {
+    return [
         ((x - plotScale.x_offset) * plotScale.x_display_range / plotScale.x_value_range),
         ((y - plotScale.y_offset) * plotScale.y_display_range / plotScale.y_value_range),
     ];
@@ -106,5 +113,6 @@ function fillPixelsJavascript(plotScale: PlotScale, roots: number[][], iteration
 
 export {
     transformPointToPlotScale,
+    transformPointToCanvasScale,
     fillPixelsJavascript
 };

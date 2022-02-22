@@ -34,6 +34,12 @@ function newtonMethodApprox(roots, z) {
 }
 function transformPointToPlotScale(x, y, plotScale) {
     return [
+        plotScale.x_offset + x * plotScale.x_value_range / plotScale.x_display_range,
+        plotScale.y_offset + y * plotScale.y_value_range / plotScale.y_display_range
+    ];
+}
+function transformPointToCanvasScale(x, y, plotScale) {
+    return [
         ((x - plotScale.x_offset) * plotScale.x_display_range / plotScale.x_value_range),
         ((y - plotScale.y_offset) * plotScale.y_display_range / plotScale.y_value_range),
     ];
@@ -80,5 +86,5 @@ function fillPixelsJavascript(plotScale, roots, iterationsCount, colors) {
     let imageData = new ImageData(uint8Data, w_int, h_int);
     return imageData;
 }
-export { transformPointToPlotScale, fillPixelsJavascript };
+export { transformPointToPlotScale, transformPointToCanvasScale, fillPixelsJavascript };
 //# sourceMappingURL=newtons_fractal.js.map
