@@ -1,12 +1,9 @@
-import init, { Plotter, Polynomial } from '../pkg/newton_fractal.js';
-import { generateColor, regionColors } from './colors.js';
-import { calcDimension, fillPixelsJavascript } from './calculation.js';
-const startRoots = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25], [-0.85, 0.5]];
+import init, { fill_pixels_nalgebra, fill_pixels_simd_nalgebra } from '../pkg/newton_fractal.js';
+import { fillPixelsJavascript } from './newtons_fractal.js';
 var WorkerCommands;
 (function (WorkerCommands) {
     WorkerCommands[WorkerCommands["Init"] = 0] = "Init";
     WorkerCommands[WorkerCommands["Draw"] = 1] = "Draw";
-    WorkerCommands[WorkerCommands["Resize"] = 2] = "Resize";
 })(WorkerCommands || (WorkerCommands = {}));
 var DrawingModes;
 (function (DrawingModes) {
@@ -14,28 +11,19 @@ var DrawingModes;
     DrawingModes["CPU_WASM_SCALAR"] = "CPU-wasm-scalar";
     DrawingModes["CPU_JS_SCALAR"] = "CPU-js-scalar";
 })(DrawingModes || (DrawingModes = {}));
-let plotter;
-let polynom;
-function addRoot(xMapped, yMapped) {
-    console.log(`Added new root at: (${xMapped}, ${yMapped})`);
-    polynom.add_root(xMapped, yMapped);
-    if (regionColors.length < polynom.get_roots_count()) {
-        regionColors.push(generateColor());
-    }
-}
 function draw(config) {
-    let { drawingMode, iterationsCount, regionColors } = config;
+    let { plotScale, roots, drawingMode, iterationsCount, regionColors } = config;
     let imageData;
     let start = new Date();
     switch (drawingMode) {
         case DrawingModes.CPU_JS_SCALAR:
-            imageData = fillPixelsJavascript(plotter, polynom, iterationsCount, regionColors);
+            imageData = fillPixelsJavascript(plotScale, roots, iterationsCount, regionColors);
             break;
         case DrawingModes.CPU_WASM_SCALAR:
-            imageData = plotter.fill_pixels_nalgebra(polynom, iterationsCount, regionColors);
+            imageData = fill_pixels_nalgebra(plotScale, roots, iterationsCount, regionColors);
             break;
         case DrawingModes.CPU_WASM_SIMD:
-            imageData = plotter.fill_pixels_simd_nalgebra(polynom, iterationsCount, regionColors);
+            imageData = fill_pixels_simd_nalgebra(plotScale, roots, iterationsCount, regionColors);
             break;
         default:
             break;
@@ -43,14 +31,6 @@ function draw(config) {
     let end = new Date();
     let elapsedMs = end.getTime() - start.getTime();
     return { drawingMode, elapsedMs, imageData };
-}
-async function InitWasm(initConfig) {
-    await init();
-    let { innerWidth, innerHeight } = initConfig;
-    let dimension = calcDimension(innerWidth, innerHeight);
-    plotter = new Plotter(dimension);
-    polynom = new Polynomial(startRoots);
-    return dimension;
 }
 function postCustomMessage(message) {
     postMessage(message);
@@ -61,22 +41,9 @@ onmessage = async function (e) {
     switch (command) {
         case WorkerCommands.Init:
             {
-                let dimension = await InitWasm(data.initConfig);
-                console.log('dimension :>> ', dimension);
+                await init();
                 postCustomMessage({
-                    command,
-                    dimension: { width: dimension.width, height: dimension.height }
-                });
-            }
-            break;
-        case WorkerCommands.Resize:
-            {
-                let { innerWidth, innerHeight } = data.initConfig;
-                let dimension = calcDimension(innerWidth, innerHeight);
-                plotter.dimension = dimension;
-                postCustomMessage({
-                    command,
-                    dimension: { width: dimension.width, height: dimension.height }
+                    command
                 });
             }
             break;

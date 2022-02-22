@@ -1,7 +1,7 @@
-use crate::simd_constants::SimdHelper;
+use crate::{newtons_fractal::*, simd_constants::SimdHelper};
 
-use super::polynomial::Polynomial;
-use num_complex::{Complex, Complex32};
+use num_complex::Complex32;
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::{prelude::*, Clamped};
 use web_sys::ImageData;
 
@@ -13,283 +13,196 @@ use nalgebra::{DMatrix, RawStorage};
 
 use super::logger::*;
 
-const SEARCH_TRESHOLD: f32 = 0.01;
-
-#[wasm_bindgen]
-#[derive(Clone, Copy, Debug)]
-#[repr(C)]
-pub struct Dimension {
-    pub width: f32,
-    pub height: f32,
-    pub x_range: f32,
-    pub y_range: f32,
-    pub x_offset: f32,
-    pub y_offset: f32,
-}
-
 #[repr(C)]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 struct ColorsPack(u32, u32, u32, u32);
 
+pub fn convert_colors_array(colors: JsValue) -> Vec<u32> {
+    unsafe { transmute(colors.into_serde::<Vec<[u8; 4]>>().unwrap()) }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct PlotScale {
+    x_offset: f32,
+    y_offset: f32,
+    x_value_range: f32,
+    y_value_range: f32,
+    x_display_range: f32,
+    y_display_range: f32,
+}
+
+pub fn transform_point_to_plot_scale(x: f32, y: f32, plot_scale: &PlotScale) -> (f32, f32) {
+    (
+        plot_scale.x_offset + x * plot_scale.x_value_range / plot_scale.x_display_range,
+        plot_scale.y_offset + y * plot_scale.y_value_range / plot_scale.y_display_range,
+    )
+}
+
+#[target_feature(enable = "simd128")]
+pub fn simd_transform_point_to_plot_scale(
+    x1: f32,
+    y1: f32,
+    x2: f32,
+    y2: f32,
+    plot_scale: &PlotScale,
+) -> v128 {
+    // Formula:
+    // x = x_offset + x * x_range / width
+    // y = y_offset + y * y_range / height
+    unsafe {
+        let _source_points = f32x4(x1, y1, x2, y2);
+        // _ranges = [x_range, y_range, x_range, y_range]
+        let _ranges = v128_load64_splat(addr_of!(plot_scale.x_value_range) as *const u64);
+        // _sizes = [width, height, width, height]
+        let _sizes = v128_load64_splat(addr_of!(plot_scale.x_display_range) as *const u64);
+        // _offsets = [x_offset, y_offset, x_offset, y_offset]
+        let _offsets = v128_load64_splat(addr_of!(plot_scale.x_offset) as *const u64);
+        let _mul = f32x4_mul(_source_points, _ranges);
+        let _div = f32x4_div(_mul, _sizes);
+        f32x4_add(_div, _offsets)
+    }
+}
+
+pub fn transform_point_to_canvas_scale(x: f32, y: f32, plot_scale: &PlotScale) -> (f32, f32) {
+    (
+        ((x - plot_scale.x_offset) * plot_scale.x_display_range / plot_scale.x_value_range),
+        ((y - plot_scale.y_offset) * plot_scale.y_display_range / plot_scale.y_value_range),
+    )
+}
+
 #[wasm_bindgen]
-impl Dimension {
-    #[wasm_bindgen(constructor)]
-    pub fn new(
-        width: f32,
-        height: f32,
-        x_range: f32,
-        y_range: f32,
-        x_offset: f32,
-        y_offset: f32,
-    ) -> Dimension {
-        Dimension {
-            width,
-            height,
-            x_range,
-            y_range,
-            x_offset,
-            y_offset,
+pub fn fill_pixels_nalgebra(
+    plot_scale: JsValue, // PlotScale
+    roots: JsValue,      // Vec<Complexf32>
+    iterations_count: usize,
+    colors: JsValue,
+) -> ImageData {
+    let plot_scale: PlotScale = plot_scale.into_serde().unwrap();
+    let roots: Vec<Complex32> = (roots.into_serde::<Vec<(f32, f32)>>().unwrap())
+        .into_iter()
+        .map(|p| Complex32 { re: p.0, im: p.1 })
+        .collect();
+    let colors = convert_colors_array(colors);
+
+    let PlotScale {
+        x_display_range: width,
+        y_display_range: height,
+        ..
+    } = plot_scale;
+    let (w_int, h_int) = (width as usize, height as usize);
+
+    let pixels_data: DMatrix<u32> = DMatrix::from_fn(w_int, h_int, |x, y| {
+        let mut min_d = f32::MAX;
+        let mut closest_root_id: usize = 0;
+        let (xp, yp) = transform_point_to_plot_scale(x as f32, y as f32, &plot_scale);
+        let mut z = Complex32::new(xp, yp);
+        for _ in 0..iterations_count {
+            let (id, new_point) = newton_method_approx(z, &roots);
+            if (id & (1 << 31)) == 0 {
+                return colors[id];
+            }
+            z = new_point;
+        }
+
+        for (i, root) in roots.iter().enumerate() {
+            let d = (z - root).norm_sqr().sqrt();
+            if d < min_d {
+                min_d = d;
+                closest_root_id = i;
+            }
+        }
+        colors[closest_root_id]
+    });
+
+    let pixels_data: &[u8] = unsafe {
+        std::slice::from_raw_parts(
+            std::mem::transmute(pixels_data.data.ptr()),
+            pixels_data.len() * 4,
+        )
+    };
+
+    match ImageData::new_with_u8_clamped_array_and_sh(
+        Clamped(pixels_data),
+        width as u32,
+        height as u32,
+    ) {
+        Ok(v) => v,
+        Err(e) => {
+            log!("Error creating image data: {:?}, returning empty", e);
+            ImageData::new_with_sw(0, 0).unwrap()
         }
     }
 }
 
 #[wasm_bindgen]
-pub struct Plotter {
-    pub dimension: Dimension,
-}
+#[target_feature(enable = "simd128")]
+pub fn fill_pixels_simd_nalgebra(
+    plot_scale: JsValue, // PlotScale
+    roots: JsValue,      // Vec<Complexf32>
+    iterations_count: usize,
+    colors: JsValue,
+) -> ImageData {
+    let plot_scale: PlotScale = plot_scale.into_serde().unwrap();
+    let roots: Vec<Complex32> = (roots.into_serde::<Vec<(f32, f32)>>().unwrap())
+        .into_iter()
+        .map(|p| Complex32 { re: p.0, im: p.1 })
+        .collect();
+    let colors = convert_colors_array(colors);
 
-impl Plotter {
-    pub fn convert_colors_array(colors: JsValue) -> (Vec<u32>, usize) {
-        let colors: Vec<[u8; 4]> = match colors.into_serde() {
-            Ok(v) => v,
-            Err(e) => {
-                log!("Error parsing provided colors info: {}", e);
-                vec![[0, 0, 0, 0]]
+    let PlotScale {
+        x_display_range: width,
+        y_display_range: height,
+        ..
+    } = plot_scale;
+    let (w_int, h_int) = (width as usize, height as usize);
+
+    let pixels_data: DMatrix<ColorsPack> = DMatrix::from_fn(w_int / 4, h_int, |x, y| {
+        let mut _min_distances = SimdHelper::F32_MAXIMUMS;
+        let mut _closest_root_ids = SimdHelper::I32_ZEROES;
+        // Simd can be used here
+        let (x, y) = (4.0 * x as f32, y as f32);
+        let mut _points1 = simd_transform_point_to_plot_scale(x + 0.0, y, x + 1.0, y, &plot_scale);
+        let mut _points2 = simd_transform_point_to_plot_scale(x + 2.0, y, x + 3.0, y, &plot_scale);
+        for _ in 0..iterations_count {
+            unsafe {
+                _points1 = simd_newton_method_approx_for_two_numbers(_points1, &roots);
+                _points2 = simd_newton_method_approx_for_two_numbers(_points2, &roots);
             }
-        };
-        let colors_len = colors.len();
-        (unsafe { transmute(colors) }, colors_len)
-    }
-
-    pub fn canvas_point_to_plot(&self, x: f32, y: f32) -> (f32, f32) {
-        (
-            self.dimension.x_offset + x * self.dimension.x_range / self.dimension.width,
-            self.dimension.y_offset + y * self.dimension.y_range / self.dimension.height,
-        )
-    }
-
-    #[target_feature(enable = "simd128")]
-    pub fn simd_canvas_point_to_plot(&self, x1: f32, y1: f32, x2: f32, y2: f32) -> v128 {
-        // Formula:
-        // x = x_offset + x * x_range / width
-        // y = y_offset + y * y_range / height
+        }
         unsafe {
-            let _source_points = f32x4(x1, y1, x2, y2);
-            // _ranges = [x_range, y_range, x_range, y_range]
-            let _ranges = v128_load64_splat(addr_of!(self.dimension.x_range) as *const u64);
-            // _sizes = [width, height, width, height]
-            let _sizes = v128_load64_splat(addr_of!(self.dimension.width) as *const u64);
-            // _offsets = [x_offset, y_offset, x_offset, y_offset]
-            let _offsets = v128_load64_splat(addr_of!(self.dimension.x_offset) as *const u64);
-            let _mul = f32x4_mul(_source_points, _ranges);
-            let _div = f32x4_div(_mul, _sizes);
-            f32x4_add(_div, _offsets)
+            for (i, &root) in roots.iter().enumerate() {
+                let _ids = i32x4_splat(i as i32);
+                let _root = v128_load64_splat(addr_of!(root) as *const u64);
+                let _sqrt1 = SimdHelper::calculate_distance(_points1, _root);
+                let _sqrt2 = SimdHelper::calculate_distance(_points2, _root);
+                let _distance = i32x4_shuffle::<0, 2, 4, 6>(_sqrt1, _sqrt2);
+                let _le_check = f32x4_lt(_distance, _min_distances);
+                _min_distances = f32x4_pmin(_distance, _min_distances);
+                _closest_root_ids = v128_bitselect(_ids, _closest_root_ids, _le_check);
+            }
         }
-    }
+        unsafe {
+            let (id1, id2, id3, id4): (usize, usize, usize, usize) = transmute(_closest_root_ids);
+            transmute([colors[id1], colors[id2], colors[id3], colors[id4]])
+        }
+    });
 
-    pub fn plot_point_to_canvas(&self, x: f32, y: f32) -> (f64, f64) {
-        (
-            ((x - self.dimension.x_offset) * self.dimension.width / self.dimension.x_range) as f64,
-            ((y - self.dimension.y_offset) * self.dimension.height / self.dimension.y_range) as f64,
+    let pixels_data: &[u8] = unsafe {
+        std::slice::from_raw_parts(
+            std::mem::transmute(pixels_data.as_ptr()),
+            pixels_data.len() * 16,
         )
-    }
+    };
 
-    // pub fn draw_raw_data(&self, data: Clamped<&[u8]>) {
-    //     self.context
-    //         .put_image_data(
-    //             &ImageData::new_with_u8_clamped_array_and_sh(
-    //                 data,
-    //                 self.dimension.width as u32,
-    //                 self.dimension.height as u32,
-    //             )
-    //             .unwrap(),
-    //             0.0,
-    //             0.0,
-    //         )
-    //         .unwrap();
-    // }
-
-    pub fn adjust_color(color: u8, k: f32) -> u8 {
-        ((color as f32 / k) as u8).clamp(u8::MIN, u8::MAX)
-    }
-}
-
-#[wasm_bindgen]
-impl Plotter {
-    #[wasm_bindgen(constructor)]
-    pub fn new(dimension: &Dimension) -> Plotter {
-        Plotter { dimension: *dimension }
-    }
-
-    #[wasm_bindgen]
-    pub fn canvas_point_to_plot_to_js(&self, x: f32, y: f32) -> JsValue {
-        JsValue::from_serde(&self.canvas_point_to_plot(x, y)).unwrap()
-    }
-
-    // #[wasm_bindgen]
-    // pub fn resize_canvas(&mut self, dimension: &Dimension) {
-    //     self.dimension = *dimension;
-    //     self.canvas.set_width(self.dimension.width as u32);
-    //     self.canvas.set_height(self.dimension.height as u32);
-    // }
-
-    // #[wasm_bindgen]
-    // pub fn plot_point(&self, x: f32, y: f32, color: &JsValue, size: f64) {
-    //     let ctx = &self.context;
-    //     let (canvas_x, canvas_y) = self.plot_point_to_canvas(x, y);
-    //     ctx.move_to(canvas_x, canvas_y);
-    //     ctx.begin_path();
-    //     ctx.arc(canvas_x, canvas_y, size, 0f64, 2f64 * std::f64::consts::PI)
-    //         .unwrap();
-    //     ctx.set_fill_style(color);
-    //     ctx.fill();
-    //     ctx.stroke();
-    //     ctx.close_path();
-    // }
-
-    #[wasm_bindgen]
-    pub fn fill_pixels_nalgebra(
-        &self,
-        polynom: &Polynomial,
-        iterations_count: usize,
-        colors: JsValue,
-    ) -> ImageData {
-        let (colors, colors_len) = Plotter::convert_colors_array(colors);
-
-        let Dimension { width, height, .. } = self.dimension;
-        let (w_int, h_int) = (width as usize, height as usize);
-
-        let roots = polynom.get_roots();
-
-        let pixels_data: DMatrix<u32> = DMatrix::from_fn(w_int, h_int, |x, y| {
-            let mut min_d = f32::MAX;
-            let mut closest_root_id: usize = 0;
-            let (xp, yp) = self.canvas_point_to_plot(x as f32, y as f32);
-            let mut z = Complex32::new(xp, yp);
-            for _ in 0..iterations_count {
-                let (id, new_point) = polynom.newton_method_approx(z);
-                if (id & (1 << 31)) == 0 {
-                    return colors[id];
-                }
-                z = new_point;
-            }
-
-            for (i, root) in roots.iter().enumerate() {
-                let d = (z - root).norm_sqr().sqrt();
-                if d < min_d {
-                    min_d = d;
-                    closest_root_id = i;
-                }
-            }
-            colors[closest_root_id]
-        });
-
-        let pixels_data: &[u8] = unsafe {
-            std::slice::from_raw_parts(
-                std::mem::transmute(pixels_data.data.ptr()),
-                pixels_data.len() * 4,
-            )
-        };
-
-        match ImageData::new_with_u8_clamped_array_and_sh(
-            Clamped(pixels_data),
-            self.dimension.width as u32,
-            self.dimension.height as u32,
-        ) {
-            Ok(v) => v,
-            Err(e) => {
-                log!("Error creating image data: {:?}, returning empty", e);
-                ImageData::new_with_sw(0, 0).unwrap()
-            }
+    match ImageData::new_with_u8_clamped_array_and_sh(
+        Clamped(pixels_data),
+        width as u32,
+        height as u32,
+    ) {
+        Ok(v) => v,
+        Err(e) => {
+            log!("Error creating image data: {:?}, returning empty", e);
+            ImageData::new_with_sw(0, 0).unwrap()
         }
     }
-
-    #[wasm_bindgen]
-    #[target_feature(enable = "simd128")]
-    pub fn fill_pixels_simd_nalgebra(
-        &self,
-        polynom: &Polynomial,
-        iterations_count: usize,
-        colors: JsValue,
-    ) -> ImageData {
-        let (colors, colors_len) = Plotter::convert_colors_array(colors);
-
-        let Dimension { width, height, .. } = self.dimension;
-        let (w_int, h_int) = (width as usize, height as usize);
-
-        let roots = polynom.get_roots();
-
-        let pixels_data: DMatrix<ColorsPack> = DMatrix::from_fn(w_int / 4, h_int, |x, y| {
-            let mut _min_distances = SimdHelper::F32_MAXIMUMS;
-            let mut _closest_root_ids = SimdHelper::I32_ZEROES;
-            let (x, y) = (4.0 * x as f32, y as f32);
-            let mut _points1 = self.simd_canvas_point_to_plot(x + 0.0, y, x + 1.0, y);
-            let mut _points2 = self.simd_canvas_point_to_plot(x + 2.0, y, x + 3.0, y);
-            for _ in 0..iterations_count {
-                unsafe {
-                    _points1 = polynom.simd_newton_method_approx_for_two_numbers(_points1);
-                    _points2 = polynom.simd_newton_method_approx_for_two_numbers(_points2);
-                }
-            }
-            unsafe {
-                for (i, &root) in roots.iter().enumerate() {
-                    let _ids = i32x4_splat(i as i32);
-                    let _root = v128_load64_splat(addr_of!(root) as *const u64);
-                    let _sqrt1 = SimdHelper::calculate_distance(_points1, _root);
-                    let _sqrt2 = SimdHelper::calculate_distance(_points2, _root);
-                    let _distance = i32x4_shuffle::<0, 2, 4, 6>(_sqrt1, _sqrt2);
-                    let _le_check = f32x4_lt(_distance, _min_distances);
-                    _min_distances = f32x4_pmin(_distance, _min_distances);
-                    _closest_root_ids = v128_bitselect(_ids, _closest_root_ids, _le_check);
-                }
-            }
-            unsafe {
-                let (id1, id2, id3, id4): (usize, usize, usize, usize) =
-                    transmute(_closest_root_ids);
-                transmute([colors[id1], colors[id2], colors[id3], colors[id4]])
-            }
-        });
-
-        let pixels_data: &[u8] = unsafe {
-            std::slice::from_raw_parts(
-                std::mem::transmute(pixels_data.as_ptr()),
-                pixels_data.len() * 16,
-            )
-        };
-
-        match ImageData::new_with_u8_clamped_array_and_sh(
-            Clamped(pixels_data),
-            self.dimension.width as u32,
-            self.dimension.height as u32,
-        ) {
-            Ok(v) => v,
-            Err(e) => {
-                log!("Error creating image data: {:?}, returning empty", e);
-                ImageData::new_with_sw(0, 0).unwrap()
-            }
-        }
-    }
-
-    // #[wasm_bindgen]
-    // pub fn display_roots(&self, polynom: &Polynomial) {
-    //     for root in polynom.get_roots().iter() {
-    //         let p = root.clone();
-    //         self.plot_point(p.re, p.im, &"wheat".into(), 4.0);
-    //     }
-    // }
-
-    // #[wasm_bindgen]
-    // pub fn put_image_data_from_js(&self, image_data: ImageData) {
-    //     self.context.put_image_data(&image_data, 0.0, 0.0).unwrap();
-    // }
 }

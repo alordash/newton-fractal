@@ -1,14 +1,13 @@
 import { generateColor, regionColors } from './colors.js';
-import { calcDimension } from './calculation.js';
 import {
     WorkerCommands,
-    InitConfig,
     DrawingModes,
     DrawingConfig,
     DrawingResult,
     WorkerMessage,
     WorkerResult
 } from './drawing_worker.js';
+import { PlotScale, roots } from './plotter.js';
 
 const CLICK_POINT_DISTANCE = 0.125;
 let holdingPointIndex = -1;
@@ -28,8 +27,11 @@ let loggerDiv = document.getElementById("logger");
 
 function formDrawingConfig(drawingMode: DrawingModes = <DrawingModes>drawingModeSelect.value): DrawingConfig {
     let iterationsCount = parseInt(iterationsCountRange.value);
+    let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
     return {
         drawingMode,
+        plotScale,
+        roots,
         iterationsCount,
         regionColors
     };
@@ -78,11 +80,6 @@ function drawingWorkerCallback(e: MessageEvent<WorkerResult>) {
     let command = data.command;
     switch (command) {
         case WorkerCommands.Init:
-        case WorkerCommands.Resize:
-            let { width, height } = data.dimension;
-            resizeCanvas(width, height);
-            runDrawingWorker(DrawingModes.CPU_WASM_SIMD);
-            break;
         case WorkerCommands.Draw:
             drawingCallback(data.drawingResult);
             break;
@@ -135,12 +132,10 @@ function WindowResize() {
 
     console.log(`Resizing (${innerWidth}, ${innerHeight})`);
     let drawingConfig = formDrawingConfig();
+    mainCanvas.width = drawingConfig.plotScale.x_display_range;
+    mainCanvas.height = drawingConfig.plotScale.y_display_range;
     sendMessageToWorker({
-        command: WorkerCommands.Resize,
-        initConfig: {
-            innerWidth,
-            innerHeight
-        },
+        command: WorkerCommands.Draw,
         drawingConfig
     });
 }
@@ -165,10 +160,7 @@ async function run() {
 
     let { innerWidth, innerHeight } = window;
     sendMessageToWorker({
-        command: WorkerCommands.Init,
-        initConfig: {
-            innerWidth, innerHeight
-        }
+        command: WorkerCommands.Init
     });
     // drawingWorker.postMessage()
     // await init();

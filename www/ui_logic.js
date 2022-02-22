@@ -1,5 +1,6 @@
 import { regionColors } from './colors.js';
 import { WorkerCommands, DrawingModes } from './drawing_worker.js';
+import { PlotScale, roots } from './plotter.js';
 const CLICK_POINT_DISTANCE = 0.125;
 let holdingPointIndex = -1;
 let drawingWorker;
@@ -14,8 +15,11 @@ let iterationsCountDisplay = document.getElementById("iterationsCountDisplay");
 let loggerDiv = document.getElementById("logger");
 function formDrawingConfig(drawingMode = drawingModeSelect.value) {
     let iterationsCount = parseInt(iterationsCountRange.value);
+    let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
     return {
         drawingMode,
+        plotScale,
+        roots,
         iterationsCount,
         regionColors
     };
@@ -53,11 +57,6 @@ function drawingWorkerCallback(e) {
     let command = data.command;
     switch (command) {
         case WorkerCommands.Init:
-        case WorkerCommands.Resize:
-            let { width, height } = data.dimension;
-            resizeCanvas(width, height);
-            runDrawingWorker(DrawingModes.CPU_WASM_SIMD);
-            break;
         case WorkerCommands.Draw:
             drawingCallback(data.drawingResult);
             break;
@@ -76,12 +75,10 @@ function WindowResize() {
     let { innerWidth, innerHeight } = window;
     console.log(`Resizing (${innerWidth}, ${innerHeight})`);
     let drawingConfig = formDrawingConfig();
+    mainCanvas.width = drawingConfig.plotScale.x_display_range;
+    mainCanvas.height = drawingConfig.plotScale.y_display_range;
     sendMessageToWorker({
-        command: WorkerCommands.Resize,
-        initConfig: {
-            innerWidth,
-            innerHeight
-        },
+        command: WorkerCommands.Draw,
         drawingConfig
     });
 }
@@ -101,10 +98,7 @@ async function run() {
     drawingWorker.onmessage = drawingWorkerCallback;
     let { innerWidth, innerHeight } = window;
     sendMessageToWorker({
-        command: WorkerCommands.Init,
-        initConfig: {
-            innerWidth, innerHeight
-        }
+        command: WorkerCommands.Init
     });
     mainCanvas.addEventListener("mousedown", CanvasMouseDown);
     mainCanvas.addEventListener("click", CanvasClick);

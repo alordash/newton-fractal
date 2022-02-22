@@ -1,18 +1,10 @@
-import init, { Dimension, Plotter, Polynomial } from '../pkg/newton_fractal.js';
-import { generateColor, regionColors } from './colors.js';
-import { calcDimension, fillPixelsJavascript } from './calculation.js';
-
-const startRoots = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25], [-0.85, 0.5]];
+import init, { fill_pixels_nalgebra, fill_pixels_simd_nalgebra } from '../pkg/newton_fractal.js';
+import { fillPixelsJavascript } from './newtons_fractal.js';
+import { PlotScale } from './plotter.js';
 
 enum WorkerCommands {
     Init,
     Draw,
-    Resize
-}
-
-type InitConfig = {
-    innerWidth: number,
-    innerHeight: number
 }
 
 enum DrawingModes {
@@ -23,6 +15,8 @@ enum DrawingModes {
 
 type DrawingConfig = {
     drawingMode: DrawingModes,
+    plotScale: PlotScale,
+    roots: number[][],
     iterationsCount: number,
     regionColors: number[][]
 }
@@ -35,41 +29,28 @@ type DrawingResult = {
 
 type WorkerMessage = {
     command: WorkerCommands,
-    initConfig?: InitConfig,
     drawingConfig?: DrawingConfig,
 }
 
 type WorkerResult = {
     command: WorkerCommands,
-    drawingResult?: DrawingResult,
-    dimension?: { width: number, height: number }
-}
-
-let plotter: Plotter;
-let polynom: Polynomial;
-
-function addRoot(xMapped: number, yMapped: number) {
-    console.log(`Added new root at: (${xMapped}, ${yMapped})`);
-    polynom.add_root(xMapped, yMapped);
-    if (regionColors.length < polynom.get_roots_count()) {
-        regionColors.push(generateColor());
-    }
+    drawingResult?: DrawingResult
 }
 
 function draw(config: DrawingConfig): DrawingResult {
-    let { drawingMode, iterationsCount, regionColors } = config;
+    let { plotScale, roots, drawingMode, iterationsCount, regionColors } = config;
 
     let imageData: ImageData;
     let start = new Date();
     switch (drawingMode) {
         case DrawingModes.CPU_JS_SCALAR:
-            imageData = fillPixelsJavascript(plotter, polynom, iterationsCount, regionColors);
+            imageData = fillPixelsJavascript(plotScale, roots, iterationsCount, regionColors);
             break;
         case DrawingModes.CPU_WASM_SCALAR:
-            imageData = plotter.fill_pixels_nalgebra(polynom, iterationsCount, regionColors);
+            imageData = fill_pixels_nalgebra(plotScale, roots, iterationsCount, regionColors);
             break;
         case DrawingModes.CPU_WASM_SIMD:
-            imageData = plotter.fill_pixels_simd_nalgebra(polynom, iterationsCount, regionColors);
+            imageData = fill_pixels_simd_nalgebra(plotScale, roots, iterationsCount, regionColors);
             break;
 
         default:
@@ -78,17 +59,6 @@ function draw(config: DrawingConfig): DrawingResult {
     let end = new Date();
     let elapsedMs = end.getTime() - start.getTime();
     return { drawingMode, elapsedMs, imageData };
-}
-
-async function InitWasm(initConfig: InitConfig): Promise<Dimension> {
-    await init();
-
-    let { innerWidth, innerHeight } = initConfig;
-    let dimension = calcDimension(innerWidth, innerHeight);
-    plotter = new Plotter(dimension);
-    polynom = new Polynomial(startRoots);
-
-    return dimension;
 }
 
 function postCustomMessage(message: WorkerResult) {
@@ -102,22 +72,9 @@ onmessage = async function (e: MessageEvent<WorkerMessage>) {
     switch (command) {
         case WorkerCommands.Init:
             {
-                let dimension = await InitWasm(data.initConfig);
-                console.log('dimension :>> ', dimension);
+                await init();
                 postCustomMessage({
-                    command,
-                    dimension: { width: dimension.width, height: dimension.height }
-                });
-            }
-            break;
-        case WorkerCommands.Resize:
-            {
-                let { innerWidth, innerHeight } = data.initConfig;
-                let dimension = calcDimension(innerWidth, innerHeight);
-                plotter.dimension = dimension;
-                postCustomMessage({
-                    command,
-                    dimension: { width: dimension.width, height: dimension.height }
+                    command
                 });
             }
             break;
@@ -138,7 +95,6 @@ onmessage = async function (e: MessageEvent<WorkerMessage>) {
 
 export {
     WorkerCommands,
-    InitConfig,
     DrawingModes,
     DrawingConfig,
     DrawingResult,
