@@ -41,11 +41,13 @@ function formDrawingConfig(drawingMode = drawingModeSelect.value) {
         regionColors
     };
 }
+let doneDrawing = true;
 function runDrawingWorker(drawingMode = drawingModeSelect.value) {
     let drawingConfig = formDrawingConfig(drawingMode);
     loggerDiv.innerHTML = `Drawing technic: ${drawingMode}</br>
     Calculation in process...</br>
     <b>FPS: ...</b>`;
+    doneDrawing = false;
     sendMessageToWorker({
         command: WorkerCommands.Draw,
         drawingConfig
@@ -65,6 +67,7 @@ Took: ${elapsedMs}ms</br>
     mainCanvasContext.putImageData(imageData, 0, 0);
     console.log(`Done drawing using "${drawingMode}", took: ${elapsedMs}ms`);
     plotRoots(plotScale, roots);
+    doneDrawing = true;
 }
 function resizeCanvas(width, height) {
     mainCanvas.width = width;
@@ -115,9 +118,11 @@ function CanvasMouseMove(me) {
         holdingPointIndex = -1;
         return;
     }
-    let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
-    roots[holdingPointIndex] = [x, y];
-    runDrawingWorker();
+    if (doneDrawing) {
+        let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
+        roots[holdingPointIndex] = [x, y];
+        runDrawingWorker();
+    }
 }
 function WindowResize() {
     let { innerWidth, innerHeight } = window;

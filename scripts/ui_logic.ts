@@ -9,6 +9,7 @@ import {
 } from './drawing_worker.js';
 import { transformPointToPlotScale, transformPointToCanvasScale } from './newtons_fractal.js';
 import { PlotScale, roots, addRoot, getClosestRoot } from './plotter.js';
+import init from '../pkg/newton_fractal.js';
 
 const rootPointSize = 4.0;
 
@@ -57,6 +58,7 @@ function formDrawingConfig(drawingMode: DrawingModes = <DrawingModes>drawingMode
     };
 }
 
+let doneDrawing = true;
 function runDrawingWorker(drawingMode: DrawingModes = <DrawingModes>drawingModeSelect.value) {
     let drawingConfig = formDrawingConfig(drawingMode);
 
@@ -64,6 +66,7 @@ function runDrawingWorker(drawingMode: DrawingModes = <DrawingModes>drawingModeS
     Calculation in process...</br>
     <b>FPS: ...</b>`;
 
+    doneDrawing = false;
     sendMessageToWorker({
         command: WorkerCommands.Draw,
         drawingConfig
@@ -87,6 +90,7 @@ Took: ${elapsedMs}ms</br>
     mainCanvasContext.putImageData(imageData, 0, 0);
     console.log(`Done drawing using "${drawingMode}", took: ${elapsedMs}ms`);
     plotRoots(plotScale, roots);
+    doneDrawing = true;
 }
 
 function resizeCanvas(width: number, height: number) {
@@ -144,10 +148,12 @@ function CanvasMouseMove(me: MouseEvent) {
         return;
     }
 
-    let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
-    roots[holdingPointIndex] = [x, y];
-    
-    runDrawingWorker();
+    if (doneDrawing) {
+        let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
+        roots[holdingPointIndex] = [x, y];
+
+        runDrawingWorker();
+    }
 }
 
 function WindowResize() {
