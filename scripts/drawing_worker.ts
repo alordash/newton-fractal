@@ -41,22 +41,27 @@ function draw(config: DrawingConfig): DrawingResult {
     let { plotScale, roots, drawingMode, iterationsCount, regionColors } = config;
 
     let imageData: ImageData;
-    let start = new Date();
+    let start: Date, end: Date;
     switch (drawingMode) {
         case DrawingModes.CPU_JS_SCALAR:
+            start = new Date();
             imageData = fillPixelsJavascript(plotScale, roots, iterationsCount, regionColors);
+            end = new Date();
             break;
         case DrawingModes.CPU_WASM_SCALAR:
+            start = new Date();
             imageData = fill_pixels_nalgebra(plotScale, roots, iterationsCount, regionColors);
+            end = new Date();
             break;
         case DrawingModes.CPU_WASM_SIMD:
+            start = new Date();
             imageData = fill_pixels_simd_nalgebra(plotScale, roots, iterationsCount, regionColors);
+            end = new Date();
             break;
 
         default:
             break;
     }
-    let end = new Date();
     let elapsedMs = end.getTime() - start.getTime();
     return { drawingMode, elapsedMs, imageData };
 }
