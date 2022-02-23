@@ -13,27 +13,28 @@ var DrawingModes;
 })(DrawingModes || (DrawingModes = {}));
 function draw(config) {
     let { plotScale, roots, drawingMode, iterationsCount, regionColors } = config;
-    let imageData;
+    let data;
     let start, end;
     switch (drawingMode) {
         case DrawingModes.CPU_JS_SCALAR:
             start = new Date();
-            imageData = fillPixelsJavascript(plotScale, roots, iterationsCount, regionColors);
+            data = fillPixelsJavascript(plotScale, roots, iterationsCount, regionColors);
             end = new Date();
             break;
         case DrawingModes.CPU_WASM_SCALAR:
             start = new Date();
-            imageData = fill_pixels_nalgebra(plotScale, roots, iterationsCount, regionColors);
+            data = fill_pixels_nalgebra(plotScale, roots, iterationsCount, regionColors);
             end = new Date();
             break;
         case DrawingModes.CPU_WASM_SIMD:
             start = new Date();
-            imageData = fill_pixels_simd_nalgebra(plotScale, roots, iterationsCount, regionColors);
+            data = fill_pixels_simd_nalgebra(plotScale, roots, iterationsCount, regionColors);
             end = new Date();
             break;
         default:
             break;
     }
+    let imageData = new ImageData(data, plotScale.x_display_range, plotScale.y_display_range);
     let elapsedMs = end.getTime() - start.getTime();
     return { drawingMode, elapsedMs, imageData };
 }

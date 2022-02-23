@@ -60,7 +60,7 @@ function transformPointToCanvasScale(x: number, y: number, plotScale: PlotScale)
     ];
 }
 
-function fillPixelsJavascript(plotScale: PlotScale, roots: number[][], iterationsCount: number, colors: number[][]): ImageData {
+function fillPixelsJavascript(plotScale: PlotScale, roots: number[][], iterationsCount: number, colors: number[][]): Uint8ClampedArray {
     let {
         x_display_range: width,
         y_display_range: height
@@ -106,8 +106,7 @@ function fillPixelsJavascript(plotScale: PlotScale, roots: number[][], iteration
     }
     let uint8Data = new Uint8ClampedArray(uint32Data.buffer);
 
-    let imageData = new ImageData(uint8Data, w_int, h_int);
-    return imageData;
+    return uint8Data;
 }
 
 export {

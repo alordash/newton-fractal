@@ -76,7 +76,7 @@ pub fn fill_pixels_nalgebra(
     roots: JsValue,      // Vec<Complexf32>
     iterations_count: usize,
     colors: JsValue,
-) -> ImageData {
+) -> Clamped<Vec<u8>> {
     let plot_scale: PlotScale = plot_scale.into_serde().unwrap();
     let roots: Vec<Complex32> = (roots.into_serde::<Vec<(f32, f32)>>().unwrap())
         .into_iter()
@@ -121,17 +121,7 @@ pub fn fill_pixels_nalgebra(
         )
     };
 
-    match ImageData::new_with_u8_clamped_array_and_sh(
-        Clamped(pixels_data),
-        width as u32,
-        height as u32,
-    ) {
-        Ok(v) => v,
-        Err(e) => {
-            log!("Error creating image data: {:?}, returning empty", e);
-            ImageData::new_with_sw(0, 0).unwrap()
-        }
-    }
+    Clamped(pixels_data.to_vec())
 }
 
 #[wasm_bindgen]
@@ -141,7 +131,7 @@ pub fn fill_pixels_simd_nalgebra(
     roots: JsValue,      // Vec<Complexf32>
     iterations_count: usize,
     colors: JsValue,
-) -> ImageData {
+) -> Clamped<Vec<u8>> {
     let plot_scale: PlotScale = plot_scale.into_serde().unwrap();
     let roots: Vec<Complex32> = (roots.into_serde::<Vec<(f32, f32)>>().unwrap())
         .into_iter()
@@ -194,15 +184,5 @@ pub fn fill_pixels_simd_nalgebra(
         )
     };
 
-    match ImageData::new_with_u8_clamped_array_and_sh(
-        Clamped(pixels_data),
-        width as u32,
-        height as u32,
-    ) {
-        Ok(v) => v,
-        Err(e) => {
-            log!("Error creating image data: {:?}, returning empty", e);
-            ImageData::new_with_sw(0, 0).unwrap()
-        }
-    }
+    Clamped(pixels_data.to_vec())
 }

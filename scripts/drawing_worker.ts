@@ -40,28 +40,29 @@ type WorkerResult = {
 function draw(config: DrawingConfig): DrawingResult {
     let { plotScale, roots, drawingMode, iterationsCount, regionColors } = config;
 
-    let imageData: ImageData;
+    let data: Uint8ClampedArray;
     let start: Date, end: Date;
     switch (drawingMode) {
         case DrawingModes.CPU_JS_SCALAR:
             start = new Date();
-            imageData = fillPixelsJavascript(plotScale, roots, iterationsCount, regionColors);
+            data = fillPixelsJavascript(plotScale, roots, iterationsCount, regionColors);
             end = new Date();
             break;
         case DrawingModes.CPU_WASM_SCALAR:
             start = new Date();
-            imageData = fill_pixels_nalgebra(plotScale, roots, iterationsCount, regionColors);
+            data = fill_pixels_nalgebra(plotScale, roots, iterationsCount, regionColors);
             end = new Date();
             break;
         case DrawingModes.CPU_WASM_SIMD:
             start = new Date();
-            imageData = fill_pixels_simd_nalgebra(plotScale, roots, iterationsCount, regionColors);
+            data = fill_pixels_simd_nalgebra(plotScale, roots, iterationsCount, regionColors);
             end = new Date();
             break;
 
         default:
             break;
     }
+    let imageData = new ImageData(data, plotScale.x_display_range, plotScale.y_display_range);
     let elapsedMs = end.getTime() - start.getTime();
     return { drawingMode, elapsedMs, imageData };
 }

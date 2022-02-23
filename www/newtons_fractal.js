@@ -83,8 +83,7 @@ function fillPixelsJavascript(plotScale, roots, iterationsCount, colors) {
         }
     }
     let uint8Data = new Uint8ClampedArray(uint32Data.buffer);
-    let imageData = new ImageData(uint8Data, w_int, h_int);
-    return imageData;
+    return uint8Data;
 }
 export { transformPointToPlotScale, transformPointToCanvasScale, fillPixelsJavascript };
 //# sourceMappingURL=newtons_fractal.js.map
