@@ -1,4 +1,3 @@
-import { point_to_plot_scale_js } from "../pkg/newton_fractal.js";
 import { PlotScale } from "./plotter.js";
 
 class Complex32 {
