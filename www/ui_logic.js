@@ -67,6 +67,9 @@ Took: ${elapsedMs}ms</br>
     mainCanvasContext.putImageData(imageData, 0, 0);
     plotRoots(plotScale, roots);
     doneDrawing = true;
+    if (awaitingForResize) {
+        WindowResize();
+    }
 }
 function resizeCanvas(width, height) {
     mainCanvas.width = width;
@@ -123,13 +126,19 @@ function CanvasMouseMove(me) {
         runDrawingWorker();
     }
 }
+let awaitingForResize = false;
 function WindowResize() {
     let { innerWidth, innerHeight } = window;
-    console.log(`Resizing (${innerWidth}, ${innerHeight})`);
-    plotScale = PlotScale.calculatePlotScale(innerWidth, innerHeight);
-    let drawingConfig = formDrawingConfig();
-    resizeCanvas(drawingConfig.plotScale.x_display_range, drawingConfig.plotScale.y_display_range);
-    runDrawingWorker();
+    if (doneDrawing) {
+        awaitingForResize = false;
+        plotScale = PlotScale.calculatePlotScale(innerWidth, innerHeight);
+        let drawingConfig = formDrawingConfig();
+        resizeCanvas(drawingConfig.plotScale.x_display_range, drawingConfig.plotScale.y_display_range);
+        runDrawingWorker();
+    }
+    else {
+        awaitingForResize = true;
+    }
 }
 for (const value of Object.values(DrawingModes)) {
     let option = document.createElement("option");

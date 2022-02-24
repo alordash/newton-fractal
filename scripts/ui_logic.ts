@@ -91,6 +91,9 @@ Took: ${elapsedMs}ms</br>
     // console.log(`Done drawing using "${drawingMode}", took: ${elapsedMs}ms`);
     plotRoots(plotScale, roots);
     doneDrawing = true;
+    if (awaitingForResize) {
+        WindowResize();
+    }
 }
 
 function resizeCanvas(width: number, height: number) {
@@ -156,17 +159,22 @@ function CanvasMouseMove(me: MouseEvent) {
     }
 }
 
+let awaitingForResize = false;
 function WindowResize() {
     let { innerWidth, innerHeight } = window;
 
-    console.log(`Resizing (${innerWidth}, ${innerHeight})`);
-    plotScale = PlotScale.calculatePlotScale(innerWidth, innerHeight);
-    let drawingConfig = formDrawingConfig();
-    resizeCanvas(
-        drawingConfig.plotScale.x_display_range,
-        drawingConfig.plotScale.y_display_range
-    );
-    runDrawingWorker();
+    if (doneDrawing) {
+        awaitingForResize = false;
+        plotScale = PlotScale.calculatePlotScale(innerWidth, innerHeight);
+        let drawingConfig = formDrawingConfig();
+        resizeCanvas(
+            drawingConfig.plotScale.x_display_range,
+            drawingConfig.plotScale.y_display_range
+        );
+        runDrawingWorker();
+    } else {
+        awaitingForResize = true;
+    }
 }
 
 for (const value of Object.values(DrawingModes)) {
