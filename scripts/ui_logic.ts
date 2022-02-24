@@ -1,67 +1,80 @@
-import init, { Dimension, Plotter, Polynomial } from '../pkg/newton_fractal.js';
 import { generateColor, regionColors } from './colors.js';
-import { mapPoints, fillPixelsJavascript } from './calculation.js';
+import {
+    WorkerCommands,
+    DrawingModes,
+    DrawingConfig,
+    DrawingResult,
+    WorkerMessage,
+    WorkerResult
+} from './drawing_worker.js';
+import { transformPointToPlotScale, transformPointToCanvasScale } from './newtons_fractal.js';
+import { PlotScale, roots, addRoot, getClosestRoot } from './plotter.js';
+import init from '../pkg/newton_fractal.js';
 
-let plotter: Plotter;
-let polynom: Polynomial;
+const rootPointSize = 4.0;
 
-const startRoots = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25], [-0.85, 0.5]];
-
-enum DrawingModes {
-    CPU_WASM_SIMD = "CPU-wasm-simd",
-    CPU_WASM_SCALAR = "CPU-wasm-scalar",
-    CPU_JS_SCALAR = "CPU-js-scalar",
-}
-
+let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
 const CLICK_POINT_DISTANCE = 0.125;
 let holdingPointIndex = -1;
 
+let drawingWorker: Worker;
+
+function sendMessageToWorker(message: WorkerMessage) {
+    drawingWorker.postMessage(message);
+}
+
+let mainCanvas = <HTMLCanvasElement>document.getElementById("main-canvas");
+let mainCanvasContext = mainCanvas.getContext("2d");
 let drawingModeSelect = <HTMLSelectElement>document.getElementById("drawingModeSelect");
 let iterationsCountRange = <HTMLInputElement>document.getElementById("iterationsCount");
 let iterationsCountDisplay = <HTMLOutputElement>document.getElementById("iterationsCountDisplay");
 let loggerDiv = document.getElementById("logger");
 
-function addRoot(xMapped: number, yMapped: number) {
-    console.log(`Added new root at: (${xMapped}, ${yMapped})`);
-    polynom.add_root(xMapped, yMapped);
-    if (regionColors.length < polynom.get_roots_count()) {
-        regionColors.push(generateColor());
+function plotPoint(x: number, y: number, size: number, plotScale: PlotScale) {
+    let [canvasX, canvasY] = transformPointToCanvasScale(x, y, plotScale);
+    mainCanvasContext.moveTo(canvasX, canvasY);
+    mainCanvasContext.beginPath();
+    mainCanvasContext.arc(canvasX, canvasY, size, 0, Math.PI * 2);
+    mainCanvasContext.fillStyle = "wheat";
+    mainCanvasContext.fill();
+    mainCanvasContext.stroke();
+    mainCanvasContext.closePath();
+}
+
+function plotRoots(plotScale: PlotScale, roots: number[][]) {
+    for (let [x, y] of roots) {
+        plotPoint(x, y, rootPointSize, plotScale);
     }
 }
 
-function calcDimension(): Dimension {
-    const width = Math.round(window.innerWidth * 0.65 / 4) * 4;
-    const height = Math.round(window.innerHeight * 0.75);
-    const k = height / width;
-    const x_range = 4;
-    const x_offset = -2;
-    return new Dimension(width, height, x_range, x_range * k, x_offset, x_offset * k);
-}
-
-function draw(enableLogging: Boolean, drawingMode: DrawingModes = <DrawingModes>drawingModeSelect.value) {
+function formDrawingConfig(drawingMode: DrawingModes = <DrawingModes>drawingModeSelect.value): DrawingConfig {
     let iterationsCount = parseInt(iterationsCountRange.value);
+    return {
+        drawingMode,
+        plotScale,
+        roots,
+        iterationsCount,
+        regionColors
+    };
+}
 
-    if (enableLogging) {
-        console.log(`Drawing technic: ${drawingMode}`);
-    }
+let doneDrawing = true;
+function runDrawingWorker(drawingMode: DrawingModes = <DrawingModes>drawingModeSelect.value) {
+    let drawingConfig = formDrawingConfig(drawingMode);
 
-    let start = new Date();
-    switch (drawingMode) {
-        case DrawingModes.CPU_JS_SCALAR:
-            fillPixelsJavascript(plotter, polynom, iterationsCount, regionColors);
-            break;
-        case DrawingModes.CPU_WASM_SCALAR:
-            plotter.fill_pixels_nalgebra(polynom, iterationsCount, regionColors);
-            break;
-        case DrawingModes.CPU_WASM_SIMD:
-            plotter.fill_pixels_simd_nalgebra(polynom, iterationsCount, regionColors);
-            break;
+    loggerDiv.innerHTML = `Drawing technic: ${drawingMode}</br>
+    Calculation in process...</br>
+    <b>FPS: ...</b>`;
 
-        default:
-            break;
-    }
-    let end = new Date();
-    let elapsedMs = end.getTime() - start.getTime();
+    doneDrawing = false;
+    sendMessageToWorker({
+        command: WorkerCommands.Draw,
+        drawingConfig
+    });
+}
+
+function drawingCallback(drawingResult: DrawingResult) {
+    let { elapsedMs, drawingMode, imageData } = drawingResult;
 
     let fps = 1000 / elapsedMs;
     let precisionPower = 10;
@@ -70,59 +83,90 @@ function draw(enableLogging: Boolean, drawingMode: DrawingModes = <DrawingModes>
     }
     fps = Math.round(fps * precisionPower) / precisionPower;
 
-    let msg = `Drawing technic: ${drawingMode}</br>
+    loggerDiv.innerHTML = `Drawing technic: ${drawingMode}</br>
 Took: ${elapsedMs}ms</br>
 <b>FPS: ${fps}</b>`;
-    loggerDiv.innerHTML = msg;
 
-    if (enableLogging) {
-        console.log(`Done drawing, took: ${elapsedMs}ms`);
-    }
-    plotter.display_roots(polynom);
+    mainCanvasContext.putImageData(imageData, 0, 0);
+    // console.log(`Done drawing using "${drawingMode}", took: ${elapsedMs}ms`);
+    plotRoots(plotScale, roots);
+    doneDrawing = true;
 }
 
-window.addEventListener("resize", () => {
-    let dimension = calcDimension();
-    plotter.resize_canvas(dimension);
-    draw(true);
-});
+function resizeCanvas(width: number, height: number) {
+    mainCanvas.width = width;
+    mainCanvas.height = height;
+}
+
+function drawingWorkerCallback(e: MessageEvent<WorkerResult>) {
+    let { data } = e;
+    let command = data.command;
+    switch (command) {
+        case WorkerCommands.Init:
+            WindowResize();
+            break;
+        case WorkerCommands.Draw:
+            drawingCallback(data.drawingResult);
+            break;
+
+        default:
+            break;
+    }
+}
 
 function CanvasClick(me: MouseEvent) {
     if (holdingPointIndex != -1) return;
-    let [x, y] = mapPoints(plotter, me.offsetX, me.offsetY);
+    let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
 
     if (me.shiftKey) {
         addRoot(x, y);
     } else if (me.ctrlKey) {
-        let [idx, _] = polynom.get_closest_root_id(x, y);
-        polynom.remove_root_by_id(idx);
+        let { id, dst } = getClosestRoot(x, y);
+        roots.splice(id, 1);
     }
 
-    draw(true);
+    runDrawingWorker();
 }
 
 function CanvasMouseDown(me: MouseEvent) {
-    let [x, y] = mapPoints(plotter, me.offsetX, me.offsetY);
+    let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
 
-    let [idx, dst] = polynom.get_closest_root_id(x, y);
+    let { id, dst } = getClosestRoot(x, y);
     if (dst < CLICK_POINT_DISTANCE) {
-        holdingPointIndex = idx;
+        holdingPointIndex = id;
     } else {
         holdingPointIndex = -1;
     }
 }
 
 function CanvasMouseMove(me: MouseEvent) {
-    if (holdingPointIndex == -1) return;
+    if (holdingPointIndex == -1) {
+        return;
+    }
     if (me.buttons != 1) {
         holdingPointIndex = -1;
         return;
     }
 
-    let [x, y] = mapPoints(plotter, me.offsetX, me.offsetY);
-    polynom.set_root_by_id(holdingPointIndex, x, y);
+    if (doneDrawing) {
+        let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
+        roots[holdingPointIndex] = [x, y];
 
-    draw(false)
+        runDrawingWorker();
+    }
+}
+
+function WindowResize() {
+    let { innerWidth, innerHeight } = window;
+
+    console.log(`Resizing (${innerWidth}, ${innerHeight})`);
+    plotScale = PlotScale.calculatePlotScale(innerWidth, innerHeight);
+    let drawingConfig = formDrawingConfig();
+    resizeCanvas(
+        drawingConfig.plotScale.x_display_range,
+        drawingConfig.plotScale.y_display_range
+    );
+    runDrawingWorker();
 }
 
 for (const value of Object.values(DrawingModes)) {
@@ -136,24 +180,28 @@ iterationsCountDisplay.value = iterationsCountRange.value;
 
 iterationsCountRange.addEventListener("change", () => {
     iterationsCountDisplay.value = iterationsCountRange.value;
-    draw(true);
+    runDrawingWorker();
 });
 
 async function run() {
-    await init();
+    drawingWorker = new Worker("drawing_worker.js", { type: 'module' });
+    drawingWorker.onmessage = drawingWorkerCallback;
 
-    let myCanvas = <HTMLCanvasElement>document.getElementById("main-canvas");
-    let myCanvasContext = myCanvas.getContext("2d");
+    let { innerWidth, innerHeight } = window;
+    sendMessageToWorker({
+        command: WorkerCommands.Init
+    });
+    // drawingWorker.postMessage()
+    // await init();
 
-    myCanvas.addEventListener("mousedown", CanvasMouseDown)
-    myCanvas.addEventListener("click", CanvasClick);
-    myCanvas.addEventListener("mousemove", CanvasMouseMove);
 
-    let dimension = calcDimension();
-    plotter = new Plotter(dimension, myCanvas, myCanvasContext);
-    polynom = new Polynomial(startRoots);
+    mainCanvas.addEventListener("mousedown", CanvasMouseDown)
+    mainCanvas.addEventListener("click", CanvasClick);
+    mainCanvas.addEventListener("mousemove", CanvasMouseMove);
 
-    draw(true);
+    window.addEventListener("resize", WindowResize);
+
+    // runDrawingWorker(true);
 }
 
 run();

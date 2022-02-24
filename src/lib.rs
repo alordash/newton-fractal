@@ -8,7 +8,7 @@ use logger::*;
 
 pub mod simd_constants;
 
-pub mod polynomial;
+pub mod newtons_fractal;
 
 pub mod plotting;
 

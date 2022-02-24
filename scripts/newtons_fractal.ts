@@ -1,5 +1,4 @@
-import { Dimension, Plotter, Polynomial } from "../pkg/newton_fractal";
-import { memory } from '../pkg/newton_fractal_bg.wasm';
+import { PlotScale } from "./plotter.js";
 
 class Complex32 {
     re: number;
@@ -47,18 +46,31 @@ function newtonMethodApprox(roots: Complex32[], z: Complex32): {
     return { idx: -1, z: z.subtract(sum.invert()) };
 }
 
-function mapPoints(p: Plotter, x: number, y: number) : [number, number] {
-    return <[number, number]>p.canvas_point_to_plot_to_js(x, y);
+function transformPointToPlotScale(x: number, y: number, plotScale: PlotScale): number[] {
+    return [
+        plotScale.x_offset + x * plotScale.x_value_range / plotScale.x_display_range,
+        plotScale.y_offset + y * plotScale.y_value_range / plotScale.y_display_range
+    ];
 }
 
-function fillPixelsJavascript(plotter: Plotter, polynom: Polynomial, iterationsCount: number, colors: number[][]) {
-    let { width, height } = plotter.dimension;
+function transformPointToCanvasScale(x: number, y: number, plotScale: PlotScale): number[] {
+    return [
+        ((x - plotScale.x_offset) * plotScale.x_display_range / plotScale.x_value_range),
+        ((y - plotScale.y_offset) * plotScale.y_display_range / plotScale.y_value_range),
+    ];
+}
+
+function fillPixelsJavascript(plotScale: PlotScale, roots: number[][], iterationsCount: number, colors: number[][]): Uint8ClampedArray {
+    let {
+        x_display_range: width,
+        y_display_range: height
+    } = plotScale;
     let [w_int, h_int] = [Math.round(width), Math.round(height)];
 
     let flatColors = new Uint8Array(colors.flat());
     let colorPacks = new Uint32Array(flatColors.buffer);
 
-    let roots: Complex32[] = (<number[][]>polynom.get_roots_to_js()).map((pair) => new Complex32(pair[0], pair[1]));
+    let complexRoots: Complex32[] = roots.map((pair) => new Complex32(pair[0], pair[1]));
     let uint32Data = new Uint32Array(w_int * h_int);
     let index = 0;
 
@@ -66,23 +78,23 @@ function fillPixelsJavascript(plotter: Plotter, polynom: Polynomial, iterationsC
         for (let x = 0; x < w_int; x++) {
             let minDistance = Number.MAX_SAFE_INTEGER;
             let closestRootId = 0;
-            let [xp, yp] = mapPoints(plotter, x, y);
+            let [xp, yp] = transformPointToPlotScale(x, y, plotScale);
             let z = new Complex32(xp, yp);
             let colorId = -1;
             for (let i = 0; i < iterationsCount; i++) {
-                let { idx, z: zNew } = newtonMethodApprox(roots, z);
+                let { idx, z: zNew } = newtonMethodApprox(complexRoots, z);
                 if (idx != -1) {
                     colorId = idx;
                     break;
                 }
                 z = zNew;
             }
-            if(colorId != -1) {
+            if (colorId != -1) {
                 uint32Data[index++] = colorPacks[colorId];
                 continue;
             }
-            for (let i in roots) {
-                const root = roots[i];
+            for (let i in complexRoots) {
+                const root = complexRoots[i];
                 let d = z.subtract(root).distance();
                 if (d < minDistance) {
                     minDistance = d;
@@ -94,11 +106,11 @@ function fillPixelsJavascript(plotter: Plotter, polynom: Polynomial, iterationsC
     }
     let uint8Data = new Uint8ClampedArray(uint32Data.buffer);
 
-    let imageData = new ImageData(uint8Data, w_int, h_int);
-    plotter.put_image_data_from_js(imageData);
+    return uint8Data;
 }
 
 export {
-    mapPoints,
+    transformPointToPlotScale,
+    transformPointToCanvasScale,
     fillPixelsJavascript
 };
