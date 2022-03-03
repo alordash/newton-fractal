@@ -154,9 +154,11 @@ iterationsCountRange.addEventListener("change", () => {
 async function run() {
     drawingWorker = new Worker("drawing_worker.js", { type: 'module' });
     drawingWorker.onmessage = drawingWorkerCallback;
+    let sharedMemory = new WebAssembly.Memory({ initial: 100, maximum: 1000, shared: true });
     let { innerWidth, innerHeight } = window;
     sendMessageToWorker({
-        command: WorkerCommands.Init
+        command: WorkerCommands.Init,
+        initSharedMemory: sharedMemory
     });
     mainCanvas.addEventListener("mousedown", CanvasMouseDown);
     mainCanvas.addEventListener("click", CanvasClick);

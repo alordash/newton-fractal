@@ -29,6 +29,7 @@ type DrawingResult = {
 
 type WorkerMessage = {
     command: WorkerCommands,
+    initSharedMemory?: WebAssembly.Memory,
     drawingConfig?: DrawingConfig,
 }
 
@@ -68,17 +69,17 @@ function draw(config: DrawingConfig): DrawingResult {
 }
 
 function postCustomMessage(message: WorkerResult) {
-    postMessage(message);
+    postMessage(message, undefined);
 }
 
 onmessage = async function (e: MessageEvent<WorkerMessage>) {
     let { data } = e;
-    let command = data.command;
+    let { command } = data;
 
     switch (command) {
         case WorkerCommands.Init:
             {
-                await init();
+                await init(undefined, data.initSharedMemory);
                 postCustomMessage({
                     command
                 });

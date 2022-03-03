@@ -39,15 +39,15 @@ function draw(config) {
     return { drawingMode, elapsedMs, imageData };
 }
 function postCustomMessage(message) {
-    postMessage(message);
+    postMessage(message, undefined);
 }
 onmessage = async function (e) {
     let { data } = e;
-    let command = data.command;
+    let { command } = data;
     switch (command) {
         case WorkerCommands.Init:
             {
-                await init();
+                await init(undefined, data.initSharedMemory);
                 postCustomMessage({
                     command
                 });
