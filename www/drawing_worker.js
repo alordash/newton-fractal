@@ -14,15 +14,15 @@ var DrawingModes;
 function draw(config) {
     let { plotScale, roots, drawingMode, iterationsCount, regionColors } = config;
     let length = plotScale.x_display_range * plotScale.y_display_range * 4;
-    let coresCount = navigator.hardwareConcurrency;
+    let coresCount = 13;
     console.log('coresCount :>> ', coresCount);
     let step = Math.floor(length / coresCount);
     let data = new Uint8ClampedArray(length);
     console.log('length :>> ', length);
+    let sumLength = 0;
     let start, end;
     for (let i = 0; i < coresCount; i++) {
         let new_data;
-        const offset = step * i;
         switch (drawingMode) {
             case DrawingModes.CPU_JS_SCALAR:
                 start = new Date();
@@ -43,11 +43,12 @@ function draw(config) {
                 break;
         }
         console.log('new_data.length :>> ', new_data.length);
-        console.log('offset :>> ', offset, ', step :>> ', step);
         for (let j = 0; j < new_data.length; j++) {
-            data[j + offset] = new_data[j];
+            data[j + sumLength] = new_data[j];
         }
+        sumLength += new_data.length;
     }
+    console.log(`Real length: ${length}, new data length: ${sumLength}`);
     let imageData = new ImageData(data, plotScale.x_display_range, plotScale.y_display_range);
     let elapsedMs = end.getTime() - start.getTime();
     return { drawingMode, elapsedMs, imageData };

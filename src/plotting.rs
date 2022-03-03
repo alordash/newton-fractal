@@ -119,16 +119,14 @@ pub fn fill_pixels(
     };
 
     let size = w_int * h_int;
-    let this_border = size * part_offset / parts_count;
-    let next_border = size * (part_offset + 1) / parts_count;
+    let this_border = ((size * part_offset) as f32 / parts_count as f32).round() as usize;
+    let next_border = ((size * (part_offset + 1)) as f32 / parts_count as f32).round() as usize;
     let size = next_border - this_border;
 
     let mut pixels_data: Vec<u32> = vec![0u32; size];
-    let iteration_start = size * part_offset;
-    let iteration_end = iteration_start + size;
     unsafe {
-        for i in iteration_start..iteration_end {
-            *pixels_data.get_unchecked_mut(i - iteration_start) = filler(i % w_int, i / w_int);
+        for i in this_border..next_border {
+            *pixels_data.get_unchecked_mut(i - this_border) = filler(i % w_int, i / w_int);
         }
     }
 
