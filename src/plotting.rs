@@ -118,18 +118,11 @@ pub fn fill_pixels(
         colors[closest_root_id]
     };
 
-    let mut pixels_data: Vec<u32> = vec![0u32; w_int * h_int];
-    let y_start = part_offset * h_int;
-    let y_end = (part_offset + 1) * h_int;
-    unsafe {
-        for y in y_start..y_end {
-            for x in 0..w_int {
-                *pixels_data.get_unchecked_mut(x + (y - y_start) * w_int) = filler(x, y);
-            }
-        }
-    }
+    let size = w_int * h_int;
+    let this_border = size * part_offset / parts_count;
+    let next_border = size * (part_offset + 1) / parts_count;
+    let size = next_border - this_border;
 
-    let size = w_int * h_int / parts_count;
     let mut pixels_data: Vec<u32> = vec![0u32; size];
     let iteration_start = size * part_offset;
     let iteration_end = iteration_start + size;
