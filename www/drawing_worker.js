@@ -1,4 +1,4 @@
-import init, { fill_pixels_nalgebra, fill_pixels_simd_nalgebra } from '../pkg/newton_fractal.js';
+import init, { fill_pixels, fill_pixels_simd } from '../pkg/newton_fractal.js';
 import { fillPixelsJavascript } from './newtons_fractal.js';
 var WorkerCommands;
 (function (WorkerCommands) {
@@ -23,12 +23,12 @@ function draw(config) {
             break;
         case DrawingModes.CPU_WASM_SCALAR:
             start = new Date();
-            data = fill_pixels_nalgebra(plotScale, roots, iterationsCount, regionColors);
+            data = fill_pixels(plotScale, roots, iterationsCount, regionColors);
             end = new Date();
             break;
         case DrawingModes.CPU_WASM_SIMD:
             start = new Date();
-            data = fill_pixels_simd_nalgebra(plotScale, roots, iterationsCount, regionColors);
+            data = fill_pixels_simd(plotScale, roots, iterationsCount, regionColors);
             end = new Date();
             break;
         default:
