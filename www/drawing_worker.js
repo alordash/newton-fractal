@@ -13,26 +13,39 @@ var DrawingModes;
 })(DrawingModes || (DrawingModes = {}));
 function draw(config) {
     let { plotScale, roots, drawingMode, iterationsCount, regionColors } = config;
-    let data;
+    let length = plotScale.x_display_range * plotScale.y_display_range * 4;
+    let coresCount = navigator.hardwareConcurrency;
+    console.log('coresCount :>> ', coresCount);
+    let step = Math.floor(length / coresCount);
+    let data = new Uint8ClampedArray(length);
     let start, end;
-    switch (drawingMode) {
-        case DrawingModes.CPU_JS_SCALAR:
-            start = new Date();
-            data = fillPixelsJavascript(plotScale, roots, iterationsCount, regionColors);
-            end = new Date();
-            break;
-        case DrawingModes.CPU_WASM_SCALAR:
-            start = new Date();
-            data = fill_pixels_nalgebra(plotScale, roots, iterationsCount, regionColors);
-            end = new Date();
-            break;
-        case DrawingModes.CPU_WASM_SIMD:
-            start = new Date();
-            data = fill_pixels_simd_nalgebra(plotScale, roots, iterationsCount, regionColors);
-            end = new Date();
-            break;
-        default:
-            break;
+    for (let i = 0; i < coresCount; i++) {
+        let new_data;
+        switch (drawingMode) {
+            case DrawingModes.CPU_JS_SCALAR:
+                start = new Date();
+                new_data = fillPixelsJavascript(plotScale, roots, iterationsCount, regionColors);
+                end = new Date();
+                break;
+            case DrawingModes.CPU_WASM_SCALAR:
+                start = new Date();
+                new_data = fill_pixels_nalgebra(plotScale, roots, iterationsCount, regionColors);
+                end = new Date();
+                break;
+            case DrawingModes.CPU_WASM_SIMD:
+                start = new Date();
+                new_data = fill_pixels_simd_nalgebra(plotScale, roots, iterationsCount, regionColors);
+                end = new Date();
+                break;
+            default:
+                break;
+        }
+        const offset = step * i;
+        for (let j = 0; j < step; j++) {
+            data[j + offset] = new_data[j];
+        }
+        data[offset] = 255;
+        data[offset + step - 1] = 255;
     }
     let imageData = new ImageData(data, plotScale.x_display_range, plotScale.y_display_range);
     let elapsedMs = end.getTime() - start.getTime();
