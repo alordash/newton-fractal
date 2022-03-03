@@ -9,8 +9,6 @@ use std::arch::wasm32::*;
 use std::mem::transmute;
 use std::ptr::addr_of;
 
-use nalgebra::{DMatrix, RawStorage};
-
 use super::logger::*;
 
 #[repr(C)]
@@ -142,70 +140,8 @@ pub fn fill_pixels(
 }
 
 #[wasm_bindgen]
-pub fn fill_pixels_nalgebra(
-    plot_scale: JsValue, // PlotScale
-    roots: JsValue,      // Vec<Complexf32>
-    iterations_count: usize,
-    colors: JsValue,
-    part_offset: Option<usize>,
-    parts_count: Option<usize>,
-) -> Clamped<Vec<u8>> {
-    let plot_scale: PlotScale = plot_scale.into_serde().unwrap();
-    let roots: Vec<Complex32> = (roots.into_serde::<Vec<(f32, f32)>>().unwrap())
-        .into_iter()
-        .map(|p| Complex32 { re: p.0, im: p.1 })
-        .collect();
-    let colors = convert_colors_array(colors);
-    let (part_offset, parts_count) = unsafe {
-        (
-            part_offset.or(Some(0)).unwrap_unchecked(),
-            parts_count.or(Some(1)).unwrap_unchecked(),
-        )
-    };
-
-    let PlotScale {
-        x_display_range: width,
-        y_display_range: height,
-        ..
-    } = plot_scale;
-    let (w_int, h_int) = (width as usize / parts_count, height as usize / parts_count);
-
-    let pixels_data: DMatrix<u32> = DMatrix::from_fn(w_int, h_int, |x, y| {
-        let mut min_d = f32::MAX;
-        let mut closest_root_id: usize = 0;
-        let (xp, yp) = transform_point_to_plot_scale(x as f32, y as f32, &plot_scale);
-        let mut z = Complex32::new(xp, yp);
-        for _ in 0..iterations_count {
-            let (id, new_point) = newton_method_approx(z, &roots);
-            if (id & (1 << 31)) == 0 {
-                return colors[id];
-            }
-            z = new_point;
-        }
-
-        for (i, root) in roots.iter().enumerate() {
-            let d = (z - root).norm_sqr().sqrt();
-            if d < min_d {
-                min_d = d;
-                closest_root_id = i;
-            }
-        }
-        colors[closest_root_id]
-    });
-
-    let pixels_data: &[u8] = unsafe {
-        std::slice::from_raw_parts(
-            std::mem::transmute(pixels_data.data.ptr()),
-            pixels_data.len() * 4,
-        )
-    };
-
-    Clamped(pixels_data.to_vec())
-}
-
-#[wasm_bindgen]
 #[target_feature(enable = "simd128")]
-pub fn fill_pixels_simd_nalgebra(
+pub fn fill_pixels_simd(
     plot_scale: JsValue, // PlotScale
     roots: JsValue,      // Vec<Complexf32>
     iterations_count: usize,
@@ -223,9 +159,9 @@ pub fn fill_pixels_simd_nalgebra(
         y_display_range: height,
         ..
     } = plot_scale;
-    let (w_int, h_int) = (width as usize, height as usize);
+    let (w_int, h_int) = (width as usize / 4, height as usize);
 
-    let pixels_data: DMatrix<ColorsPack> = DMatrix::from_fn(w_int / 4, h_int, |x, y| {
+    let filler = |x, y| {
         let mut _min_distances = SimdHelper::F32_MAXIMUMS;
         let mut _closest_root_ids = SimdHelper::I32_ZEROES;
         // Simd can be used here
@@ -254,7 +190,16 @@ pub fn fill_pixels_simd_nalgebra(
             let (id1, id2, id3, id4): (usize, usize, usize, usize) = transmute(_closest_root_ids);
             transmute([colors[id1], colors[id2], colors[id3], colors[id4]])
         }
-    });
+    };
+
+    let mut pixels_data: Vec<ColorsPack> = vec![ColorsPack(0, 0, 0, 0); w_int * h_int];
+    unsafe {
+        for j in 0..h_int {
+            for i in 0..w_int {
+                *pixels_data.get_unchecked_mut(i + j * w_int) = filler(i, j);
+            }
+        }
+    }
 
     let pixels_data: &[u8] = unsafe {
         std::slice::from_raw_parts(

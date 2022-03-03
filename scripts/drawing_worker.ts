@@ -1,4 +1,4 @@
-import init, { fill_pixels_nalgebra, fill_pixels_simd_nalgebra, fill_pixels } from '../pkg/newton_fractal.js';
+import init, { fill_pixels, fill_pixels_simd } from '../pkg/newton_fractal.js';
 import { fillPixelsJavascript } from './newtons_fractal.js';
 import { PlotScale } from './plotter.js';
 
@@ -10,7 +10,6 @@ enum WorkerCommands {
 enum DrawingModes {
     CPU_WASM_SIMD = "CPU-wasm-simd",
     CPU_WASM_SCALAR = "CPU-wasm-scalar",
-    CPU_WASM_SCALAR_PURE = "CPU-wasm-scalar-pure",
     CPU_JS_SCALAR = "CPU-js-scalar",
 }
 
@@ -58,17 +57,12 @@ function draw(config: DrawingConfig): DrawingResult {
             break;
         case DrawingModes.CPU_WASM_SCALAR:
             start = new Date();
-            data = fill_pixels_nalgebra(plotScale, roots, iterationsCount, regionColors);
-            end = new Date();
-            break;
-        case DrawingModes.CPU_WASM_SCALAR_PURE:
-            start = new Date();
             data = fill_pixels(plotScale, roots, iterationsCount, regionColors);
             end = new Date();
             break;
         case DrawingModes.CPU_WASM_SIMD:
             start = new Date();
-            data = fill_pixels_simd_nalgebra(plotScale, roots, iterationsCount, regionColors);
+            data = fill_pixels_simd(plotScale, roots, iterationsCount, regionColors);
             end = new Date();
             break;
 
