@@ -41,41 +41,43 @@ type WorkerResult = {
 function draw(config: DrawingConfig): DrawingResult {
     let { plotScale, roots, drawingMode, iterationsCount, regionColors } = config;
 
-    // let length = plotScale.x_display_range * plotScale.y_display_range * 4;
-    // let coresCount = navigator.hardwareConcurrency;
-    // console.log('coresCount :>> ', coresCount);
-    // let step = Math.floor(length / coresCount);
-    let data: Uint8ClampedArray;// = new Uint8ClampedArray(length);
+    let length = plotScale.x_display_range * plotScale.y_display_range * 4;
+    let coresCount = navigator.hardwareConcurrency;
+    // let coresCount = 8;
+    console.log('coresCount :>> ', coresCount);
+    let step = Math.floor(length / coresCount);
+    let data: Uint8ClampedArray = new Uint8ClampedArray(length);
+    console.log('length :>> ', length);
     let start: Date, end: Date;
-    // for (let i = 0; i < coresCount; i++) {
-    // let new_data: Uint8ClampedArray;
-    switch (drawingMode) {
-        case DrawingModes.CPU_JS_SCALAR:
-            start = new Date();
-            data = fillPixelsJavascript(plotScale, roots, iterationsCount, regionColors);
-            end = new Date();
-            break;
-        case DrawingModes.CPU_WASM_SCALAR:
-            start = new Date();
-            data = fill_pixels(plotScale, roots, iterationsCount, regionColors);
-            end = new Date();
-            break;
-        case DrawingModes.CPU_WASM_SIMD:
-            start = new Date();
-            data = fill_pixels_simd(plotScale, roots, iterationsCount, regionColors);
-            end = new Date();
-            break;
+    for (let i = 0; i < coresCount; i++) {
+        let new_data: Uint8ClampedArray;
+        const offset = step * i;
+        switch (drawingMode) {
+            case DrawingModes.CPU_JS_SCALAR:
+                start = new Date();
+                new_data = fillPixelsJavascript(plotScale, roots, iterationsCount, regionColors);
+                end = new Date();
+                break;
+            case DrawingModes.CPU_WASM_SCALAR:
+                start = new Date();
+                new_data = fill_pixels(plotScale, roots, iterationsCount, regionColors, i, coresCount);
+                end = new Date();
+                break;
+            case DrawingModes.CPU_WASM_SIMD:
+                start = new Date();
+                new_data = fill_pixels_simd(plotScale, roots, iterationsCount, regionColors);
+                end = new Date();
+                break;
 
-        default:
-            break;
+            default:
+                break;
+        }
+        console.log('new_data.length :>> ', new_data.length);
+        console.log('offset :>> ', offset, ', step :>> ', step);
+        for (let j = 0; j < new_data.length; j++) {
+            data[j + offset] = new_data[j];
+        }
     }
-    //     const offset = step * i;
-    //     for (let j = 0; j < step; j++) {
-    //         data[j + offset] = new_data[j];
-    //     }
-    //     data[offset] = 255;
-    //     data[offset + step - 1] = 255;
-    // }
     let imageData = new ImageData(data, plotScale.x_display_range, plotScale.y_display_range);
     let elapsedMs = end.getTime() - start.getTime();
     return { drawingMode, elapsedMs, imageData };

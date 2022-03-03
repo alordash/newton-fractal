@@ -83,19 +83,17 @@ pub fn fill_pixels(
         .map(|p| Complex32 { re: p.0, im: p.1 })
         .collect();
     let colors = convert_colors_array(colors);
-    let (part_offset, parts_count) = unsafe {
-        (
-            part_offset.or(Some(0)).unwrap_unchecked(),
-            parts_count.or(Some(1)).unwrap_unchecked(),
-        )
-    };
+    let (part_offset, parts_count) = (
+        part_offset.or(Some(0)).unwrap(),
+        parts_count.or(Some(1)).unwrap(),
+    );
 
     let PlotScale {
         x_display_range: width,
         y_display_range: height,
         ..
     } = plot_scale;
-    let (w_int, h_int) = (width as usize / parts_count, height as usize / parts_count);
+    let (w_int, h_int) = (width as usize, height as usize);
 
     let filler = |x: usize, y: usize| {
         let mut min_d = f32::MAX;
@@ -121,11 +119,23 @@ pub fn fill_pixels(
     };
 
     let mut pixels_data: Vec<u32> = vec![0u32; w_int * h_int];
+    let y_start = part_offset * h_int;
+    let y_end = (part_offset + 1) * h_int;
     unsafe {
-        for j in 0..h_int {
-            for i in 0..w_int {
-                *pixels_data.get_unchecked_mut(i + j * w_int) = filler(i, j);
+        for y in y_start..y_end {
+            for x in 0..w_int {
+                *pixels_data.get_unchecked_mut(x + (y - y_start) * w_int) = filler(x, y);
             }
+        }
+    }
+
+    let size = w_int * h_int / parts_count;
+    let mut pixels_data: Vec<u32> = vec![0u32; size];
+    let iteration_start = size * part_offset;
+    let iteration_end = iteration_start + size;
+    unsafe {
+        for i in iteration_start..iteration_end {
+            *pixels_data.get_unchecked_mut(i - iteration_start) = filler(i % w_int, i / w_int);
         }
     }
 
