@@ -3,7 +3,6 @@ use crate::{newtons_fractal::*, simd_constants::SimdHelper};
 use num_complex::Complex32;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::{prelude::*, Clamped};
-use web_sys::ImageData;
 
 use std::arch::wasm32::*;
 use std::mem::transmute;
@@ -19,14 +18,43 @@ pub fn convert_colors_array(colors: JsValue) -> Vec<u32> {
     unsafe { transmute(colors.into_serde::<Vec<[u8; 4]>>().unwrap()) }
 }
 
-#[derive(Serialize, Deserialize)]
+#[wasm_bindgen]
+#[derive(Serialize, Deserialize, Clone, Copy)]
 pub struct PlotScale {
-    x_offset: f32,
-    y_offset: f32,
-    x_value_range: f32,
-    y_value_range: f32,
-    x_display_range: f32,
-    y_display_range: f32,
+    #[wasm_bindgen(js_name = "xOffset")]
+    pub x_offset: f32,
+    #[wasm_bindgen(js_name = "yOffset")]
+    pub y_offset: f32,
+    #[wasm_bindgen(js_name = "xValueRange")]
+    pub x_value_range: f32,
+    #[wasm_bindgen(js_name = "yValueRange")]
+    pub y_value_range: f32,
+    #[wasm_bindgen(js_name = "yDisplayRange")]
+    pub x_display_range: f32,
+    #[wasm_bindgen(js_name = "xDisplayRange")]
+    pub y_display_range: f32,
+}
+
+#[wasm_bindgen]
+impl PlotScale {
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        x_offset: f32,
+        y_offset: f32,
+        x_value_range: f32,
+        y_value_range: f32,
+        x_display_range: f32,
+        y_display_range: f32,
+    ) -> PlotScale {
+        PlotScale {
+            x_offset,
+            y_offset,
+            x_value_range,
+            y_value_range,
+            x_display_range,
+            y_display_range,
+        }
+    }
 }
 
 pub fn transform_point_to_plot_scale(x: f32, y: f32, plot_scale: &PlotScale) -> (f32, f32) {
