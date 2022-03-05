@@ -3,14 +3,18 @@
 use wasm_bindgen::prelude::*;
 
 #[macro_use]
-mod logger;
-use logger::*;
-
-pub mod simd_constants;
+mod logging;
+use logging::*;
 
 pub mod newtons_fractal;
-
 pub mod plotting;
+pub mod simd_constants;
+
+pub mod drawing {
+    pub mod config;
+    pub mod result;
+    pub mod worker;
+}
 
 #[wasm_bindgen]
 pub fn create_buffer(capacity: usize) -> *mut u32 {

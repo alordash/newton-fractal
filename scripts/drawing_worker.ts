@@ -1,4 +1,4 @@
-import init, { fill_pixels, fill_pixels_simd } from '../pkg/newton_fractal.js';
+import init, { create_drawing_worker, fill_pixels, fill_pixels_simd } from '../pkg/newton_fractal.js';
 import { fillPixelsJavascript } from './newtons_fractal.js';
 import { PlotScale } from './plotter.js';
 
@@ -88,9 +88,11 @@ function postCustomMessage(message: WorkerResult) {
     postMessage(message, undefined);
 }
 
+let worker: Worker;
 onmessage = async function (e: MessageEvent<WorkerMessage>) {
     let { data } = e;
     let { command } = data;
+
 
     switch (command) {
         case WorkerCommands.Init:
@@ -99,6 +101,8 @@ onmessage = async function (e: MessageEvent<WorkerMessage>) {
                 postCustomMessage({
                     command
                 });
+
+                worker = create_drawing_worker("./test.js");
             }
             break;
         case WorkerCommands.Draw:
@@ -109,6 +113,7 @@ onmessage = async function (e: MessageEvent<WorkerMessage>) {
                     command,
                     drawingResult
                 });
+                worker.postMessage({ some: "data", answer: 42 });
             }
             break;
         default:

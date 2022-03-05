@@ -8,7 +8,7 @@ use std::arch::wasm32::*;
 use std::mem::transmute;
 use std::ptr::addr_of;
 
-use super::logger::*;
+use super::logging::*;
 
 #[repr(C)]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]

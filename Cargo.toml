@@ -25,5 +25,7 @@ features = [
   "console",
   "HtmlCanvasElement",
   "CanvasRenderingContext2d",
-  "ImageData"
+  "ImageData",
+  "Worker",
+  "MessageEvent"
 ]
