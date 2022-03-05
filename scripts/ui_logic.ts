@@ -1,7 +1,6 @@
 import { generateColor, regionColors } from './colors.js';
 import {
     WorkerCommands,
-    DrawingModes,
     DrawingConfig,
     DrawingResult,
     WorkerMessage,
@@ -9,7 +8,7 @@ import {
 } from './drawing_worker.js';
 import { transformPointToPlotScale, transformPointToCanvasScale } from './newtons_fractal.js';
 import { PlotScale, roots, addRoot, getClosestRoot } from './plotter.js';
-import init from '../pkg/newton_fractal.js';
+import init, { DrawingModes } from '../pkg/newton_fractal.js';
 
 const rootPointSize = 4.0;
 
@@ -47,7 +46,7 @@ function plotRoots(plotScale: PlotScale, roots: number[][]) {
     }
 }
 
-function formDrawingConfig(drawingMode: DrawingModes = <DrawingModes>drawingModeSelect.value): DrawingConfig {
+function formDrawingConfig(drawingMode: DrawingModes = <DrawingModes><any>drawingModeSelect.value): DrawingConfig {
     let iterationsCount = parseInt(iterationsCountRange.value);
     return {
         drawingMode,
@@ -59,7 +58,7 @@ function formDrawingConfig(drawingMode: DrawingModes = <DrawingModes>drawingMode
 }
 
 let doneDrawing = true;
-function runDrawingWorker(drawingMode: DrawingModes = <DrawingModes>drawingModeSelect.value) {
+function runDrawingWorker(drawingMode: DrawingModes = <DrawingModes><any>drawingModeSelect.value) {
     let drawingConfig = formDrawingConfig(drawingMode);
 
     loggerDiv.innerHTML = `Drawing technic: ${drawingMode}</br>
@@ -176,11 +175,15 @@ function WindowResize() {
         awaitingForResize = true;
     }
 }
+console.log('DrawingModes :>> ', DrawingModes);
+console.log('Object.(DrawingModes) :>> ', Object.values(DrawingModes));
+
+
 
 for (const value of Object.values(DrawingModes)) {
     let option = <HTMLOptionElement>document.createElement("option");
-    option.value = value;
-    option.innerText = value;
+    option.value = (<DrawingModes>value).toString();
+    option.innerText = value.toString();
     drawingModeSelect.options.add(option);
 }
 

@@ -19,7 +19,7 @@ pub fn convert_colors_array(colors: JsValue) -> Vec<u32> {
 }
 
 #[wasm_bindgen]
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct PlotScale {
     #[wasm_bindgen(js_name = "xOffset")]
     pub x_offset: f32,

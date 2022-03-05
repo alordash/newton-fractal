@@ -1,7 +1,8 @@
 import { regionColors } from './colors.js';
-import { WorkerCommands, DrawingModes } from './drawing_worker.js';
+import { WorkerCommands } from './drawing_worker.js';
 import { transformPointToPlotScale, transformPointToCanvasScale } from './newtons_fractal.js';
 import { PlotScale, roots, addRoot, getClosestRoot } from './plotter.js';
+import { DrawingModes } from '../pkg/newton_fractal.js';
 const rootPointSize = 4.0;
 let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
 const CLICK_POINT_DISTANCE = 0.125;
@@ -140,10 +141,12 @@ function WindowResize() {
         awaitingForResize = true;
     }
 }
+console.log('DrawingModes :>> ', DrawingModes);
+console.log('Object.(DrawingModes) :>> ', Object.values(DrawingModes));
 for (const value of Object.values(DrawingModes)) {
     let option = document.createElement("option");
-    option.value = value;
-    option.innerText = value;
+    option.value = value.toString();
+    option.innerText = value.toString();
     drawingModeSelect.options.add(option);
 }
 iterationsCountDisplay.value = iterationsCountRange.value;

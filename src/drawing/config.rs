@@ -1,59 +1,44 @@
-use super::worker::DrawingModes;
 use crate::plotting::PlotScale;
 
 use std::mem::transmute;
 
+use num_complex::Complex32;
 use wasm_bindgen::prelude::*;
-use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize)]
-pub struct Complex32 {
-    re: f32,
-    im: f32,
-}
-
-impl Into<num_complex::Complex32> for Complex32 {
-    fn into(self) -> num_complex::Complex32 {
-        unsafe { transmute(self) }
-    }
-}
-
-#[wasm_bindgen(typescript_custom_section)]
-const TS_DRAWING_CONFIG_TYPE: &'static str = r#"
-export interface IDrawingConfig { 
-    "drawing_mode": DrawingModes,
-    "plot_scale": PlotScale,
-    "roots": Array<{re: number, im: number}>,
-    "iterations_count": number,
-    "region_colors": Uint32Array
-}; 
-"#;
+use super::modes::DrawingModes;
 
 #[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(typescript_type = "IDrawingConfig")]
-    pub type IDrawingConfig;
-}
-
-#[derive(Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct DrawingConfig {
-    pub drawing_mode: DrawingModes,
-    pub plot_scale: PlotScale,
-    pub roots: Vec<Complex32>,
-    pub iterations_count: usize,
-    pub region_colors: Vec<u32>,
+    drawing_mode: DrawingModes,
+    plot_scale: PlotScale,
+    roots: Vec<Complex32>,
+    iterations_count: usize,
+    region_colors: Vec<[u8; 4]>,
 }
 
-impl From<IDrawingConfig> for DrawingConfig {
-    fn from(drawing_config: IDrawingConfig) -> DrawingConfig {
-        drawing_config.obj.into_serde().unwrap()
-    }
-}
-
-impl Into<IDrawingConfig> for DrawingConfig {
-    fn into(self) -> IDrawingConfig {
-        IDrawingConfig {
-            obj: JsValue::from_serde(&self).unwrap(),
+#[wasm_bindgen]
+impl DrawingConfig {
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        drawing_mode: DrawingModes,
+        plot_scale: &PlotScale,
+        roots: Vec<f32>,
+        iterations_count: usize,
+        region_colors: Vec<u8>,
+    ) -> Option<DrawingConfig> {
+        if roots.len() % 2 != 0 || region_colors.len() % 4 != 0 {
+            return None;
         }
+        let roots: Vec<Complex32> = unsafe { transmute(roots) };
+        let region_colors: Vec<[u8; 4]> = unsafe { transmute(region_colors) };
+        log!("RUST: new drawing_mode: {:?}", drawing_mode);
+        return Some(DrawingConfig {
+            drawing_mode,
+            plot_scale: *plot_scale,
+            roots,
+            iterations_count,
+            region_colors,
+        });
     }
 }

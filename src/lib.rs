@@ -12,6 +12,7 @@ pub mod simd_constants;
 
 pub mod drawing {
     pub mod config;
+    pub mod modes;
     pub mod result;
     pub mod worker;
 }

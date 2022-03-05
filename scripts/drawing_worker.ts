@@ -1,16 +1,10 @@
-import init, { create_drawing_worker, fill_pixels, fill_pixels_simd } from '../pkg/newton_fractal.js';
+import init, { create_drawing_worker, DrawingConfig as DC, DrawingModes, fill_pixels, fill_pixels_simd, PlotScale as PS } from '../pkg/newton_fractal.js';
 import { fillPixelsJavascript } from './newtons_fractal.js';
 import { PlotScale } from './plotter.js';
 
 enum WorkerCommands {
     Init,
     Draw,
-}
-
-enum DrawingModes {
-    CPU_WASM_SIMD = "CPU-wasm-simd",
-    CPU_WASM_SCALAR = "CPU-wasm-scalar",
-    CPU_JS_SCALAR = "CPU-js-scalar",
 }
 
 type DrawingConfig = {
@@ -52,24 +46,25 @@ function draw(config: DrawingConfig): DrawingResult {
     let start: Date, end: Date;
     for (let i = 0; i < coresCount; i++) {
         let new_data: Uint8ClampedArray;
-        switch (drawingMode) {
-            case DrawingModes.CPU_JS_SCALAR:
+        switch (+DrawingModes[drawingMode]) {
+            case DrawingModes.CpuJsScalar:
                 start = new Date();
                 new_data = fillPixelsJavascript(plotScale, roots, iterationsCount, regionColors);
                 end = new Date();
                 break;
-            case DrawingModes.CPU_WASM_SCALAR:
+            case DrawingModes.CpuWasmScalar:
                 start = new Date();
                 new_data = fill_pixels(plotScale, roots, iterationsCount, regionColors, i, coresCount);
                 end = new Date();
                 break;
-            case DrawingModes.CPU_WASM_SIMD:
+            case DrawingModes.CpuWasmSimd:
                 start = new Date();
                 new_data = fill_pixels_simd(plotScale, roots, iterationsCount, regionColors);
                 end = new Date();
                 break;
 
             default:
+                console.log(`UNKNOWN DRAWING MODE`);
                 break;
         }
         console.log('new_data.length :>> ', new_data.length);
@@ -113,7 +108,14 @@ onmessage = async function (e: MessageEvent<WorkerMessage>) {
                     command,
                     drawingResult
                 });
-                worker.postMessage({ some: "data", answer: 42 });
+                console.log('drawingConfig :>> ', drawingConfig);
+                let ps = drawingConfig.plotScale;
+                let plot_scale = new PS(ps.x_offset, ps.y_offset, ps.x_value_range, ps.y_value_range, ps.x_display_range, ps.y_display_range);
+                let drawing_mode = +DrawingModes[drawingConfig.drawingMode];
+                console.log('drawing_mode :>> ', drawing_mode);
+                let rustData = new DC(drawing_mode, plot_scale, new Float32Array(drawingConfig.roots.flat()), drawingConfig.iterationsCount, new Uint8Array(drawingConfig.regionColors.flat()));
+                console.log(`Created rust data: `, rustData);
+                worker.postMessage(rustData);
             }
             break;
         default:
