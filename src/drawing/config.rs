@@ -23,7 +23,7 @@ pub struct DrawingConfig {
     #[wasm_bindgen(skip)]
     pub iterations_count: usize,
     #[wasm_bindgen(skip)]
-    pub region_colors: Vec<[u8; 4]>,
+    pub colors: Vec<[u8; 4]>,
 }
 
 #[wasm_bindgen]
@@ -34,12 +34,12 @@ impl DrawingConfig {
         plot_scale: &PlotScale,
         mut roots: Vec<f32>,
         iterations_count: usize,
-        mut region_colors: Vec<u8>,
+        mut colors: Vec<u8>,
     ) -> Option<DrawingConfig> {
         roots.shrink_to_fit();
-        region_colors.shrink_to_fit();
+        colors.shrink_to_fit();
 
-        if roots.len() % 2 != 0 || region_colors.len() % 4 != 0 {
+        if roots.len() % 2 != 0 || colors.len() % 4 != 0 {
             return None;
         }
 
@@ -53,22 +53,22 @@ impl DrawingConfig {
         };
         std::mem::forget(roots);
 
-        let region_colors_result_len = region_colors.len() / 4;
-        let region_colors_packed: Vec<[u8; 4]> = unsafe {
+        let region_colors_result_len = colors.len() / 4;
+        let colors_packed: Vec<[u8; 4]> = unsafe {
             Vec::from_raw_parts(
-                region_colors.as_mut_ptr() as *mut [u8; 4],
+                colors.as_mut_ptr() as *mut [u8; 4],
                 region_colors_result_len,
                 region_colors_result_len,
             )
         };
-        std::mem::forget(region_colors);
+        std::mem::forget(colors);
 
         let drawing_config = DrawingConfig {
             drawing_mode: unsafe { transmute_copy(&drawing_mode) },
             plot_scale: *plot_scale,
             roots: roots_packed,
             iterations_count,
-            region_colors: region_colors_packed,
+            colors: colors_packed,
         };
 
         return Some(drawing_config);

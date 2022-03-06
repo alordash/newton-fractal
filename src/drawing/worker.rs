@@ -1,3 +1,5 @@
+use std::{borrow::Borrow, ops::Deref};
+
 use super::config::*;
 
 use js_sys::Reflect;
@@ -5,7 +7,8 @@ use wasm_bindgen::{prelude::*, JsCast};
 use web_sys::{ImageData, MessageEvent, Worker};
 
 use crate::{
-    plotting::{fill_pixels, PlotScale},
+    drawing::modes::DrawingModes,
+    plotting::{fill_pixels, fill_pixels_simd, PlotScale},
     utils::value_from_wasm_ref_cell_ptr,
 };
 
@@ -18,6 +21,28 @@ fn worker_onmessage_callback(event: MessageEvent) {
         .unwrap() as u32;
     let drawing_config = unsafe { value_from_wasm_ref_cell_ptr::<DrawingConfig>(ptr) };
     log!("drawing_config: {:?}", drawing_config);
+    let DrawingConfig {
+        drawing_mode,
+        plot_scale,
+        roots,
+        iterations_count,
+        colors,
+    } = drawing_config;
+
+    let colors: &Vec<u32> = &unsafe {
+        Vec::from_raw_parts(colors.as_ptr() as *mut u32, colors.len(), colors.capacity())
+    };
+
+    let data = match drawing_mode {
+        // DrawingModes::CpuJsScalar => ,
+        DrawingModes::CpuWasmScalar => {
+            fill_pixels(plot_scale, roots, *iterations_count, colors, None, None)
+        }
+        DrawingModes::CpuWasmSimd => fill_pixels_simd(plot_scale, roots, *iterations_count, colors),
+        _ => fill_pixels_simd(plot_scale, roots, *iterations_count, colors),
+    };
+
+    log!("data: {:?}", &data);
 }
 
 #[wasm_bindgen]

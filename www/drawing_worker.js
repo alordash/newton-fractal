@@ -1,4 +1,4 @@
-import init, { create_drawing_worker, DrawingConfig as DC, fill_pixels, fill_pixels_simd, PlotScale as PS } from '../pkg/newton_fractal.js';
+import init, { create_drawing_worker, DrawingConfig as DC, fill_pixels_js, fill_pixels_simd_js, PlotScale as PS } from '../pkg/newton_fractal.js';
 import { fillPixelsJavascript } from './newtons_fractal.js';
 var DrawingModes;
 (function (DrawingModes) {
@@ -31,12 +31,12 @@ function draw(config) {
                 break;
             case DrawingModes.CpuWasmScalar:
                 start = new Date();
-                new_data = fill_pixels(plotScale, roots, iterationsCount, regionColors, i, coresCount);
+                new_data = fill_pixels_js(plotScale, roots, iterationsCount, regionColors, i, coresCount);
                 end = new Date();
                 break;
             case DrawingModes.CpuWasmSimd:
                 start = new Date();
-                new_data = fill_pixels_simd(plotScale, roots, iterationsCount, regionColors);
+                new_data = fill_pixels_simd_js(plotScale, roots, iterationsCount, regionColors);
                 end = new Date();
                 break;
             default:
