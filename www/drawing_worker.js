@@ -79,7 +79,6 @@ onmessage = async function (e) {
                 let drawing_mode = +DrawingModes[drawingConfig.drawingMode];
                 console.log('drawing_mode :>> ', drawing_mode);
                 let rustData = new DC(drawing_mode, plot_scale, new Float32Array(drawingConfig.roots.flat()), drawingConfig.iterationsCount, new Uint8Array(drawingConfig.regionColors.flat()));
-                console.log(`Created rust data: `, rustData);
                 worker.postMessage(rustData);
             }
             break;

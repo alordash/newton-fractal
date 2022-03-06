@@ -1,3 +1,3 @@
-onmessage = function(e: MessageEvent) {
+onmessage = function (e: MessageEvent) {
     self.postMessage(e.data);
 }

@@ -1,19 +1,23 @@
 use super::config::*;
 
-use js_sys::{Array, Uint8ClampedArray};
-use serde::{Deserialize, Serialize};
-use wasm_bindgen::{prelude::*, Clamped, JsCast, convert::IntoWasmAbi};
+use js_sys::Reflect;
+use wasm_bindgen::{prelude::*, JsCast};
 use web_sys::{ImageData, MessageEvent, Worker};
 
-use crate::plotting::{fill_pixels, PlotScale};
+use crate::{
+    plotting::{fill_pixels, PlotScale},
+    utils::value_from_wasm_ref_cell_ptr,
+};
 
 fn worker_onmessage_callback(event: MessageEvent) {
     let data = event.data();
-    log!("RUST: worker event data: {:#?}", &data);
-    let ptr: u32 = data.into_abi();
-    let drawing_config_ptr = unsafe { Box::from_raw(ptr as *mut DrawingConfig) };
-    let drawing_config = drawing_config_ptr.as_ref();
-    log!("RUST: drawing config: {:?}", drawing_config);
+    log!("worker event data: {:#?}", &data);
+    let ptr: u32 = Reflect::get(&data, &"ptr".into())
+        .unwrap()
+        .as_f64()
+        .unwrap() as u32;
+    let drawing_config = unsafe { value_from_wasm_ref_cell_ptr::<DrawingConfig>(ptr) };
+    log!("drawing_config: {:?}", drawing_config);
 }
 
 #[wasm_bindgen]
