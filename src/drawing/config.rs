@@ -1,6 +1,9 @@
 use crate::plotting::PlotScale;
 
-use std::{mem::transmute, ptr::addr_of};
+use std::{
+    mem::{transmute, transmute_copy},
+    ptr::addr_of,
+};
 
 use num_complex::Complex32;
 use wasm_bindgen::prelude::*;
@@ -27,7 +30,7 @@ pub struct DrawingConfig {
 impl DrawingConfig {
     #[wasm_bindgen(constructor)]
     pub fn new(
-        drawing_mode: DrawingModes,
+        drawing_mode: u8,
         plot_scale: &PlotScale,
         mut roots: Vec<f32>,
         iterations_count: usize,
@@ -61,7 +64,7 @@ impl DrawingConfig {
         std::mem::forget(region_colors);
 
         let drawing_config = DrawingConfig {
-            drawing_mode,
+            drawing_mode: unsafe { transmute_copy(&drawing_mode) },
             plot_scale: *plot_scale,
             roots: roots_packed,
             iterations_count,

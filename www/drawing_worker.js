@@ -1,5 +1,11 @@
-import init, { create_drawing_worker, DrawingConfig as DC, DrawingModes, fill_pixels, fill_pixels_simd, PlotScale as PS } from '../pkg/newton_fractal.js';
+import init, { create_drawing_worker, DrawingConfig as DC, fill_pixels, fill_pixels_simd, PlotScale as PS } from '../pkg/newton_fractal.js';
 import { fillPixelsJavascript } from './newtons_fractal.js';
+var DrawingModes;
+(function (DrawingModes) {
+    DrawingModes["CpuWasmSimd"] = "CPU-wasm-simd";
+    DrawingModes["CpuWasmScalar"] = "CPU-wasm-scalar";
+    DrawingModes["CpuJsScalar"] = "CPU-js-scalar";
+})(DrawingModes || (DrawingModes = {}));
 var WorkerCommands;
 (function (WorkerCommands) {
     WorkerCommands[WorkerCommands["Init"] = 0] = "Init";
@@ -8,7 +14,7 @@ var WorkerCommands;
 function draw(config) {
     let { plotScale, roots, drawingMode, iterationsCount, regionColors } = config;
     let length = plotScale.x_display_range * plotScale.y_display_range * 4;
-    let coresCount = 13;
+    let coresCount = 2;
     console.log('coresCount :>> ', coresCount);
     let step = Math.floor(length / coresCount);
     let data = new Uint8ClampedArray(length);
@@ -17,7 +23,7 @@ function draw(config) {
     let start, end;
     for (let i = 0; i < coresCount; i++) {
         let new_data;
-        switch (+DrawingModes[drawingMode]) {
+        switch (drawingMode) {
             case DrawingModes.CpuJsScalar:
                 start = new Date();
                 new_data = fillPixelsJavascript(plotScale, roots, iterationsCount, regionColors);
@@ -76,7 +82,7 @@ onmessage = async function (e) {
                 console.log('drawingConfig :>> ', drawingConfig);
                 let ps = drawingConfig.plotScale;
                 let plot_scale = new PS(ps.x_offset, ps.y_offset, ps.x_value_range, ps.y_value_range, ps.x_display_range, ps.y_display_range);
-                let drawing_mode = +DrawingModes[drawingConfig.drawingMode];
+                let drawing_mode = Object.values(DrawingModes).indexOf(drawingConfig.drawingMode);
                 console.log('drawing_mode :>> ', drawing_mode);
                 let rustData = new DC(drawing_mode, plot_scale, new Float32Array(drawingConfig.roots.flat()), drawingConfig.iterationsCount, new Uint8Array(drawingConfig.regionColors.flat()));
                 worker.postMessage(rustData);

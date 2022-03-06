@@ -8,7 +8,13 @@ import {
 } from './drawing_worker.js';
 import { transformPointToPlotScale, transformPointToCanvasScale } from './newtons_fractal.js';
 import { PlotScale, roots, addRoot, getClosestRoot } from './plotter.js';
-import init, { DrawingModes } from '../pkg/newton_fractal.js';
+// import init, { DrawingModes } from '../pkg/newton_fractal.js';
+
+enum DrawingModes { 
+    CpuWasmSimd = "CPU-wasm-simd",
+    CpuWasmScalar = "CPU-wasm-scalar",
+    CpuJsScalar = "CPU-js-scalar"
+}
 
 const rootPointSize = 4.0;
 

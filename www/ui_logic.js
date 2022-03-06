@@ -2,7 +2,12 @@ import { regionColors } from './colors.js';
 import { WorkerCommands } from './drawing_worker.js';
 import { transformPointToPlotScale, transformPointToCanvasScale } from './newtons_fractal.js';
 import { PlotScale, roots, addRoot, getClosestRoot } from './plotter.js';
-import { DrawingModes } from '../pkg/newton_fractal.js';
+var DrawingModes;
+(function (DrawingModes) {
+    DrawingModes["CpuWasmSimd"] = "CPU-wasm-simd";
+    DrawingModes["CpuWasmScalar"] = "CPU-wasm-scalar";
+    DrawingModes["CpuJsScalar"] = "CPU-js-scalar";
+})(DrawingModes || (DrawingModes = {}));
 const rootPointSize = 4.0;
 let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
 const CLICK_POINT_DISTANCE = 0.125;
