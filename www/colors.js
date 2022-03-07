@@ -1,4 +1,4 @@
-let regionColors = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], [255, 255, 0, 255], [255, 0, 255, 255], [0, 255, 255, 255]];
+let regionColors = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255],];
 const DIM_COEFFICIENT = 1.25;
 function dimColors(colors) {
     for (let i = 0; i < colors.length; i++) {

@@ -17,7 +17,7 @@ class PlotScale {
         return new PlotScale(x_offset, x_offset * k, x_range, x_range * k, width, height);
     }
 }
-const startRoots = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25], [-0.85, 0.5]];
+const startRoots = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5],];
 let roots = startRoots;
 function addRoot(xMapped, yMapped) {
     roots.push([xMapped, yMapped]);

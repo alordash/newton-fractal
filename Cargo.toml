@@ -27,5 +27,6 @@ features = [
   "CanvasRenderingContext2d",
   "ImageData",
   "Worker",
-  "MessageEvent"
+  "MessageEvent",
+  "DedicatedWorkerGlobalScope"
 ]

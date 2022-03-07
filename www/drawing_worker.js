@@ -18,7 +18,6 @@ function draw(config) {
     console.log('coresCount :>> ', coresCount);
     let step = Math.floor(length / coresCount);
     let data = new Uint8ClampedArray(length);
-    console.log('length :>> ', length);
     let sumLength = 0;
     let start, end;
     for (let i = 0; i < coresCount; i++) {
@@ -43,13 +42,11 @@ function draw(config) {
                 console.log(`UNKNOWN DRAWING MODE`);
                 break;
         }
-        console.log('new_data.length :>> ', new_data.length);
         for (let j = 0; j < new_data.length; j++) {
             data[j + sumLength] = new_data[j];
         }
         sumLength += new_data.length;
     }
-    console.log(`Real length: ${length}, new data length: ${sumLength}`);
     let imageData = new ImageData(data, plotScale.x_display_range, plotScale.y_display_range);
     let elapsedMs = end.getTime() - start.getTime();
     return { drawingMode, elapsedMs, imageData };
@@ -57,10 +54,12 @@ function draw(config) {
 function postCustomMessage(message) {
     postMessage(message, undefined);
 }
-let worker;
+const workersCount = navigator.hardwareConcurrency;
+let workers = [];
 onmessage = async function (e) {
     let { data } = e;
     let { command } = data;
+    console.log('JS WORKER got data :>> ', data);
     switch (command) {
         case WorkerCommands.Init:
             {
@@ -68,24 +67,30 @@ onmessage = async function (e) {
                 postCustomMessage({
                     command
                 });
-                worker = create_drawing_worker("./test.js");
+                for (let i = 0; i < workersCount; i++) {
+                    workers.push(create_drawing_worker('./test.js'));
+                }
+                console.log('workersCount :>> ', workersCount);
+                console.log('workers :>> ', workers);
             }
             break;
         case WorkerCommands.Draw:
             {
                 let { drawingConfig } = data;
                 let drawingResult = draw(drawingConfig);
+                console.log('drawingResult :>> ', drawingResult);
+                let ps = drawingConfig.plotScale;
+                let plot_scale = new PS(ps.x_offset, ps.y_offset, ps.x_value_range, ps.y_value_range, ps.x_display_range, ps.y_display_range);
+                let drawing_mode = Object.values(DrawingModes).indexOf(drawingConfig.drawingMode);
+                for (let i = 0; i < 8; i++) {
+                    let rustData = new DC(drawing_mode, plot_scale, new Float32Array(drawingConfig.roots.flat()), drawingConfig.iterationsCount, new Uint8Array(drawingConfig.regionColors.flat()), i, workersCount);
+                    console.log('rustData.ptr :>> ', rustData.ptr);
+                    workers[i].postMessage(rustData);
+                }
                 postCustomMessage({
                     command,
                     drawingResult
                 });
-                console.log('drawingConfig :>> ', drawingConfig);
-                let ps = drawingConfig.plotScale;
-                let plot_scale = new PS(ps.x_offset, ps.y_offset, ps.x_value_range, ps.y_value_range, ps.x_display_range, ps.y_display_range);
-                let drawing_mode = Object.values(DrawingModes).indexOf(drawingConfig.drawingMode);
-                console.log('drawing_mode :>> ', drawing_mode);
-                let rustData = new DC(drawing_mode, plot_scale, new Float32Array(drawingConfig.roots.flat()), drawingConfig.iterationsCount, new Uint8Array(drawingConfig.regionColors.flat()));
-                worker.postMessage(rustData);
             }
             break;
         default:

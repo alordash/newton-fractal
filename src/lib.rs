@@ -9,7 +9,6 @@ use logging::*;
 pub mod newtons_fractal;
 pub mod plotting;
 pub mod simd_constants;
-pub mod utils;
 
 pub mod drawing {
     pub mod config;

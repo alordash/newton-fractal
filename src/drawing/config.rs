@@ -24,6 +24,8 @@ pub struct DrawingConfig {
     pub iterations_count: usize,
     #[wasm_bindgen(skip)]
     pub colors: Vec<[u8; 4]>,
+    pub part_offset: Option<usize>,
+    pub parts_count: Option<usize>,
 }
 
 #[wasm_bindgen]
@@ -35,6 +37,8 @@ impl DrawingConfig {
         mut roots: Vec<f32>,
         iterations_count: usize,
         mut colors: Vec<u8>,
+        part_offset: Option<usize>,
+        parts_count: Option<usize>,
     ) -> Option<DrawingConfig> {
         roots.shrink_to_fit();
         colors.shrink_to_fit();
@@ -69,6 +73,8 @@ impl DrawingConfig {
             roots: roots_packed,
             iterations_count,
             colors: colors_packed,
+            part_offset,
+            parts_count,
         };
 
         return Some(drawing_config);

@@ -34,7 +34,7 @@ class PlotScale {
     }
 }
 
-const startRoots = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], [0.75, 0.25], [-0.85, 0.5]];
+const startRoots = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], /*[0.75, 0.25], [-0.85, 0.5]*/];
 let roots: number[][] = startRoots;
 
 function addRoot(xMapped: number, yMapped: number) {

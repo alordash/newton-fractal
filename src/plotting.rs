@@ -5,8 +5,9 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::{prelude::*, Clamped};
 
 use std::arch::wasm32::*;
-use std::mem::transmute;
+use std::mem::{self, transmute, ManuallyDrop};
 use std::ptr::addr_of;
+use std::slice;
 
 use super::logging::*;
 
@@ -14,8 +15,10 @@ use super::logging::*;
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 struct ColorsPack(u32, u32, u32, u32);
 
-pub fn convert_colors_array(colors: JsValue) -> Vec<u32> {
-    unsafe { transmute(colors.into_serde::<Vec<[u8; 4]>>().unwrap()) }
+pub fn convert_colors_array<'a>(colors: JsValue) -> &'a [u32] {
+    let colors: Vec<[u8; 4]> = colors.into_serde().unwrap();
+    let colors = ManuallyDrop::new(colors);
+    unsafe { slice::from_raw_parts(addr_of!(colors[0]) as *mut u32, colors.len()) }
 }
 
 #[wasm_bindgen]
@@ -105,22 +108,18 @@ pub fn fill_pixels_js(
     part_offset: Option<usize>,
     parts_count: Option<usize>,
 ) -> Clamped<Vec<u8>> {
-    log!("converting plot_scale");
     let plot_scale: PlotScale = plot_scale.into_serde().unwrap();
-    log!("converting roots");
     let roots: Vec<Complex32> = (roots.into_serde::<Vec<(f32, f32)>>().unwrap())
         .into_iter()
         .map(|p| Complex32 { re: p.0, im: p.1 })
         .collect();
-    log!("converting colors");
     let colors = convert_colors_array(colors);
 
-    log!("calling inner fill_pixels");
     fill_pixels(
         &plot_scale,
-        &roots,
+        roots.as_slice(),
         iterations_count,
-        &colors,
+        colors,
         part_offset,
         parts_count,
     )
@@ -128,9 +127,9 @@ pub fn fill_pixels_js(
 
 pub fn fill_pixels(
     plot_scale: &PlotScale,
-    roots: &Vec<Complex32>,
+    roots: &[Complex32],
     iterations_count: usize,
-    colors: &Vec<u32>,
+    colors: &[u32],
     part_offset: Option<usize>,
     parts_count: Option<usize>,
 ) -> Clamped<Vec<u8>> {
@@ -199,33 +198,23 @@ pub fn fill_pixels_simd_js(
     iterations_count: usize,
     colors: JsValue,
 ) -> Clamped<Vec<u8>> {
-    log!("plot_scale: {:?}", plot_scale);
-    log!("roots: {:?}", roots);
-    log!("iterations_count: {:?}", iterations_count);
-    log!("colors: {:?}", colors);
-
-    log!("converting plot_scale");
     let plot_scale: PlotScale = plot_scale.into_serde().unwrap();
-    log!("converting roots");
     let roots: Vec<Complex32> = (roots.into_serde::<Vec<(f32, f32)>>().unwrap())
         .into_iter()
         .map(|p| Complex32 { re: p.0, im: p.1 })
         .collect();
-    log!("converting colors");
     let colors = convert_colors_array(colors);
 
-    log!("calling inner fill_pixels_simd");
-    fill_pixels_simd(&plot_scale, &roots, iterations_count, &colors)
+    fill_pixels_simd(&plot_scale, roots.as_slice(), iterations_count, colors)
 }
 
 #[target_feature(enable = "simd128")]
 pub fn fill_pixels_simd(
     plot_scale: &PlotScale,
-    roots: &Vec<Complex32>,
+    roots: &[Complex32],
     iterations_count: usize,
-    colors: &Vec<u32>,
+    colors: &[u32],
 ) -> Clamped<Vec<u8>> {
-    log!("fill_pixels_simd");
     let PlotScale {
         x_display_range: width,
         y_display_range: height,

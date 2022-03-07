@@ -6,7 +6,7 @@ use std::ptr::addr_of;
 
 use crate::simd_constants::SimdHelper;
 
-pub fn newton_method_approx(z: Complex32, roots: &Vec<Complex32>) -> (usize, Complex32) {
+pub fn newton_method_approx(z: Complex32, roots: &[Complex32]) -> (usize, Complex32) {
     let mut sum = Complex32::new(0.0, 0.0);
     for (i, root) in roots.iter().enumerate() {
         let diff = z - root;
@@ -20,10 +20,7 @@ pub fn newton_method_approx(z: Complex32, roots: &Vec<Complex32>) -> (usize, Com
 
 #[inline]
 #[target_feature(enable = "simd128")]
-pub unsafe fn simd_newton_method_approx_for_two_numbers(
-    two_z: v128,
-    roots: &Vec<Complex32>,
-) -> v128 {
+pub unsafe fn simd_newton_method_approx_for_two_numbers(two_z: v128, roots: &[Complex32]) -> v128 {
     let ptr = addr_of!(two_z) as *const u64;
     u64x2(
         simd_newton_method_approx(*ptr, roots),
@@ -33,7 +30,7 @@ pub unsafe fn simd_newton_method_approx_for_two_numbers(
 
 #[inline]
 #[target_feature(enable = "simd128")]
-pub fn simd_newton_method_approx(z: u64, roots: &Vec<Complex32>) -> u64 {
+pub fn simd_newton_method_approx(z: u64, roots: &[Complex32]) -> u64 {
     // In scalar implementation we process only one root at a time.
     // When using SIMDs, we process two roots at the same time.
     // We have f32x4 [A, B, C, D], in which (A, B): re and im parts

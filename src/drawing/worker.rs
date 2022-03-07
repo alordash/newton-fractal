@@ -1,48 +1,69 @@
-use std::{borrow::Borrow, ops::Deref};
+use std::{borrow::Borrow, intrinsics::transmute, mem, ops::Deref, ptr::addr_of};
 
 use super::config::*;
 
-use js_sys::Reflect;
+use js_sys::{Reflect, Uint8ClampedArray};
 use wasm_bindgen::{prelude::*, JsCast};
-use web_sys::{ImageData, MessageEvent, Worker};
+use web_sys::{DedicatedWorkerGlobalScope, ImageData, MessageEvent, Worker};
+
+use std::slice;
 
 use crate::{
     drawing::modes::DrawingModes,
     plotting::{fill_pixels, fill_pixels_simd, PlotScale},
-    utils::value_from_wasm_ref_cell_ptr,
 };
+
+use wasm_bindgen::__rt::WasmRefCell;
 
 fn worker_onmessage_callback(event: MessageEvent) {
     let data = event.data();
-    log!("worker event data: {:#?}", &data);
+    // log!("worker event data: {:#?}", &data);
     let ptr: u32 = Reflect::get(&data, &"ptr".into())
         .unwrap()
         .as_f64()
         .unwrap() as u32;
-    let drawing_config = unsafe { value_from_wasm_ref_cell_ptr::<DrawingConfig>(ptr) };
-    log!("drawing_config: {:?}", drawing_config);
+
+    let mut wasm_ref_cell = unsafe { Box::from_raw(ptr as *mut WasmRefCell<DrawingConfig>) };
+    let drawing_config = wasm_ref_cell.get_mut();
+    let drawing_config_ptr = addr_of!(*drawing_config);
+    // log!("drawing_config: {:?}", drawing_config);
     let DrawingConfig {
         drawing_mode,
         plot_scale,
         roots,
         iterations_count,
         colors,
+        part_offset,
+        parts_count,
     } = drawing_config;
 
-    let colors: &Vec<u32> = &unsafe {
-        Vec::from_raw_parts(colors.as_ptr() as *mut u32, colors.len(), colors.capacity())
-    };
+    log!(
+        "Worker #{} got message",
+        part_offset.or(Some(usize::MAX)).unwrap()
+    );
 
-    let data = match drawing_mode {
-        // DrawingModes::CpuJsScalar => ,
-        DrawingModes::CpuWasmScalar => {
-            fill_pixels(plot_scale, roots, *iterations_count, colors, None, None)
-        }
-        DrawingModes::CpuWasmSimd => fill_pixels_simd(plot_scale, roots, *iterations_count, colors),
-        _ => fill_pixels_simd(plot_scale, roots, *iterations_count, colors),
-    };
+    let colors_packed =
+        unsafe { slice::from_raw_parts_mut(addr_of!(colors[0]) as *mut u32, colors.len()) };
+    mem::forget(colors);
 
-    log!("data: {:?}", &data);
+    let data = fill_pixels(
+        plot_scale,
+        roots,
+        *iterations_count,
+        colors_packed,
+        *part_offset,
+        *parts_count,
+    );
+
+    log!("data length: {:?}", &data.len());
+    log!("first 10: {:?}", &data[0..10]);
+
+    // let global = js_sys::global().unchecked_into::<DedicatedWorkerGlobalScope>();
+    // let js_data = Uint8ClampedArray::from(data.as_slice());
+    // match global.post_message(&js_data) {
+    //     Ok(_) => log!("Sucessfuly sent data from worker"),
+    //     Err(e) => log!("Error sending data from worker: {:?}", &e),
+    // };
 }
 
 #[wasm_bindgen]
