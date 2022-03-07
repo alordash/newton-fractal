@@ -1,4 +1,4 @@
-import init, { create_drawing_worker, DrawingConfig as DC, fill_pixels_js, fill_pixels_simd_js, InitOutput, PlotScale as PS } from '../pkg/newton_fractal.js';
+import init, { DrawingConfig as DC, fill_pixels_js, fill_pixels_simd_js, InitOutput, PlotScale as PS } from '../pkg/newton_fractal.js';
 import { fillPixelsJavascript } from './newtons_fractal.js';
 import { PlotScale } from './plotter.js';
 
@@ -118,7 +118,7 @@ onmessage = async function (e: MessageEvent<WorkerMessage>) {
                 });
 
                 for (let i = 0; i < workersCount; i++) {
-                    let worker = createDrawingWorker('./test.js', mod.memory);
+                    let worker = createDrawingWorker('./test.js', data.initSharedMemory);
                     // let worker = create_drawing_worker('./test.js');
                     workers.push(worker);
                 }
@@ -130,7 +130,7 @@ onmessage = async function (e: MessageEvent<WorkerMessage>) {
             {
                 let { drawingConfig } = data;
                 let drawingResult = draw(drawingConfig);
-                console.log('drawingResult :>> ', drawingResult);
+                // console.log('drawingResult :>> ', drawingResult);
 
                 let ps = drawingConfig.plotScale;
                 let plot_scale = new PS(ps.x_offset, ps.y_offset, ps.x_value_range, ps.y_value_range, ps.x_display_range, ps.y_display_range);
@@ -138,7 +138,6 @@ onmessage = async function (e: MessageEvent<WorkerMessage>) {
 
                 for (let i = 0; i < 8; i++) {
                     let rustData = new DC(
-                        drawing_mode,
                         plot_scale,
                         new Float32Array(drawingConfig.roots.flat()),
                         drawingConfig.iterationsCount,
@@ -146,7 +145,7 @@ onmessage = async function (e: MessageEvent<WorkerMessage>) {
                         i,
                         workersCount
                     );
-                    console.log('rustData.ptr :>> ', (<any>rustData).ptr);
+                    console.log('rustData :>> ', rustData);
                     // rustData.free();
                     // console.log(`Sending drawing config to worker #${i}`);
                     workers[i].postMessage(rustData);

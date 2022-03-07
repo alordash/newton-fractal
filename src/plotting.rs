@@ -1,3 +1,4 @@
+use crate::drawing_config::DrawingConfig;
 use crate::{newtons_fractal::*, simd_constants::SimdHelper};
 
 use num_complex::Complex32;
@@ -15,8 +16,7 @@ use super::logging::*;
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 struct ColorsPack(u32, u32, u32, u32);
 
-pub fn convert_colors_array<'a>(colors: JsValue) -> &'a [u32] {
-    let colors: Vec<[u8; 4]> = colors.into_serde().unwrap();
+pub fn convert_colors_array<'a>(colors: &Vec<[u8; 4]>) -> &'a [u32] {
     let colors = ManuallyDrop::new(colors);
     unsafe { slice::from_raw_parts(addr_of!(colors[0]) as *mut u32, colors.len()) }
 }
@@ -113,7 +113,9 @@ pub fn fill_pixels_js(
         .into_iter()
         .map(|p| Complex32 { re: p.0, im: p.1 })
         .collect();
-    let colors = convert_colors_array(colors);
+
+    let colors: Vec<[u8; 4]> = colors.into_serde().unwrap();
+    let colors = convert_colors_array(&colors);
 
     fill_pixels(
         &plot_scale,
@@ -203,7 +205,9 @@ pub fn fill_pixels_simd_js(
         .into_iter()
         .map(|p| Complex32 { re: p.0, im: p.1 })
         .collect();
-    let colors = convert_colors_array(colors);
+
+    let colors: Vec<[u8; 4]> = colors.into_serde().unwrap();
+    let colors = convert_colors_array(&colors);
 
     fill_pixels_simd(&plot_scale, roots.as_slice(), iterations_count, colors)
 }

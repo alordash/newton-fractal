@@ -6,15 +6,14 @@ use wasm_bindgen::prelude::*;
 mod logging;
 use logging::*;
 
+pub mod drawing_config;
 pub mod newtons_fractal;
 pub mod plotting;
 pub mod simd_constants;
 
-pub mod drawing {
-    pub mod config;
-    pub mod modes;
-    pub mod result;
-    pub mod worker;
+#[wasm_bindgen]
+pub fn foo() -> usize {
+    42
 }
 
 #[wasm_bindgen(start)]

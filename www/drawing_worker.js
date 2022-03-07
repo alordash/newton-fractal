@@ -79,7 +79,7 @@ onmessage = async function (e) {
                     command
                 });
                 for (let i = 0; i < workersCount; i++) {
-                    let worker = createDrawingWorker('./test.js', mod.memory);
+                    let worker = createDrawingWorker('./test.js', data.initSharedMemory);
                     workers.push(worker);
                 }
                 console.log('workersCount :>> ', workersCount);
@@ -90,13 +90,12 @@ onmessage = async function (e) {
             {
                 let { drawingConfig } = data;
                 let drawingResult = draw(drawingConfig);
-                console.log('drawingResult :>> ', drawingResult);
                 let ps = drawingConfig.plotScale;
                 let plot_scale = new PS(ps.x_offset, ps.y_offset, ps.x_value_range, ps.y_value_range, ps.x_display_range, ps.y_display_range);
                 let drawing_mode = Object.values(DrawingModes).indexOf(drawingConfig.drawingMode);
                 for (let i = 0; i < 8; i++) {
-                    let rustData = new DC(drawing_mode, plot_scale, new Float32Array(drawingConfig.roots.flat()), drawingConfig.iterationsCount, new Uint8Array(drawingConfig.regionColors.flat()), i, workersCount);
-                    console.log('rustData.ptr :>> ', rustData.ptr);
+                    let rustData = new DC(plot_scale, new Float32Array(drawingConfig.roots.flat()), drawingConfig.iterationsCount, new Uint8Array(drawingConfig.regionColors.flat()), i, workersCount);
+                    console.log('rustData :>> ', rustData);
                     workers[i].postMessage(rustData);
                 }
                 postCustomMessage({
