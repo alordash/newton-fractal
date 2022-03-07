@@ -1,4 +1,4 @@
-import init, { create_drawing_worker, DrawingConfig as DC, fill_pixels_js, fill_pixels_simd_js, PlotScale as PS } from '../pkg/newton_fractal.js';
+import init, { create_drawing_worker, DrawingConfig as DC, fill_pixels_js, fill_pixels_simd_js, InitOutput, PlotScale as PS } from '../pkg/newton_fractal.js';
 import { fillPixelsJavascript } from './newtons_fractal.js';
 import { PlotScale } from './plotter.js';
 
@@ -89,23 +89,38 @@ function postCustomMessage(message: WorkerResult) {
 const workersCount = navigator.hardwareConcurrency;
 let workers: Worker[] = [];
 
+let mod: InitOutput;
+
+function testWorkerCallback(e: MessageEvent<any>) {
+    console.log('Message from test worker :>> ', e.data);
+}
+
+function createDrawingWorker(uri: string | URL, wasmMemory: WebAssembly.Memory): Worker {
+    let worker = new Worker(uri, { type: 'module' });
+    worker.onmessage = testWorkerCallback;
+    worker.postMessage({ init: true, wasmMemory });
+    console.log('new test worker :>> ', worker);
+    return worker;
+}
+
 onmessage = async function (e: MessageEvent<WorkerMessage>) {
     let { data } = e;
     let { command } = data;
 
     console.log('JS WORKER got data :>> ', data);
 
-
     switch (command) {
         case WorkerCommands.Init:
             {
-                await init(undefined, data.initSharedMemory);
+                mod = await init(undefined, data.initSharedMemory);
                 postCustomMessage({
                     command
                 });
 
                 for (let i = 0; i < workersCount; i++) {
-                    workers.push(create_drawing_worker('./test.js'));
+                    let worker = createDrawingWorker('./test.js', mod.memory);
+                    // let worker = create_drawing_worker('./test.js');
+                    workers.push(worker);
                 }
                 console.log('workersCount :>> ', workersCount);
                 console.log('workers :>> ', workers);
@@ -132,7 +147,6 @@ onmessage = async function (e: MessageEvent<WorkerMessage>) {
                         workersCount
                     );
                     console.log('rustData.ptr :>> ', (<any>rustData).ptr);
-                    // eat_draw_conf(rustData);
                     // rustData.free();
                     // console.log(`Sending drawing config to worker #${i}`);
                     workers[i].postMessage(rustData);

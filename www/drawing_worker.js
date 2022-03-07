@@ -1,4 +1,4 @@
-import init, { create_drawing_worker, DrawingConfig as DC, fill_pixels_js, fill_pixels_simd_js, PlotScale as PS } from '../pkg/newton_fractal.js';
+import init, { DrawingConfig as DC, fill_pixels_js, fill_pixels_simd_js, PlotScale as PS } from '../pkg/newton_fractal.js';
 import { fillPixelsJavascript } from './newtons_fractal.js';
 var DrawingModes;
 (function (DrawingModes) {
@@ -56,6 +56,17 @@ function postCustomMessage(message) {
 }
 const workersCount = navigator.hardwareConcurrency;
 let workers = [];
+let mod;
+function testWorkerCallback(e) {
+    console.log('Message from test worker :>> ', e.data);
+}
+function createDrawingWorker(uri, wasmMemory) {
+    let worker = new Worker(uri, { type: 'module' });
+    worker.onmessage = testWorkerCallback;
+    worker.postMessage({ init: true, wasmMemory });
+    console.log('new test worker :>> ', worker);
+    return worker;
+}
 onmessage = async function (e) {
     let { data } = e;
     let { command } = data;
@@ -63,12 +74,13 @@ onmessage = async function (e) {
     switch (command) {
         case WorkerCommands.Init:
             {
-                await init(undefined, data.initSharedMemory);
+                mod = await init(undefined, data.initSharedMemory);
                 postCustomMessage({
                     command
                 });
                 for (let i = 0; i < workersCount; i++) {
-                    workers.push(create_drawing_worker('./test.js'));
+                    let worker = createDrawingWorker('./test.js', mod.memory);
+                    workers.push(worker);
                 }
                 console.log('workersCount :>> ', workersCount);
                 console.log('workers :>> ', workers);

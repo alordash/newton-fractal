@@ -2,9 +2,11 @@ use std::{borrow::Borrow, intrinsics::transmute, mem, ops::Deref, ptr::addr_of};
 
 use super::config::*;
 
-use js_sys::{Reflect, Uint8ClampedArray};
+use js_sys::{Reflect, Uint8ClampedArray, Object};
 use wasm_bindgen::{prelude::*, JsCast};
-use web_sys::{DedicatedWorkerGlobalScope, ImageData, MessageEvent, Worker};
+use web_sys::{
+    DedicatedWorkerGlobalScope, EventTarget, ImageData, MessageEvent, Worker, WorkerGlobalScope,
+};
 
 use std::slice;
 
@@ -38,8 +40,9 @@ fn worker_onmessage_callback(event: MessageEvent) {
     } = drawing_config;
 
     log!(
-        "Worker #{} got message",
-        part_offset.or(Some(usize::MAX)).unwrap()
+        "Worker #{offset} got message (offset: {offset}, count: {count})",
+        offset = part_offset.or(Some(usize::MAX)).unwrap(),
+        count = parts_count.or(Some(1)).unwrap()
     );
 
     let colors_packed =
@@ -55,19 +58,24 @@ fn worker_onmessage_callback(event: MessageEvent) {
         *parts_count,
     );
 
-    log!("data length: {:?}", &data.len());
-    log!("first 10: {:?}", &data[0..10]);
+    log!("Calculated, first 10 items of data: {:?}", &data[0..10]);
 
-    // let global = js_sys::global().unchecked_into::<DedicatedWorkerGlobalScope>();
-    // let js_data = Uint8ClampedArray::from(data.as_slice());
-    // match global.post_message(&js_data) {
-    //     Ok(_) => log!("Sucessfuly sent data from worker"),
-    //     Err(e) => log!("Error sending data from worker: {:?}", &e),
-    // };
+    let global = js_sys::global();
+    let global = global.unchecked_into::<DedicatedWorkerGlobalScope>();
+    log!("global: {:?}", global);
+    
+    let js_data = Uint8ClampedArray::from(data.as_slice());
+    let js_Data = JsValue::from_f64(42.42);
+    match global.post_message(&js_Data) {
+        Ok(_) => log!("Sucessfuly sent data from worker"),
+        Err(e) => log!("Error sending data from worker: {:?}", &e),
+    };
 }
 
 #[wasm_bindgen]
 pub fn create_drawing_worker(worker_script_url: &str) -> Option<Worker> {
+    let global = js_sys::global();
+    log!("global when creating: {:?}", global);
     let worker = match Worker::new(worker_script_url) {
         Ok(v) => v,
         Err(e) => {

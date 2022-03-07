@@ -10,7 +10,7 @@ import { transformPointToPlotScale, transformPointToCanvasScale } from './newton
 import { PlotScale, roots, addRoot, getClosestRoot } from './plotter.js';
 // import init, { DrawingModes } from '../pkg/newton_fractal.js';
 
-enum DrawingModes { 
+enum DrawingModes {
     CpuWasmSimd = "CPU-wasm-simd",
     CpuWasmScalar = "CPU-wasm-scalar",
     CpuJsScalar = "CPU-js-scalar"
@@ -183,8 +183,6 @@ function WindowResize() {
 }
 console.log('DrawingModes :>> ', DrawingModes);
 console.log('Object.(DrawingModes) :>> ', Object.values(DrawingModes));
-
-
 
 for (const value of Object.values(DrawingModes)) {
     let option = <HTMLOptionElement>document.createElement("option");
