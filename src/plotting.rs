@@ -107,6 +107,7 @@ pub fn fill_pixels_js(
     colors: JsValue,
     part_offset: Option<usize>,
     parts_count: Option<usize>,
+    buffer_ptr: Option<u32>,
 ) -> Clamped<Vec<u8>> {
     let plot_scale: PlotScale = plot_scale.into_serde().unwrap();
     let roots: Vec<Complex32> = (roots.into_serde::<Vec<(f32, f32)>>().unwrap())
@@ -124,6 +125,7 @@ pub fn fill_pixels_js(
         colors,
         part_offset,
         parts_count,
+        buffer_ptr.map(|ptr| ptr as *mut u32),
     )
 }
 
@@ -134,6 +136,7 @@ pub fn fill_pixels(
     colors: &[u32],
     part_offset: Option<usize>,
     parts_count: Option<usize>,
+    buffer_ptr: Option<*mut u32>,
 ) -> Clamped<Vec<u8>> {
     let (part_offset, parts_count) = (
         part_offset.or(Some(0)).unwrap(),
@@ -175,19 +178,33 @@ pub fn fill_pixels(
     let next_border = ((size * (part_offset + 1)) as f32 / parts_count as f32).round() as usize;
     let size = next_border - this_border;
 
-    let mut pixels_data: Vec<u32> = vec![0u32; size];
+    let mut pixels_data: Vec<u32>;
+    let buffer_ptr = match buffer_ptr {
+        Some(v) => v,
+        None => {
+            pixels_data = vec![0u32; size];
+            pixels_data.as_mut_ptr()
+        }
+    };
+    // let mut pixels_data = vec![0u32; size];
     unsafe {
         for i in this_border..next_border {
-            *pixels_data.get_unchecked_mut(i - this_border) = filler(i % w_int, i / w_int);
+            *buffer_ptr.add(i - this_border) = filler(i % w_int, i / w_int);
+            // *pixels_data.get_unchecked_mut(i - this_border) = filler(i % w_int, i / w_int);
         }
     }
 
-    let pixels_data: &[u8] = unsafe {
-        std::slice::from_raw_parts(
-            std::mem::transmute(pixels_data.as_ptr()),
-            pixels_data.len() * 4,
-        )
-    };
+    log!("#{} buffer_ptr: {}", part_offset + 1, buffer_ptr as u32);
+    let pixels_data: &[u8] =
+        unsafe { std::slice::from_raw_parts(buffer_ptr as *const u8, size * 4) };
+
+    // unsafe {
+    //     log!("px data before delete: {:?}", *buffer_ptr);
+    //     if let Some(pixels_data_for_drop) = pixels_data_for_drop {
+    //         mem::drop(pixels_data_for_drop);
+    //         log!("px data after  delete: {:?}", *buffer_ptr);
+    //     }
+    // }
 
     Clamped(pixels_data.to_vec())
 }
@@ -258,6 +275,7 @@ pub fn fill_pixels_simd(
     };
 
     let mut pixels_data: Vec<ColorsPack> = vec![ColorsPack(0, 0, 0, 0); w_int * h_int];
+    log!("buffer_ptr: {}", pixels_data.as_mut_ptr() as u32);
     unsafe {
         for j in 0..h_int {
             for i in 0..w_int {

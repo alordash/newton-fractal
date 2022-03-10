@@ -100,15 +100,14 @@ pub fn fill_pixels_parallel(ptr: u32) -> Clamped<Vec<u8>> {
         parts_count,
     } = drawing_config;
 
-    log!(
-        "Worker #{offset} got message (offset: {offset}, count: {count})",
-        offset = part_offset.or(Some(usize::MAX)).unwrap(),
-        count = parts_count.or(Some(1)).unwrap()
-    );
+    // log!(
+    //     "Worker #{offset} got message (offset: {offset}, count: {count})",
+    //     offset = part_offset.or(Some(usize::MAX)).unwrap(),
+    //     count = parts_count.or(Some(1)).unwrap()
+    // );
 
     let colors_packed =
         unsafe { slice::from_raw_parts_mut(addr_of!(colors[0]) as *mut u32, colors.len()) };
-    mem::forget(colors);
 
     let data = fill_pixels(
         plot_scale,
@@ -117,9 +116,10 @@ pub fn fill_pixels_parallel(ptr: u32) -> Clamped<Vec<u8>> {
         colors_packed,
         *part_offset,
         *parts_count,
+        None
     );
 
-    log!("Calculated, first 10 items of data: {:?}", &data[0..10]);
+    // log!("Calculated, first 10 items of data: {:?}", &data[0..10]);
 
     data
 }

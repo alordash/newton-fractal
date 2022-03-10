@@ -86,13 +86,20 @@ function postCustomMessage(message: WorkerResult) {
     postMessage(message, undefined);
 }
 
-const workersCount = navigator.hardwareConcurrency;
+const workersCount = 4//navigator.hardwareConcurrency;
 let workers: Worker[] = [];
+let rustData: DC[] = [];
+let initialized = false;
 
 let mod: InitOutput;
 
-function testWorkerCallback(e: MessageEvent<any>) {
+function testWorkerCallback(e: MessageEvent<{ id: number, data: Uint8ClampedArray }>) {
+    let { id, data } = e.data;
     console.log('Message from test worker :>> ', e.data);
+    console.log(`del rustData[${id}] :>> `, rustData[id]);
+    // rustData[id].free();
+    // console.log(`del rustData[${id}] :>> `, rustData[id]);
+    // console.log(`del rustData[${id}].plot_scale :>> `, rustData[id].plot_scale);
 }
 
 function createDrawingWorker(uri: string | URL, wasmMemory: WebAssembly.Memory): Worker {
@@ -106,8 +113,6 @@ function createDrawingWorker(uri: string | URL, wasmMemory: WebAssembly.Memory):
 onmessage = async function (e: MessageEvent<WorkerMessage>) {
     let { data } = e;
     let { command } = data;
-
-    console.log('JS WORKER got data :>> ', data);
 
     switch (command) {
         case WorkerCommands.Init:
@@ -132,23 +137,31 @@ onmessage = async function (e: MessageEvent<WorkerMessage>) {
                 let drawingResult = draw(drawingConfig);
                 // console.log('drawingResult :>> ', drawingResult);
 
-                let ps = drawingConfig.plotScale;
-                let plot_scale = new PS(ps.x_offset, ps.y_offset, ps.x_value_range, ps.y_value_range, ps.x_display_range, ps.y_display_range);
-                let drawing_mode = Object.values(DrawingModes).indexOf(drawingConfig.drawingMode);
+                if (initialized) {
+                    let ps = drawingConfig.plotScale;
+                    let drawing_mode = Object.values(DrawingModes).indexOf(drawingConfig.drawingMode);
+                    let plot_scale = new PS(ps.x_offset, ps.y_offset, ps.x_value_range, ps.y_value_range, ps.x_display_range, ps.y_display_range);
 
-                for (let i = 0; i < 8; i++) {
-                    let rustData = new DC(
-                        plot_scale,
-                        new Float32Array(drawingConfig.roots.flat()),
-                        drawingConfig.iterationsCount,
-                        new Uint8Array(drawingConfig.regionColors.flat()),
-                        i,
-                        workersCount
-                    );
-                    console.log('rustData :>> ', rustData);
-                    // rustData.free();
-                    // console.log(`Sending drawing config to worker #${i}`);
-                    workers[i].postMessage(rustData);
+                    for (let i = 0; i < workersCount; i++) {
+                        rustData[i] = new DC(
+                            plot_scale,
+                            new Float32Array(drawingConfig.roots.flat()),
+                            drawingConfig.iterationsCount,
+                            new Uint8Array(drawingConfig.regionColors.flat()),
+                            i,
+                            workersCount
+                        );
+                        console.log(`rustData[${i}] :>> `, rustData[i]);
+                        // rustData[i].plot_scale.free();
+                        // rustData.free();
+                        // console.log(`Sending drawing config to worker #${i}`);
+                    }
+                    for (let i = 0; i < workersCount; i++) {
+                        workers[i].postMessage({ id: i, drawingConfig: rustData[i] });
+                    }
+                    plot_scale.free();
+                } else {
+                    initialized = true;
                 }
 
                 postCustomMessage({

@@ -1,12 +1,13 @@
 import init, { InitOutput, DrawingConfig, foo, fill_pixels_parallel } from "../pkg/newton_fractal.js";
 
-function actualCallback(e: MessageEvent<{ptr: number}>) {
-    let drawingConfig = e.data;
-    let ptr = drawingConfig.ptr;
-    console.log('test worker drawingConfig :>> ', drawingConfig);
+function actualCallback(e: MessageEvent<{ id: number, drawingConfig: DrawingConfig }>) {
+    let msgData = e.data;
+    let { id, drawingConfig } = msgData;
+    let ptr = (<any>drawingConfig).ptr;
+    console.log(`test worker #${id} drawingConfig :>> `, drawingConfig);
     let data = fill_pixels_parallel(ptr);
-    console.log('data.length :>> ', data.length);
-    postMessage(data);
+    // console.log('test worker: data.length :>> ', data.length);
+    postMessage({ id, data });
 }
 
 let mod: InitOutput;
