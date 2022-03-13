@@ -5,12 +5,50 @@ use num_complex::Complex32;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::{prelude::*, Clamped};
 
+use std::alloc::{alloc, dealloc, Layout};
 use std::arch::wasm32::*;
 use std::mem::{self, transmute, ManuallyDrop};
 use std::ptr::addr_of;
 use std::slice;
 
 use super::logging::*;
+
+#[wasm_bindgen]
+pub fn create_image_buffer(width: usize, height: usize) -> Option<u32> {
+    let size = width * height;
+    let layout = match Layout::array::<u32>(size) {
+        Ok(v) => v,
+        Err(e) => {
+            log!(
+                "Error creating layout for u32 array of {} items: {:?}",
+                size,
+                &e
+            );
+            return None;
+        }
+    };
+    log!("layout: {:?}", layout);
+    let buffer_ptr = unsafe { alloc(layout) } as *mut u32;
+    Some(buffer_ptr as u32)
+}
+
+#[wasm_bindgen]
+pub fn free_image_buffer(width: usize, height: usize, buffer_ptr: *mut u32) {
+    let size = width * height;
+    match Layout::array::<u32>(size) {
+        Ok(layout) => unsafe {
+            log!("layout: {:?}", layout);
+            dealloc(buffer_ptr as *mut u8, layout);
+        },
+        Err(e) => {
+            log!(
+                "MEMORY LEAK: Error creating dealloc layout for array of {} items: {:?}",
+                size,
+                &e
+            );
+        }
+    };
+}
 
 #[repr(C)]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]

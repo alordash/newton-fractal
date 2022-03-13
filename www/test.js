@@ -5,7 +5,7 @@ function actualCallback(e) {
     let ptr = drawingConfig.ptr;
     console.log(`test worker #${id} drawingConfig :>> `, drawingConfig);
     let data = fill_pixels_parallel(ptr);
-    postMessage({ id, data });
+    postMessage({ id, data, drawingConfig });
 }
 let mod;
 onmessage = async function (e) {

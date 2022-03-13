@@ -11,13 +11,8 @@ pub mod newtons_fractal;
 pub mod plotting;
 pub mod simd_constants;
 
-#[wasm_bindgen]
-pub fn foo() -> usize {
-    42
-}
-
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
-    log!("Test: {}", "log");
+    log!("Initialized");
     Ok(())
 }

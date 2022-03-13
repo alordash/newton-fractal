@@ -1,4 +1,4 @@
-import init, { DrawingConfig as DC, fill_pixels_js, fill_pixels_simd_js, InitOutput, PlotScale as PS } from '../pkg/newton_fractal.js';
+import init, { DrawingConfig as DC, fill_pixels_js, fill_pixels_simd_js, InitOutput, PlotScale as PS, create_image_buffer, free_image_buffer } from '../pkg/newton_fractal.js';
 import { fillPixelsJavascript } from './newtons_fractal.js';
 import { PlotScale } from './plotter.js';
 
@@ -90,13 +90,24 @@ const workersCount = 4//navigator.hardwareConcurrency;
 let workers: Worker[] = [];
 let rustData: DC[] = [];
 let initialized = false;
+let doneCount = 0;
 
 let mod: InitOutput;
 
 function testWorkerCallback(e: MessageEvent<{ id: number, data: Uint8ClampedArray }>) {
     let { id, data } = e.data;
+    let drawingConfig = rustData[id];
     console.log('Message from test worker :>> ', e.data);
     console.log(`del rustData[${id}] :>> `, rustData[id]);
+
+    doneCount++;
+    console.log('doneCount :>> ', doneCount);
+    if (doneCount == workersCount) {
+        let { plot_scale, buffer_ptr } = drawingConfig;
+        let { xDisplayRange: width, yDisplayRange: height } = plot_scale;
+        console.log('buffer_ptr :>> ', buffer_ptr, "removing it's data with size: ", width * height);
+        free_image_buffer(width, height, buffer_ptr);
+    }
     // rustData[id].free();
     // console.log(`del rustData[${id}] :>> `, rustData[id]);
     // console.log(`del rustData[${id}].plot_scale :>> `, rustData[id].plot_scale);
@@ -138,9 +149,16 @@ onmessage = async function (e: MessageEvent<WorkerMessage>) {
                 // console.log('drawingResult :>> ', drawingResult);
 
                 if (initialized) {
+                    doneCount = 0;
                     let ps = drawingConfig.plotScale;
                     let drawing_mode = Object.values(DrawingModes).indexOf(drawingConfig.drawingMode);
                     let plot_scale = new PS(ps.x_offset, ps.y_offset, ps.x_value_range, ps.y_value_range, ps.x_display_range, ps.y_display_range);
+                    let image_data_buffer = create_image_buffer(ps.x_display_range, ps.y_display_range);
+                    // image_data_buffer = undefined;
+                    if (image_data_buffer == undefined) {
+                        console.error("Error creating image buffer");
+                    }
+                    console.log('image_data_buffer :>> ', image_data_buffer);
 
                     for (let i = 0; i < workersCount; i++) {
                         rustData[i] = new DC(
@@ -149,7 +167,8 @@ onmessage = async function (e: MessageEvent<WorkerMessage>) {
                             drawingConfig.iterationsCount,
                             new Uint8Array(drawingConfig.regionColors.flat()),
                             i,
-                            workersCount
+                            workersCount,
+                            image_data_buffer
                         );
                         console.log(`rustData[${i}] :>> `, rustData[i]);
                         // rustData[i].plot_scale.free();
