@@ -60,21 +60,28 @@ let rustData = [];
 let initialized = false;
 let lastImageDataBufferPtr;
 let doneCount = 0;
+let totalMs = 0;
+let cycles = 0;
+let startTime;
 let mod;
 function testWorkerCallback(e) {
     let { id, data } = e.data;
     let drawingConfig = rustData[id];
     doneCount++;
     if (doneCount == workersCount) {
+        let endTime = new Date();
+        let elapsedMs = endTime.getTime() - startTime.getTime();
+        totalMs += elapsedMs;
+        cycles++;
         let { plot_scale, buffer_ptr } = drawingConfig;
         let { xDisplayRange: width, yDisplayRange: height } = plot_scale;
-        console.log('buffer_ptr :>> ', buffer_ptr, "removing it's data with size: ", width * height);
+        console.log('buffer_ptr :>> ', buffer_ptr, "removing it's data with size: ", width * height, "mean time:", totalMs / cycles);
         let data = new Uint8ClampedArray(mod.memory.buffer, buffer_ptr, width * height * 4);
         data = new Uint8ClampedArray(data);
         let imageData = new ImageData(data, width, height);
         let drawingResult = {
             drawingMode: DrawingModes.CpuWasmScalar,
-            elapsedMs: 42,
+            elapsedMs,
             imageData
         };
         postCustomMessage({ drawingResult, command: WorkerCommands.Draw });
@@ -129,6 +136,7 @@ onmessage = async function (e) {
                     for (let i = 0; i < workersCount; i++) {
                         rustData[i] = new DC(plot_scale, new Float32Array(drawingConfig.roots.flat()), drawingConfig.iterationsCount, new Uint8Array(drawingConfig.regionColors.flat()), i, workersCount, lastImageDataBufferPtr);
                     }
+                    startTime = new Date();
                     for (let i = 0; i < workersCount; i++) {
                         workers[i].postMessage({ id: i, drawingConfig: rustData[i] });
                     }
