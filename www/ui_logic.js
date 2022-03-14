@@ -53,8 +53,6 @@ function runDrawingWorker(drawingMode = drawingModeSelect.value) {
     loggerDiv.innerHTML = `Drawing technic: ${drawingMode}</br>
     Calculation in process...</br>
     <b>FPS: ...</b>`;
-    let dataSize = drawingConfig.plotScale.x_display_range * drawingConfig.plotScale.y_display_range;
-    console.log('data target size :>> ', dataSize);
     doneDrawing = false;
     sendMessageToWorker({
         command: WorkerCommands.Draw,
@@ -72,12 +70,6 @@ function drawingCallback(drawingResult) {
     loggerDiv.innerHTML = `Drawing technic: ${drawingMode}</br>
 Took: ${elapsedMs}ms</br>
 <b>FPS: ${fps}</b>`;
-    for (let i = 3; i < imageData.data.length; i += 4) {
-        let v = imageData.data[i];
-        if (v != 255) {
-            console.log(`Bad alpha at imageData.data[${i}]`);
-        }
-    }
     console.log('received data :>> ', imageData);
     mainCanvasContext.putImageData(imageData, 0, 0);
     plotRoots(plotScale, roots);

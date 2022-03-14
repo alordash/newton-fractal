@@ -106,13 +106,11 @@ function testWorkerCallback(e: MessageEvent<{ id: number, data: Uint8ClampedArra
     if (doneCount == workersCount) {
         // plot_scale is copied
         let { plot_scale, buffer_ptr } = drawingConfig;
-        console.log('plot_scale :>> ', plot_scale);
         let { xDisplayRange: width, yDisplayRange: height } = plot_scale;
-        console.log('width, height :>> ', width, height);
         console.log('buffer_ptr :>> ', buffer_ptr, "removing it's data with size: ", width * height);
         let data = new Uint8ClampedArray(mod.memory.buffer, buffer_ptr, width * height * 4);
         data = new Uint8ClampedArray(data);
-        console.log('test data :>> ', data);
+        
         let imageData = new ImageData(data, width, height);
         let drawingResult: DrawingResult = {
             drawingMode: DrawingModes.CpuWasmScalar,

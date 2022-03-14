@@ -92,13 +92,6 @@ function drawingCallback(drawingResult: DrawingResult) {
 Took: ${elapsedMs}ms</br>
 <b>FPS: ${fps}</b>`;
 
-    for (let i = 3; i < imageData.data.length; i += 4) {
-        let v = imageData.data[i];
-        if (v != 255) {
-            console.log(`Bad alpha at imageData.data[${i}]`);
-        }
-    }
-
     console.log('received data :>> ', imageData);
     mainCanvasContext.putImageData(imageData, 0, 0);
     // console.log(`Done drawing using "${drawingMode}", took: ${elapsedMs}ms`);
