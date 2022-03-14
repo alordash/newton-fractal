@@ -4,9 +4,9 @@ function actualCallback(e: MessageEvent<{ id: number, drawingConfig: DrawingConf
     let msgData = e.data;
     let { id, drawingConfig } = msgData;
     let ptr = (<any>drawingConfig).ptr;
-    console.log(`test worker #${id} drawingConfig :>> `, drawingConfig);
+    // console.log(`test worker #${id} drawingConfig :>> `, drawingConfig);
     let data = fill_pixels_parallel(ptr);
-    // console.log('test worker: data.length :>> ', data.length);
+    // console.log(`test worker #${id}: data.length :>> `, data.length);
     postMessage({ id, data, drawingConfig });
 }
 

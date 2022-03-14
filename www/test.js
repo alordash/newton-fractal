@@ -3,7 +3,6 @@ function actualCallback(e) {
     let msgData = e.data;
     let { id, drawingConfig } = msgData;
     let ptr = drawingConfig.ptr;
-    console.log(`test worker #${id} drawingConfig :>> `, drawingConfig);
     let data = fill_pixels_parallel(ptr);
     postMessage({ id, data, drawingConfig });
 }

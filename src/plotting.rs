@@ -85,16 +85,14 @@ impl PlotScale {
         x_display_range: f32,
         y_display_range: f32,
     ) -> PlotScale {
-        let ps = PlotScale {
+        PlotScale {
             x_offset,
             y_offset,
             x_value_range,
             y_value_range,
             x_display_range,
             y_display_range,
-        };
-        log!("new plot scale: {:?}", &ps);
-        ps
+        }
     }
 }
 
@@ -312,7 +310,7 @@ pub fn fill_pixels_simd(
     };
 
     let mut pixels_data: Vec<ColorsPack> = vec![ColorsPack(0, 0, 0, 0); w_int * h_int];
-    
+
     unsafe {
         for j in 0..h_int {
             for i in 0..w_int {

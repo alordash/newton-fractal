@@ -58,19 +58,29 @@ const workersCount = 4;
 let workers = [];
 let rustData = [];
 let initialized = false;
+let lastImageDataBufferPtr;
 let doneCount = 0;
 let mod;
 function testWorkerCallback(e) {
     let { id, data } = e.data;
     let drawingConfig = rustData[id];
-    console.log('Message from test worker :>> ', e.data);
-    console.log(`del rustData[${id}] :>> `, rustData[id]);
     doneCount++;
-    console.log('doneCount :>> ', doneCount);
     if (doneCount == workersCount) {
         let { plot_scale, buffer_ptr } = drawingConfig;
+        console.log('plot_scale :>> ', plot_scale);
         let { xDisplayRange: width, yDisplayRange: height } = plot_scale;
+        console.log('width, height :>> ', width, height);
         console.log('buffer_ptr :>> ', buffer_ptr, "removing it's data with size: ", width * height);
+        let data = new Uint8ClampedArray(mod.memory.buffer, buffer_ptr, width * height * 4);
+        data = new Uint8ClampedArray(data);
+        console.log('test data :>> ', data);
+        let imageData = new ImageData(data, width, height);
+        let drawingResult = {
+            drawingMode: DrawingModes.CpuWasmScalar,
+            elapsedMs: 42,
+            imageData
+        };
+        postCustomMessage({ drawingResult, command: WorkerCommands.Draw });
         free_image_buffer(width, height, buffer_ptr);
         plot_scale.free();
     }
@@ -103,20 +113,24 @@ onmessage = async function (e) {
         case WorkerCommands.Draw:
             {
                 let { drawingConfig } = data;
-                let drawingResult = draw(drawingConfig);
+                let drawingResult;
+                if (drawingConfig.drawingMode != DrawingModes.CpuWasmScalar) {
+                    drawingResult = draw(drawingConfig);
+                }
                 if (initialized) {
-                    doneCount = 0;
                     let ps = drawingConfig.plotScale;
+                    if (doneCount != workersCount && lastImageDataBufferPtr != undefined) {
+                        free_image_buffer(ps.x_display_range, ps.y_display_range, lastImageDataBufferPtr);
+                    }
+                    doneCount = 0;
                     let drawing_mode = Object.values(DrawingModes).indexOf(drawingConfig.drawingMode);
                     let plot_scale = new PS(ps.x_offset, ps.y_offset, ps.x_value_range, ps.y_value_range, ps.x_display_range, ps.y_display_range);
-                    let image_data_buffer = create_image_buffer(ps.x_display_range, ps.y_display_range);
-                    if (image_data_buffer == undefined) {
+                    lastImageDataBufferPtr = create_image_buffer(ps.x_display_range, ps.y_display_range);
+                    if (lastImageDataBufferPtr == undefined) {
                         console.error("Error creating image buffer");
                     }
-                    console.log('image_data_buffer :>> ', image_data_buffer);
                     for (let i = 0; i < workersCount; i++) {
-                        rustData[i] = new DC(plot_scale, new Float32Array(drawingConfig.roots.flat()), drawingConfig.iterationsCount, new Uint8Array(drawingConfig.regionColors.flat()), i, workersCount, image_data_buffer);
-                        console.log(`rustData[${i}] :>> `, rustData[i]);
+                        rustData[i] = new DC(plot_scale, new Float32Array(drawingConfig.roots.flat()), drawingConfig.iterationsCount, new Uint8Array(drawingConfig.regionColors.flat()), i, workersCount, lastImageDataBufferPtr);
                     }
                     for (let i = 0; i < workersCount; i++) {
                         workers[i].postMessage({ id: i, drawingConfig: rustData[i] });
@@ -126,10 +140,13 @@ onmessage = async function (e) {
                 else {
                     initialized = true;
                 }
-                postCustomMessage({
-                    command,
-                    drawingResult
-                });
+                if (drawingConfig.drawingMode != DrawingModes.CpuWasmScalar) {
+                    console.log('drawingResult.imageData.data :>> ', drawingResult.imageData.data);
+                    postCustomMessage({
+                        command,
+                        drawingResult
+                    });
+                }
             }
             break;
         default:

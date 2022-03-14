@@ -90,6 +90,7 @@ const workersCount = 4//navigator.hardwareConcurrency;
 let workers: Worker[] = [];
 let rustData: DC[] = [];
 let initialized = false;
+let lastImageDataBufferPtr: number;
 let doneCount = 0;
 
 let mod: InitOutput;
@@ -97,16 +98,28 @@ let mod: InitOutput;
 function testWorkerCallback(e: MessageEvent<{ id: number, data: Uint8ClampedArray }>) {
     let { id, data } = e.data;
     let drawingConfig = rustData[id];
-    console.log('Message from test worker :>> ', e.data);
-    console.log(`del rustData[${id}] :>> `, rustData[id]);
+    // console.log('Message from test worker :>> ', e.data);
+    // console.log(`del rustData[${id}] :>> `, rustData[id]);
 
     doneCount++;
-    console.log('doneCount :>> ', doneCount);
+    // console.log('doneCount :>> ', doneCount);
     if (doneCount == workersCount) {
         // plot_scale is copied
         let { plot_scale, buffer_ptr } = drawingConfig;
+        console.log('plot_scale :>> ', plot_scale);
         let { xDisplayRange: width, yDisplayRange: height } = plot_scale;
+        console.log('width, height :>> ', width, height);
         console.log('buffer_ptr :>> ', buffer_ptr, "removing it's data with size: ", width * height);
+        let data = new Uint8ClampedArray(mod.memory.buffer, buffer_ptr, width * height * 4);
+        data = new Uint8ClampedArray(data);
+        console.log('test data :>> ', data);
+        let imageData = new ImageData(data, width, height);
+        let drawingResult: DrawingResult = {
+            drawingMode: DrawingModes.CpuWasmScalar,
+            elapsedMs: 42,
+            imageData
+        }
+        postCustomMessage({ drawingResult, command: WorkerCommands.Draw });
         free_image_buffer(width, height, buffer_ptr);
         // so we need to free it manually
         plot_scale.free();
@@ -148,20 +161,26 @@ onmessage = async function (e: MessageEvent<WorkerMessage>) {
         case WorkerCommands.Draw:
             {
                 let { drawingConfig } = data;
-                let drawingResult = draw(drawingConfig);
+                let drawingResult: DrawingResult;
+                if (drawingConfig.drawingMode != DrawingModes.CpuWasmScalar) {
+                    drawingResult = draw(drawingConfig);
+                }
                 // console.log('drawingResult :>> ', drawingResult);
 
                 if (initialized) {
-                    doneCount = 0;
                     let ps = drawingConfig.plotScale;
+                    if (doneCount != workersCount && lastImageDataBufferPtr != undefined) {
+                        free_image_buffer(ps.x_display_range, ps.y_display_range, lastImageDataBufferPtr);
+                    }
+                    doneCount = 0;
                     let drawing_mode = Object.values(DrawingModes).indexOf(drawingConfig.drawingMode);
                     let plot_scale = new PS(ps.x_offset, ps.y_offset, ps.x_value_range, ps.y_value_range, ps.x_display_range, ps.y_display_range);
-                    let image_data_buffer = create_image_buffer(ps.x_display_range, ps.y_display_range);
+                    lastImageDataBufferPtr = create_image_buffer(ps.x_display_range, ps.y_display_range);
                     // image_data_buffer = undefined;
-                    if (image_data_buffer == undefined) {
+                    if (lastImageDataBufferPtr == undefined) {
                         console.error("Error creating image buffer");
                     }
-                    console.log('image_data_buffer :>> ', image_data_buffer);
+                    // console.log('image_data_buffer :>> ', lastImageDataBufferPtr);
 
                     for (let i = 0; i < workersCount; i++) {
                         rustData[i] = new DC(
@@ -171,9 +190,9 @@ onmessage = async function (e: MessageEvent<WorkerMessage>) {
                             new Uint8Array(drawingConfig.regionColors.flat()),
                             i,
                             workersCount,
-                            image_data_buffer
+                            lastImageDataBufferPtr
                         );
-                        console.log(`rustData[${i}] :>> `, rustData[i]);
+                        // console.log(`rustData[${i}] :>> `, rustData[i]);
                     }
                     for (let i = 0; i < workersCount; i++) {
                         workers[i].postMessage({ id: i, drawingConfig: rustData[i] });
@@ -183,10 +202,13 @@ onmessage = async function (e: MessageEvent<WorkerMessage>) {
                     initialized = true;
                 }
 
-                postCustomMessage({
-                    command,
-                    drawingResult
-                });
+                if (drawingConfig.drawingMode != DrawingModes.CpuWasmScalar) {
+                    console.log('drawingResult.imageData.data :>> ', drawingResult.imageData.data);
+                    postCustomMessage({
+                        command,
+                        drawingResult
+                    });
+                }
             }
             break;
         default:
