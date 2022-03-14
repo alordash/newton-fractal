@@ -27,7 +27,6 @@ pub fn create_image_buffer(width: usize, height: usize) -> Option<u32> {
             return None;
         }
     };
-    log!("layout: {:?}", layout);
     let buffer_ptr = unsafe { alloc(layout) } as *mut u32;
     Some(buffer_ptr as u32)
 }
@@ -37,7 +36,6 @@ pub fn free_image_buffer(width: usize, height: usize, buffer_ptr: *mut u32) {
     let size = width * height;
     match Layout::array::<u32>(size) {
         Ok(layout) => unsafe {
-            log!("layout: {:?}", layout);
             dealloc(buffer_ptr as *mut u8, layout);
         },
         Err(e) => {
@@ -70,9 +68,9 @@ pub struct PlotScale {
     pub x_value_range: f32,
     #[wasm_bindgen(js_name = "yValueRange")]
     pub y_value_range: f32,
-    #[wasm_bindgen(js_name = "yDisplayRange")]
-    pub x_display_range: f32,
     #[wasm_bindgen(js_name = "xDisplayRange")]
+    pub x_display_range: f32,
+    #[wasm_bindgen(js_name = "yDisplayRange")]
     pub y_display_range: f32,
 }
 
@@ -87,14 +85,16 @@ impl PlotScale {
         x_display_range: f32,
         y_display_range: f32,
     ) -> PlotScale {
-        PlotScale {
+        let ps = PlotScale {
             x_offset,
             y_offset,
             x_value_range,
             y_value_range,
             x_display_range,
             y_display_range,
-        }
+        };
+        log!("new plot scale: {:?}", &ps);
+        ps
     }
 }
 
@@ -232,7 +232,6 @@ pub fn fill_pixels(
         }
     }
 
-    log!("#{} buffer_ptr: {}", part_offset + 1, buffer_ptr as u32);
     let pixels_data: &[u8] =
         unsafe { std::slice::from_raw_parts(buffer_ptr as *const u8, size * 4) };
 
@@ -313,7 +312,7 @@ pub fn fill_pixels_simd(
     };
 
     let mut pixels_data: Vec<ColorsPack> = vec![ColorsPack(0, 0, 0, 0); w_int * h_int];
-    log!("buffer_ptr: {}", pixels_data.as_mut_ptr() as u32);
+    
     unsafe {
         for j in 0..h_int {
             for i in 0..w_int {
