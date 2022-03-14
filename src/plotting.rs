@@ -222,24 +222,15 @@ pub fn fill_pixels(
             pixels_data.as_mut_ptr()
         }
     };
-    // let mut pixels_data = vec![0u32; size];
+    
     unsafe {
         for i in this_border..next_border {
-            *buffer_ptr.add(i - this_border) = filler(i % w_int, i / w_int);
-            // *pixels_data.get_unchecked_mut(i - this_border) = filler(i % w_int, i / w_int);
+            *buffer_ptr.add(i) = filler(i % w_int, i / w_int);
         }
     }
 
     let pixels_data: &[u8] =
         unsafe { std::slice::from_raw_parts(buffer_ptr as *const u8, size * 4) };
-
-    // unsafe {
-    //     log!("px data before delete: {:?}", *buffer_ptr);
-    //     if let Some(pixels_data_for_drop) = pixels_data_for_drop {
-    //         mem::drop(pixels_data_for_drop);
-    //         log!("px data after  delete: {:?}", *buffer_ptr);
-    //     }
-    // }
 
     Clamped(pixels_data.to_vec())
 }
