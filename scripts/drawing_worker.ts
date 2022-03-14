@@ -103,10 +103,13 @@ function testWorkerCallback(e: MessageEvent<{ id: number, data: Uint8ClampedArra
     doneCount++;
     console.log('doneCount :>> ', doneCount);
     if (doneCount == workersCount) {
+        // plot_scale is copied
         let { plot_scale, buffer_ptr } = drawingConfig;
         let { xDisplayRange: width, yDisplayRange: height } = plot_scale;
         console.log('buffer_ptr :>> ', buffer_ptr, "removing it's data with size: ", width * height);
         free_image_buffer(width, height, buffer_ptr);
+        // so we need to free it manually
+        plot_scale.free();
     }
     // rustData[id].free();
     // console.log(`del rustData[${id}] :>> `, rustData[id]);
@@ -171,9 +174,6 @@ onmessage = async function (e: MessageEvent<WorkerMessage>) {
                             image_data_buffer
                         );
                         console.log(`rustData[${i}] :>> `, rustData[i]);
-                        // rustData[i].plot_scale.free();
-                        // rustData.free();
-                        // console.log(`Sending drawing config to worker #${i}`);
                     }
                     for (let i = 0; i < workersCount; i++) {
                         workers[i].postMessage({ id: i, drawingConfig: rustData[i] });

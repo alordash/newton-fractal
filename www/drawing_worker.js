@@ -72,6 +72,7 @@ function testWorkerCallback(e) {
         let { xDisplayRange: width, yDisplayRange: height } = plot_scale;
         console.log('buffer_ptr :>> ', buffer_ptr, "removing it's data with size: ", width * height);
         free_image_buffer(width, height, buffer_ptr);
+        plot_scale.free();
     }
 }
 function createDrawingWorker(uri, wasmMemory) {
