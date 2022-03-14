@@ -54,7 +54,7 @@ function draw(config) {
 function postCustomMessage(message) {
     postMessage(message, undefined);
 }
-const workersCount = 4;
+const workersCount = navigator.hardwareConcurrency;
 let workers = [];
 let rustData = [];
 let initialized = false;

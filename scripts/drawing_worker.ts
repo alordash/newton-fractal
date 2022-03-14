@@ -86,7 +86,7 @@ function postCustomMessage(message: WorkerResult) {
     postMessage(message, undefined);
 }
 
-const workersCount = 4//navigator.hardwareConcurrency;
+const workersCount = navigator.hardwareConcurrency;
 let workers: Worker[] = [];
 let rustData: DC[] = [];
 let initialized = false;
