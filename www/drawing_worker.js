@@ -66,15 +66,16 @@ let startTime;
 let mod;
 function testWorkerCallback(e) {
     let { id, data } = e.data;
-    let drawingConfig = rustData[id];
+    let workerData = rustData[id];
     doneCount++;
     if (doneCount == workersCount) {
         let endTime = new Date();
         let elapsedMs = endTime.getTime() - startTime.getTime();
         totalMs += elapsedMs;
         cycles++;
-        let { plot_scale, buffer_ptr } = drawingConfig;
-        let { xDisplayRange: width, yDisplayRange: height } = plot_scale;
+        let { buffer_ptr } = workerData.dc;
+        let { w: width, h: height } = workerData;
+        console.log('width, height :>> ', width, height);
         console.log('buffer_ptr :>> ', buffer_ptr, "removing it's data with size: ", width * height, "mean time:", totalMs / cycles);
         let data = new Uint8ClampedArray(mod.memory.buffer, buffer_ptr, width * height * 4);
         data = new Uint8ClampedArray(data);
@@ -86,7 +87,6 @@ function testWorkerCallback(e) {
         };
         postCustomMessage({ drawingResult, command: WorkerCommands.Draw });
         free_image_buffer(width, height, buffer_ptr);
-        plot_scale.free();
     }
 }
 function createDrawingWorker(uri, wasmMemory) {
@@ -134,7 +134,9 @@ onmessage = async function (e) {
                         console.error("Error creating image buffer");
                     }
                     for (let i = 0; i < workersCount; i++) {
-                        rustData[i] = new DC(plot_scale, new Float32Array(drawingConfig.roots.flat()), drawingConfig.iterationsCount, new Uint8Array(drawingConfig.regionColors.flat()), i, workersCount, lastImageDataBufferPtr);
+                        rustData[i] = {
+                            dc: new DC(plot_scale, new Float32Array(drawingConfig.roots.flat()), drawingConfig.iterationsCount, new Uint8Array(drawingConfig.regionColors.flat()), i, workersCount, lastImageDataBufferPtr), w: ps.x_display_range, h: ps.y_display_range
+                        };
                     }
                     startTime = new Date();
                     for (let i = 0; i < workersCount; i++) {
