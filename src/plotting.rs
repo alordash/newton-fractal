@@ -13,6 +13,12 @@ use std::slice;
 
 use super::logging::*;
 
+//TODO move to other file
+pub fn calculate_part_size(total_size: usize, total_count: usize, offset: usize, step: usize) -> usize {
+    ((total_size * offset) as f32 / (total_count * step) as f32).round() as usize * step
+}
+
+//TODO move to other file
 #[wasm_bindgen]
 pub fn create_image_buffer(width: usize, height: usize) -> Option<u32> {
     let size = width * height;
@@ -31,6 +37,7 @@ pub fn create_image_buffer(width: usize, height: usize) -> Option<u32> {
     Some(buffer_ptr as u32)
 }
 
+//TODO move to other file
 #[wasm_bindgen]
 pub fn free_image_buffer(width: usize, height: usize, buffer_ptr: *mut u32) {
     let size = width * height;
@@ -52,6 +59,7 @@ pub fn free_image_buffer(width: usize, height: usize, buffer_ptr: *mut u32) {
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 struct ColorsPack(u32, u32, u32, u32);
 
+//TODO move to other file (possibly?)
 pub fn convert_colors_array<'a>(colors: &Vec<[u8; 4]>) -> &'a [u32] {
     let colors = ManuallyDrop::new(colors);
     unsafe { slice::from_raw_parts(addr_of!(colors[0]) as *mut u32, colors.len()) }
@@ -161,7 +169,7 @@ pub fn fill_pixels_js(
         colors,
         part_offset,
         parts_count,
-        buffer_ptr.map(|ptr| ptr as *mut u32),
+        buffer_ptr.map(|v| v as *mut u32),
     )
 }
 
@@ -210,8 +218,8 @@ pub fn fill_pixels(
     };
 
     let size = w_int * h_int;
-    let this_border = ((size * part_offset) as f32 / parts_count as f32).round() as usize;
-    let next_border = ((size * (part_offset + 1)) as f32 / parts_count as f32).round() as usize;
+    let this_border = calculate_part_size(size, parts_count, part_offset, 1);
+    let next_border = calculate_part_size(size, parts_count, part_offset + 1, 1);
     let size = next_border - this_border;
 
     let mut pixels_data: Vec<u32>;
@@ -222,7 +230,7 @@ pub fn fill_pixels(
             pixels_data.as_mut_ptr()
         }
     };
-    
+
     unsafe {
         for i in this_border..next_border {
             *buffer_ptr.add(i) = filler(i % w_int, i / w_int);
@@ -242,6 +250,9 @@ pub fn fill_pixels_simd_js(
     roots: JsValue,      // Vec<Complexf32>
     iterations_count: usize,
     colors: JsValue,
+    part_offset: Option<usize>,
+    parts_count: Option<usize>,
+    buffer_ptr: Option<u32>,
 ) -> Clamped<Vec<u8>> {
     let plot_scale: PlotScale = plot_scale.into_serde().unwrap();
     let roots: Vec<Complex32> = (roots.into_serde::<Vec<(f32, f32)>>().unwrap())
@@ -252,7 +263,15 @@ pub fn fill_pixels_simd_js(
     let colors: Vec<[u8; 4]> = colors.into_serde().unwrap();
     let colors = convert_colors_array(&colors);
 
-    fill_pixels_simd(&plot_scale, roots.as_slice(), iterations_count, colors)
+    fill_pixels_simd(
+        &plot_scale,
+        roots.as_slice(),
+        iterations_count,
+        colors,
+        part_offset,
+        parts_count,
+        buffer_ptr.map(|v| v as *mut u32),
+    )
 }
 
 #[target_feature(enable = "simd128")]
@@ -261,6 +280,9 @@ pub fn fill_pixels_simd(
     roots: &[Complex32],
     iterations_count: usize,
     colors: &[u32],
+    part_offset: Option<usize>,
+    parts_count: Option<usize>,
+    buffer_ptr: Option<*mut u32>,
 ) -> Clamped<Vec<u8>> {
     let PlotScale {
         x_display_range: width,
@@ -300,6 +322,7 @@ pub fn fill_pixels_simd(
         }
     };
 
+    let size = w_int * h_int;
     let mut pixels_data: Vec<ColorsPack> = vec![ColorsPack(0, 0, 0, 0); w_int * h_int];
 
     unsafe {
