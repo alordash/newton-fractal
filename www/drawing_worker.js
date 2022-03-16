@@ -117,10 +117,6 @@ onmessage = async function (e) {
         case WorkerCommands.Draw:
             {
                 let { drawingConfig } = data;
-                let drawingResult;
-                if (drawingConfig.drawingMode != DrawingModes.CpuWasmScalar) {
-                    drawingResult = draw(drawingConfig);
-                }
                 if (initialized) {
                     let ps = drawingConfig.plotScale;
                     if (doneCount != workersCount && lastImageDataBufferPtr != undefined) {
@@ -135,7 +131,8 @@ onmessage = async function (e) {
                     }
                     for (let i = 0; i < workersCount; i++) {
                         rustData[i] = {
-                            dc: new DC(plot_scale, new Float32Array(drawingConfig.roots.flat()), drawingConfig.iterationsCount, new Uint8Array(drawingConfig.regionColors.flat()), i, workersCount, lastImageDataBufferPtr), w: ps.x_display_range, h: ps.y_display_range
+                            dc: new DC(plot_scale, new Float32Array(drawingConfig.roots.flat()), drawingConfig.iterationsCount, new Uint8Array(drawingConfig.regionColors.flat()), i, workersCount, lastImageDataBufferPtr), w: ps.x_display_range, h: ps.y_display_range,
+                            simd: drawingConfig.drawingMode == DrawingModes.CpuWasmSimd
                         };
                     }
                     startTime = new Date();
@@ -146,13 +143,6 @@ onmessage = async function (e) {
                 }
                 else {
                     initialized = true;
-                }
-                if (drawingConfig.drawingMode != DrawingModes.CpuWasmScalar) {
-                    console.log('drawingResult.imageData.data :>> ', drawingResult.imageData.data);
-                    postCustomMessage({
-                        command,
-                        drawingResult
-                    });
                 }
             }
             break;

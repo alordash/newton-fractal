@@ -88,7 +88,7 @@ function postCustomMessage(message: WorkerResult) {
 
 const workersCount = navigator.hardwareConcurrency;
 let workers: Worker[] = [];
-let rustData: { dc: DC, w: number, h: number }[] = [];
+let rustData: { dc: DC, w: number, h: number, simd: boolean }[] = [];
 let initialized = false;
 let lastImageDataBufferPtr: number;
 let doneCount = 0;
@@ -167,10 +167,10 @@ onmessage = async function (e: MessageEvent<WorkerMessage>) {
         case WorkerCommands.Draw:
             {
                 let { drawingConfig } = data;
-                let drawingResult: DrawingResult;
-                if (drawingConfig.drawingMode != DrawingModes.CpuWasmScalar) {
-                    drawingResult = draw(drawingConfig);
-                }
+                // let drawingResult: DrawingResult;
+                // if (drawingConfig.drawingMode != DrawingModes.CpuWasmScalar) {
+                //     drawingResult = draw(drawingConfig);
+                // }
                 // console.log('drawingResult :>> ', drawingResult);
 
                 if (initialized) {
@@ -198,7 +198,8 @@ onmessage = async function (e: MessageEvent<WorkerMessage>) {
                                 i,
                                 workersCount,
                                 lastImageDataBufferPtr
-                            ), w: ps.x_display_range, h: ps.y_display_range
+                            ), w: ps.x_display_range, h: ps.y_display_range,
+                            simd: drawingConfig.drawingMode == DrawingModes.CpuWasmSimd
                         };
                         // console.log(`rustData[${i}] :>> `, rustData[i]);
                     }
@@ -211,13 +212,13 @@ onmessage = async function (e: MessageEvent<WorkerMessage>) {
                     initialized = true;
                 }
 
-                if (drawingConfig.drawingMode != DrawingModes.CpuWasmScalar) {
-                    console.log('drawingResult.imageData.data :>> ', drawingResult.imageData.data);
-                    postCustomMessage({
-                        command,
-                        drawingResult
-                    });
-                }
+                // if (drawingConfig.drawingMode != DrawingModes.CpuWasmScalar) {
+                //     console.log('drawingResult.imageData.data :>> ', drawingResult.imageData.data);
+                //     postCustomMessage({
+                //         command,
+                //         drawingResult
+                //     });
+                // }
             }
             break;
         default:

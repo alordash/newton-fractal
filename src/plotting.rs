@@ -14,7 +14,12 @@ use std::slice;
 use super::logging::*;
 
 //TODO move to other file
-pub fn calculate_part_size(total_size: usize, total_count: usize, offset: usize, step: usize) -> usize {
+pub fn calculate_part_size(
+    total_size: usize,
+    total_count: usize,
+    offset: usize,
+    step: usize,
+) -> usize {
     ((total_size * offset) as f32 / (total_count * step) as f32).round() as usize * step
 }
 
@@ -22,6 +27,7 @@ pub fn calculate_part_size(total_size: usize, total_count: usize, offset: usize,
 #[wasm_bindgen]
 pub fn create_image_buffer(width: usize, height: usize) -> Option<u32> {
     let size = width * height;
+    log!("Creating memory with size of: {}", size);
     let layout = match Layout::array::<u32>(size) {
         Ok(v) => v,
         Err(e) => {
@@ -57,7 +63,7 @@ pub fn free_image_buffer(width: usize, height: usize, buffer_ptr: *mut u32) {
 
 #[repr(C)]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
-struct ColorsPack(u32, u32, u32, u32);
+pub struct ColorsPack(u32, u32, u32, u32);
 
 //TODO move to other file (possibly?)
 pub fn convert_colors_array<'a>(colors: &Vec<[u8; 4]>) -> &'a [u32] {
@@ -217,9 +223,9 @@ pub fn fill_pixels(
         colors[closest_root_id]
     };
 
-    let size = w_int * h_int;
-    let this_border = calculate_part_size(size, parts_count, part_offset, 1);
-    let next_border = calculate_part_size(size, parts_count, part_offset + 1, 1);
+    let total_size = w_int * h_int;
+    let this_border = calculate_part_size(total_size, parts_count, part_offset, 1);
+    let next_border = calculate_part_size(total_size, parts_count, part_offset + 1, 1);
     let size = next_border - this_border;
 
     let mut pixels_data: Vec<u32>;
@@ -270,10 +276,11 @@ pub fn fill_pixels_simd_js(
         colors,
         part_offset,
         parts_count,
-        buffer_ptr.map(|v| v as *mut u32),
+        buffer_ptr.map(|v| v as *mut ColorsPack),
     )
 }
 
+// TODO replace all "4" with sizeof(ColorsPack)
 #[target_feature(enable = "simd128")]
 pub fn fill_pixels_simd(
     plot_scale: &PlotScale,
@@ -282,16 +289,21 @@ pub fn fill_pixels_simd(
     colors: &[u32],
     part_offset: Option<usize>,
     parts_count: Option<usize>,
-    buffer_ptr: Option<*mut u32>,
+    buffer_ptr: Option<*mut ColorsPack>,
 ) -> Clamped<Vec<u8>> {
+    let (part_offset, parts_count) = (
+        part_offset.or(Some(0)).unwrap(),
+        parts_count.or(Some(1)).unwrap(),
+    );
+
     let PlotScale {
         x_display_range: width,
         y_display_range: height,
         ..
     } = *plot_scale;
-    let (w_int, h_int) = (width as usize / 4, height as usize);
+    let (w_int, h_int) = (width as usize, height as usize);
 
-    let filler = |x, y| {
+    let filler = |x: usize, y: usize| {
         let mut _min_distances = SimdHelper::F32_MAXIMUMS;
         let mut _closest_root_ids = SimdHelper::I32_ZEROES;
         // Simd can be used here
@@ -322,23 +334,29 @@ pub fn fill_pixels_simd(
         }
     };
 
-    let size = w_int * h_int;
-    let mut pixels_data: Vec<ColorsPack> = vec![ColorsPack(0, 0, 0, 0); w_int * h_int];
+    let total_size = w_int * h_int;
+    let this_border = calculate_part_size(total_size, parts_count, part_offset, 4) / 4;
+    let next_border = calculate_part_size(total_size, parts_count, part_offset + 1, 4) / 4;
+    let size = next_border - this_border;
 
+    let mut pixels_data: Vec<ColorsPack>;
+    let buffer_ptr = match buffer_ptr {
+        Some(v) => v,
+        None => {
+            pixels_data = vec![ColorsPack(0, 0, 0, 0); size];
+            pixels_data.as_mut_ptr()
+        }
+    };
+
+    let w_int = w_int / 4;
     unsafe {
-        for j in 0..h_int {
-            for i in 0..w_int {
-                *pixels_data.get_unchecked_mut(i + j * w_int) = filler(i, j);
-            }
+        for i in this_border..next_border {
+            *buffer_ptr.add(i) = filler(i % w_int, i / w_int);
         }
     }
 
-    let pixels_data: &[u8] = unsafe {
-        std::slice::from_raw_parts(
-            std::mem::transmute(pixels_data.as_ptr()),
-            pixels_data.len() * 16,
-        )
-    };
+    let pixels_data: &[u8] =
+        unsafe { std::slice::from_raw_parts(buffer_ptr as *const u8, size * 16) };
 
     Clamped(pixels_data.to_vec())
 }

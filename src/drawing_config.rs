@@ -1,4 +1,4 @@
-use crate::plotting::PlotScale;
+use crate::plotting::{ColorsPack, PlotScale};
 
 use std::ptr::addr_of;
 
@@ -31,7 +31,7 @@ pub struct DrawingConfig {
     pub colors: Vec<[u8; 4]>,
     pub part_offset: Option<usize>,
     pub parts_count: Option<usize>,
-    pub buffer_ptr: Option<u32>
+    pub buffer_ptr: Option<u32>,
 }
 
 #[wasm_bindgen]
@@ -44,7 +44,7 @@ impl DrawingConfig {
         mut colors: Vec<u8>,
         part_offset: Option<usize>,
         parts_count: Option<usize>,
-        buffer_ptr: Option<u32>
+        buffer_ptr: Option<u32>,
     ) -> Option<DrawingConfig> {
         roots.shrink_to_fit();
         colors.shrink_to_fit();
@@ -80,16 +80,18 @@ impl DrawingConfig {
             colors: colors_packed,
             part_offset,
             parts_count,
-            buffer_ptr
+            buffer_ptr,
         };
 
         return Some(drawing_config);
     }
 }
 
+// TODO restructure to other file
 #[wasm_bindgen]
-pub fn fill_pixels_parallel(drawing_config_ptr: u32) -> Clamped<Vec<u8>> {
-    let mut wasm_ref_cell = unsafe { Box::from_raw(drawing_config_ptr as *mut WasmRefCell<DrawingConfig>) };
+pub fn fill_pixels_parallel(drawing_config_ptr: u32, simd: Option<bool>) -> Clamped<Vec<u8>> {
+    let mut wasm_ref_cell =
+        unsafe { Box::from_raw(drawing_config_ptr as *mut WasmRefCell<DrawingConfig>) };
     let drawing_config = wasm_ref_cell.get_mut();
     // log!("drawing_config: {:?}", drawing_config);
     let DrawingConfig {
@@ -99,7 +101,7 @@ pub fn fill_pixels_parallel(drawing_config_ptr: u32) -> Clamped<Vec<u8>> {
         colors,
         part_offset,
         parts_count,
-        buffer_ptr
+        buffer_ptr,
     } = drawing_config;
 
     // log!(
@@ -111,15 +113,29 @@ pub fn fill_pixels_parallel(drawing_config_ptr: u32) -> Clamped<Vec<u8>> {
     let colors_packed =
         unsafe { slice::from_raw_parts_mut(addr_of!(colors[0]) as *mut u32, colors.len()) };
 
-    let data = fill_pixels(
-        plot_scale,
-        roots,
-        *iterations_count,
-        colors_packed,
-        *part_offset,
-        *parts_count,
-        buffer_ptr.map(|ptr| ptr as *mut u32)
-    );
+    let simd = simd.or(Some(false)).unwrap();
+
+    let data = if simd {
+        fill_pixels_simd(
+            plot_scale,
+            roots,
+            *iterations_count,
+            colors_packed,
+            *part_offset,
+            *parts_count,
+            buffer_ptr.map(|ptr| ptr as *mut ColorsPack),
+        )
+    } else {
+        fill_pixels(
+            plot_scale,
+            roots,
+            *iterations_count,
+            colors_packed,
+            *part_offset,
+            *parts_count,
+            buffer_ptr.map(|ptr| ptr as *mut u32),
+        )
+    };
 
     // log!("Calculated, first 10 items of data: {:?}", &data[0..10]);
 

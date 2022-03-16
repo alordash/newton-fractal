@@ -2,8 +2,9 @@ import init, { fill_pixels_parallel } from "../pkg/newton_fractal.js";
 function actualCallback(e) {
     let msgData = e.data;
     let { id, drawingConfig } = msgData;
+    let { simd } = drawingConfig;
     let ptr = drawingConfig.dc.ptr;
-    let data = fill_pixels_parallel(ptr);
+    let data = fill_pixels_parallel(ptr, simd);
     postMessage({ id, data, drawingConfig: drawingConfig.dc });
 }
 let mod;
