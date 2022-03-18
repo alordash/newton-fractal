@@ -31,7 +31,12 @@ async function draw(drawingMode: DrawingModes = <DrawingModes><any>drawingModeSe
         let data = new Uint8ClampedArray(drawingResult.data);
         let { elapsedMs, plotScale: { x_display_range: width, y_display_range: height } } = drawingResult;
 
-        let fps = 1000.0 / elapsedMs;
+        let fps = 1000 / elapsedMs;
+        let precisionPower = 10;
+        if (fps < 1) {
+            precisionPower = 100;
+        }
+        fps = Math.round(fps * precisionPower) / precisionPower;
 
         loggerDiv.innerHTML = `Drawing technic: ${drawingMode}</br>
 Took: ${elapsedMs}ms</br>
@@ -40,6 +45,7 @@ Took: ${elapsedMs}ms</br>
         let imageData = new ImageData(data, width, height);
         mainCanvasContext.putImageData(imageData, 0, 0);
 
+        plotRoots(plotScale, roots);
     }
 }
 
