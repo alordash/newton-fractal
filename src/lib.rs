@@ -6,7 +6,6 @@ use wasm_bindgen::prelude::*;
 mod logging;
 use logging::*;
 
-pub mod drawing_config;
 pub mod newtons_fractal;
 pub mod plotting;
 pub mod simd_constants;

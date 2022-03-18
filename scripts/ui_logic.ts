@@ -2,6 +2,8 @@ import { generateColor, regionColors } from './colors.js';
 import { transformPointToPlotScale, transformPointToCanvasScale } from './newtons_fractal.js';
 import { PlotScale, roots, addRoot, getClosestRoot } from './plotter.js';
 
+import { runDrawingWorkers } from './drawing_manager.js';
+
 enum DrawingModes {
     CpuWasmSimd = "CPU-wasm-simd",
     CpuWasmScalar = "CPU-wasm-scalar",
@@ -50,7 +52,7 @@ function resizeCanvas(width: number, height: number) {
     mainCanvas.height = height;
 }
 
-function CanvasClick(me: MouseEvent) {
+async function CanvasClick(me: MouseEvent) {
     if (holdingPointIndex != -1) return;
     let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
 
@@ -61,7 +63,22 @@ function CanvasClick(me: MouseEvent) {
         roots.splice(id, 1);
     }
 
-    // runDrawingWorker();
+    let iterationsCount = parseInt(iterationsCountRange.value);
+    let result = runDrawingWorkers(plotScale, roots, iterationsCount, regionColors);
+    if (result == false) {
+        console.log(`Error running drawing workers`);
+    } else {
+        console.log(`Waiting for drawing completion`);
+        let data = await result;
+        console.log('returned data :>> ', data);
+        data = new Uint8ClampedArray(data);
+        let { x_display_range: width, y_display_range: height } = plotScale;
+        console.log('data.length :>> ', data.length, ', width :>> ', width, ', height :>> ', height);
+
+        let imageData = new ImageData(data, width, height);
+        mainCanvasContext.putImageData(imageData, 0, 0);
+        console.log(`Drawing completed`);
+    }
 }
 
 function CanvasMouseDown(me: MouseEvent) {
@@ -88,6 +105,15 @@ function CanvasMouseMove(me: MouseEvent) {
     roots[holdingPointIndex] = [x, y];
 
     // runDrawingWorker();
+}
+
+function WindowResize() {
+    let { innerWidth, innerHeight } = window;
+    plotScale = PlotScale.calculatePlotScale(innerWidth, innerHeight);
+    resizeCanvas(
+        plotScale.x_display_range,
+        plotScale.y_display_range
+    );
 }
 
 console.log('DrawingModes :>> ', DrawingModes);
@@ -117,6 +143,9 @@ async function run() {
     mainCanvas.addEventListener("mousedown", CanvasMouseDown)
     mainCanvas.addEventListener("click", CanvasClick);
     mainCanvas.addEventListener("mousemove", CanvasMouseMove);
+
+    window.addEventListener("resize", WindowResize);
+    WindowResize();
 
     // runDrawingWorker(true);
 }

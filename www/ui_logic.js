@@ -1,5 +1,7 @@
+import { regionColors } from './colors.js';
 import { transformPointToPlotScale, transformPointToCanvasScale } from './newtons_fractal.js';
 import { PlotScale, roots, addRoot, getClosestRoot } from './plotter.js';
+import { runDrawingWorkers } from './drawing_manager.js';
 var DrawingModes;
 (function (DrawingModes) {
     DrawingModes["CpuWasmSimd"] = "CPU-wasm-simd";
@@ -41,7 +43,7 @@ function resizeCanvas(width, height) {
     mainCanvas.width = width;
     mainCanvas.height = height;
 }
-function CanvasClick(me) {
+async function CanvasClick(me) {
     if (holdingPointIndex != -1)
         return;
     let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
@@ -51,6 +53,22 @@ function CanvasClick(me) {
     else if (me.ctrlKey) {
         let { id, dst } = getClosestRoot(x, y);
         roots.splice(id, 1);
+    }
+    let iterationsCount = parseInt(iterationsCountRange.value);
+    let result = runDrawingWorkers(plotScale, roots, iterationsCount, regionColors);
+    if (result == false) {
+        console.log(`Error running drawing workers`);
+    }
+    else {
+        console.log(`Waiting for drawing completion`);
+        let data = await result;
+        console.log('returned data :>> ', data);
+        data = new Uint8ClampedArray(data);
+        let { x_display_range: width, y_display_range: height } = plotScale;
+        console.log('data.length :>> ', data.length, ', width :>> ', width, ', height :>> ', height);
+        let imageData = new ImageData(data, width, height);
+        mainCanvasContext.putImageData(imageData, 0, 0);
+        console.log(`Drawing completed`);
     }
 }
 function CanvasMouseDown(me) {
@@ -74,6 +92,11 @@ function CanvasMouseMove(me) {
     let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
     roots[holdingPointIndex] = [x, y];
 }
+function WindowResize() {
+    let { innerWidth, innerHeight } = window;
+    plotScale = PlotScale.calculatePlotScale(innerWidth, innerHeight);
+    resizeCanvas(plotScale.x_display_range, plotScale.y_display_range);
+}
 console.log('DrawingModes :>> ', DrawingModes);
 console.log('Object.(DrawingModes) :>> ', Object.values(DrawingModes));
 for (const value of Object.values(DrawingModes)) {
@@ -91,6 +114,8 @@ async function run() {
     mainCanvas.addEventListener("mousedown", CanvasMouseDown);
     mainCanvas.addEventListener("click", CanvasClick);
     mainCanvas.addEventListener("mousemove", CanvasMouseMove);
+    window.addEventListener("resize", WindowResize);
+    WindowResize();
 }
 run();
 //# sourceMappingURL=ui_logic.js.map
