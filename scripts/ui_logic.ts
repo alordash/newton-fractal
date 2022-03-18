@@ -19,9 +19,11 @@ let holdingPointIndex = -1;
 async function draw(drawingMode: DrawingModes = <DrawingModes><any>drawingModeSelect.value) {
     let iterationsCount = parseInt(iterationsCountRange.value);
 
-    loggerDiv.innerHTML = `Drawing technic: ${drawingMode}</br>
-        Calculation in process...</br>
-        <b>FPS: ...</b>`;
+    loggerDiv.innerHTML = `Roots count: ${roots.length}</br>
+———————————</br>
+Drawing technic: ${drawingMode}</br>
+Calculation in process...</br>
+<b>FPS: ...</b>`;
 
     let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors);
     if (result == false) {
@@ -38,7 +40,9 @@ async function draw(drawingMode: DrawingModes = <DrawingModes><any>drawingModeSe
     }
     fps = Math.round(fps * precisionPower) / precisionPower;
 
-    loggerDiv.innerHTML = `Drawing technic: ${drawingMode}</br>
+    loggerDiv.innerHTML = `Roots count: ${roots.length}</br>
+———————————</br>
+Drawing technic: ${drawingMode}</br>
 Took: ${elapsedMs}ms</br>
 <b>FPS: ${fps}</b>`;
 

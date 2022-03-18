@@ -14,9 +14,11 @@ const CLICK_POINT_DISTANCE = 0.125;
 let holdingPointIndex = -1;
 async function draw(drawingMode = drawingModeSelect.value) {
     let iterationsCount = parseInt(iterationsCountRange.value);
-    loggerDiv.innerHTML = `Drawing technic: ${drawingMode}</br>
-        Calculation in process...</br>
-        <b>FPS: ...</b>`;
+    loggerDiv.innerHTML = `Roots count: ${roots.length}</br>
+———————————</br>
+Drawing technic: ${drawingMode}</br>
+Calculation in process...</br>
+<b>FPS: ...</b>`;
     let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors);
     if (result == false) {
         return;
@@ -30,7 +32,9 @@ async function draw(drawingMode = drawingModeSelect.value) {
         precisionPower = 100;
     }
     fps = Math.round(fps * precisionPower) / precisionPower;
-    loggerDiv.innerHTML = `Drawing technic: ${drawingMode}</br>
+    loggerDiv.innerHTML = `Roots count: ${roots.length}</br>
+———————————</br>
+Drawing technic: ${drawingMode}</br>
 Took: ${elapsedMs}ms</br>
 <b>FPS: ${fps}</b>`;
     let imageData = new ImageData(data, width, height);
