@@ -35,7 +35,7 @@ function calculateFps(elapsedMs) {
 }
 async function draw(drawingMode = drawingModeSelect.value) {
     let iterationsCount = parseInt(iterationsCountRange.value);
-    let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors, 1);
+    let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors);
     if (result == false) {
         return;
     }

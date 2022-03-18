@@ -126,7 +126,6 @@ function runDrawingWorkers(drawingMode: DrawingModes, plotScale: PlotScale, root
     let u32BufferSize = width * height;
     let bufferPtr = wasm_bindgen.create_u32_buffer(u32BufferSize);
     drawingWork = new DrawingWork(drawingMode, plotScale, bufferPtr, u32BufferSize * 4);
-    console.log('drawingWork.bufferSize :>> ', drawingWork.bufferSize);
 
     readyWorkersCount -= concurrency;
     drawingWork.startTime = performance.now();

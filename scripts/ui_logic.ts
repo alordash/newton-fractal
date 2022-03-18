@@ -45,7 +45,7 @@ function calculateFps(elapsedMs: number) {
 async function draw(drawingMode: DrawingModes = <DrawingModes><any>drawingModeSelect.value) {
     let iterationsCount = parseInt(iterationsCountRange.value);
 
-    let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors, 1);
+    let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors);
     if (result == false) {
         return;
     }
@@ -171,7 +171,7 @@ iterationsCountRange.addEventListener("change", () => {
 });
 
 async function run() {
-    mainCanvas.addEventListener("mousedown", CanvasMouseDown)
+    mainCanvas.addEventListener("mousedown", CanvasMouseDown);
     mainCanvas.addEventListener("click", CanvasClick);
     mainCanvas.addEventListener("mousemove", CanvasMouseMove);
 
