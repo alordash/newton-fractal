@@ -12,6 +12,27 @@ const rootPointSize = 4.0;
 let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
 const CLICK_POINT_DISTANCE = 0.125;
 let holdingPointIndex = -1;
+async function draw(drawingMode = drawingModeSelect.value) {
+    let iterationsCount = parseInt(iterationsCountRange.value);
+    loggerDiv.innerHTML = `Drawing technic: ${drawingMode}</br>
+        Calculation in process...</br>
+        <b>FPS: ...</b>`;
+    let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors);
+    if (result == false) {
+        console.log(`Error running drawing workers`);
+    }
+    else {
+        let drawingResult = await result;
+        let data = new Uint8ClampedArray(drawingResult.data);
+        let { elapsedMs, plotScale: { x_display_range: width, y_display_range: height } } = drawingResult;
+        let fps = 1000.0 / elapsedMs;
+        loggerDiv.innerHTML = `Drawing technic: ${drawingMode}</br>
+Took: ${elapsedMs}ms</br>
+<b>FPS: ${fps}</b>`;
+        let imageData = new ImageData(data, width, height);
+        mainCanvasContext.putImageData(imageData, 0, 0);
+    }
+}
 let mainCanvas = document.getElementById("main-canvas");
 let mainCanvasContext = mainCanvas.getContext("2d");
 let drawingModeSelect = document.getElementById("drawingModeSelect");
@@ -33,12 +54,6 @@ function plotRoots(plotScale, roots) {
         plotPoint(x, y, rootPointSize, plotScale);
     }
 }
-loggerDiv.innerHTML = `Drawing technic: ${0}</br>
-    Calculation in process...</br>
-    <b>FPS: ...</b>`;
-loggerDiv.innerHTML = `Drawing technic: ${0}</br>
-Took: ${0}ms</br>
-<b>FPS: ${0}</b>`;
 function resizeCanvas(width, height) {
     mainCanvas.width = width;
     mainCanvas.height = height;
@@ -54,22 +69,7 @@ async function CanvasClick(me) {
         let { id, dst } = getClosestRoot(x, y);
         roots.splice(id, 1);
     }
-    let iterationsCount = parseInt(iterationsCountRange.value);
-    let result = runDrawingWorkers(plotScale, roots, iterationsCount, regionColors);
-    if (result == false) {
-        console.log(`Error running drawing workers`);
-    }
-    else {
-        console.log(`Waiting for drawing completion`);
-        let data = await result;
-        console.log('returned data :>> ', data);
-        data = new Uint8ClampedArray(data);
-        let { x_display_range: width, y_display_range: height } = plotScale;
-        console.log('data.length :>> ', data.length, ', width :>> ', width, ', height :>> ', height);
-        let imageData = new ImageData(data, width, height);
-        mainCanvasContext.putImageData(imageData, 0, 0);
-        console.log(`Drawing completed`);
-    }
+    draw();
 }
 function CanvasMouseDown(me) {
     let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
@@ -91,11 +91,13 @@ function CanvasMouseMove(me) {
     }
     let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
     roots[holdingPointIndex] = [x, y];
+    draw();
 }
-function WindowResize() {
+async function WindowResize() {
     let { innerWidth, innerHeight } = window;
     plotScale = PlotScale.calculatePlotScale(innerWidth, innerHeight);
     resizeCanvas(plotScale.x_display_range, plotScale.y_display_range);
+    draw();
 }
 console.log('DrawingModes :>> ', DrawingModes);
 console.log('Object.(DrawingModes) :>> ', Object.values(DrawingModes));
@@ -110,12 +112,12 @@ iterationsCountRange.addEventListener("change", () => {
     iterationsCountDisplay.value = iterationsCountRange.value;
 });
 async function run() {
-    let sharedMemory = new WebAssembly.Memory({ initial: 100, maximum: 1000, shared: true });
     mainCanvas.addEventListener("mousedown", CanvasMouseDown);
     mainCanvas.addEventListener("click", CanvasClick);
     mainCanvas.addEventListener("mousemove", CanvasMouseMove);
     window.addEventListener("resize", WindowResize);
     WindowResize();
+    draw();
 }
 run();
 //# sourceMappingURL=ui_logic.js.map

@@ -43,8 +43,7 @@ pub fn create_u32_buffer(size: usize) -> Option<u32> {
 
 //TODO move to other file
 #[wasm_bindgen]
-pub fn free_image_buffer(width: usize, height: usize, buffer_ptr: *mut u32) {
-    let size = width * height;
+pub fn free_u32_buffer(size: usize, buffer_ptr: *mut u32) {
     match Layout::array::<u32>(size) {
         Ok(layout) => unsafe {
             dealloc(buffer_ptr as *mut u8, layout);

@@ -1,4 +1,5 @@
 import { PlotScale } from "./plotter";
+const { create_u32_buffer, free_u32_buffer } = wasm_bindgen;
 
 const WASM_MODULE_SOURCE_PATH = '../pkg/newton_fractal_bg.wasm';
 let wasmModule: InitOutput;
@@ -9,13 +10,33 @@ let drawingWorkersCount = navigator.hardwareConcurrency;
 let drawingWorkers: Worker[] = [];
 let readyWorkersCount = 0;
 
+enum DrawingModes {
+    CpuWasmSimd = "CPU-wasm-simd",
+    CpuWasmScalar = "CPU-wasm-scalar",
+    CpuJsScalar = "CPU-js-scalar"
+}
+
+type DrawingResult = {
+    elapsedMs: number,
+    drawingMode: DrawingModes,
+    plotScale: PlotScale,
+    data: Uint8ClampedArray,
+}
+
 class DrawingWork {
     bufferPtr: number;
     bufferSize: number;
-    promise: Promise<Uint8ClampedArray>;
-    promiseResolve: (value: Uint8ClampedArray) => void;
+    drawingMode: DrawingModes;
+    plotScale: PlotScale;
 
-    constructor(bufferPtr: number, bufferSize: number) {
+    startTime: number;
+    promise: Promise<DrawingResult>;
+    promiseResolve: (value: DrawingResult) => void;
+
+    constructor(drawingMode: DrawingModes, plotScale: PlotScale, bufferPtr: number, bufferSize: number) {
+        this.drawingMode = drawingMode;
+        this.plotScale = plotScale;
+
         this.bufferPtr = bufferPtr;
         this.bufferSize = bufferSize;
         this.promise = new Promise((resolve, _) => {
@@ -27,6 +48,8 @@ class DrawingWork {
 let drawingWork: DrawingWork;
 
 const drawingWorkerCallback = async function (ev: MessageEvent<{ workerId: number, doneDrawing: boolean }>) {
+    let now = Date.now();
+
     let message = ev.data;
     let { workerId, doneDrawing } = message;
 
@@ -40,8 +63,15 @@ const drawingWorkerCallback = async function (ev: MessageEvent<{ workerId: numbe
 
     if (readyWorkersCount == drawingWorkersCount) {
         let data = new Uint8ClampedArray(wasmModule.memory.buffer, drawingWork.bufferPtr, drawingWork.bufferSize);
-        console.log('workers data :>> ', data);
-        drawingWork.promiseResolve(data);
+        let drawingResult: DrawingResult = {
+            elapsedMs: now - drawingWork.startTime,
+            drawingMode: drawingWork.drawingMode,
+            plotScale: drawingWork.plotScale,
+            data,
+        };
+        drawingWork.promiseResolve(drawingResult);
+
+        free_u32_buffer(drawingWork.bufferSize / 4, drawingWork.bufferPtr);
         drawingWork = undefined;
     }
 }
@@ -69,18 +99,22 @@ async function initializeDrawing() {
     initializeWorkers(sharedMemory);
 }
 
-function runDrawingWorkers(plotScale: PlotScale, roots: number[][], iterationsCount: number, colors: number[][], concurrency = drawingWorkersCount) {
-    if (drawingWork != undefined) {
+function runDrawingWorkers(drawingMode: DrawingModes, plotScale: PlotScale, roots: number[][], iterationsCount: number, colors: number[][], concurrency = drawingWorkersCount) {
+    if (drawingWork != undefined || readyWorkersCount != drawingWorkersCount) {
         return false;
     }
+
+    let drawingModeId = Object.values(drawingMode).indexOf(drawingMode);
     let { x_display_range: width, y_display_range: height } = plotScale;
+
     let u32BufferSize = width * height;
     let bufferPtr = wasm_bindgen.create_u32_buffer(u32BufferSize);
-    drawingWork = new DrawingWork(bufferPtr, u32BufferSize * 4);
+    drawingWork = new DrawingWork(drawingMode, plotScale, bufferPtr, u32BufferSize * 4);
 
+    readyWorkersCount -= concurrency;
+    drawingWork.startTime = Date.now();
     for (let i = 0; i < concurrency; i++) {
-        readyWorkersCount--;
-        drawingWorkers[i].postMessage({ plotScale, roots, iterationsCount, colors, partOffset: i, partsCount: concurrency, bufferPtr });
+        drawingWorkers[i].postMessage({ drawingModeId, plotScale, roots, iterationsCount, colors, partOffset: i, partsCount: concurrency, bufferPtr });
     }
 
     return drawingWork.promise;
@@ -88,4 +122,7 @@ function runDrawingWorkers(plotScale: PlotScale, roots: number[][], iterationsCo
 
 initializeDrawing();
 
-export { runDrawingWorkers };
+export {
+    DrawingResult,
+    runDrawingWorkers
+};
