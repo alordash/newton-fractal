@@ -114,6 +114,7 @@ for (const value of Object.values(DrawingModes)) {
 iterationsCountDisplay.value = iterationsCountRange.value;
 iterationsCountRange.addEventListener("change", () => {
     iterationsCountDisplay.value = iterationsCountRange.value;
+    draw();
 });
 async function run() {
     mainCanvas.addEventListener("mousedown", CanvasMouseDown);
