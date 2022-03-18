@@ -42,13 +42,17 @@ function calculateFps(elapsedMs: number) {
     elapsedMs = Math.round(elapsedMs * 100) / 100;
 }
 
+let waitingForDrawing = false;
+
 async function draw(drawingMode: DrawingModes = <DrawingModes><any>drawingModeSelect.value) {
     let iterationsCount = parseInt(iterationsCountRange.value);
 
     let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors);
     if (result == false) {
+        waitingForDrawing = true;
         return;
     }
+    waitingForDrawing = false;
     let drawingResult = <DrawingResult>await result;
     let data = new Uint8ClampedArray(drawingResult.data);
     let { elapsedMs, plotScale: { x_display_range: width, y_display_range: height } } = drawingResult;
@@ -64,6 +68,10 @@ Drawing technic: ${drawingMode}</br>
     mainCanvasContext.putImageData(imageData, 0, 0);
 
     plotRoots(plotScale, roots);
+
+    if (waitingForDrawing) {
+        draw();
+    }
 }
 
 let mainCanvas = <HTMLCanvasElement>document.getElementById("main-canvas");
