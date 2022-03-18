@@ -32,7 +32,6 @@ const drawingWorkerCallback = async function (ev) {
         console.log(`Worker #${workerId} initialized`);
         return;
     }
-    console.log(`Worker #${workerId} done drawing`);
     if (readyWorkersCount == drawingWorkersCount) {
         let data = new Uint8ClampedArray(wasmModule.memory.buffer, drawingWork.bufferPtr, drawingWork.bufferSize);
         let drawingResult = {
@@ -69,7 +68,7 @@ function runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, color
     if (drawingWork != undefined || readyWorkersCount != drawingWorkersCount) {
         return false;
     }
-    let drawingModeId = Object.values(drawingMode).indexOf(drawingMode);
+    let drawingModeId = Object.values(DrawingModes).indexOf(drawingMode);
     let { x_display_range: width, y_display_range: height } = plotScale;
     let u32BufferSize = width * height;
     let bufferPtr = wasm_bindgen.create_u32_buffer(u32BufferSize);

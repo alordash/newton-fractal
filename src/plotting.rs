@@ -25,7 +25,7 @@ pub fn calculate_part_size(
 //TODO move to other file
 #[wasm_bindgen]
 pub fn create_u32_buffer(size: usize) -> Option<u32> {
-    log!("Creating buffer with {} u32 items", size);
+    // log!("Creating buffer with {} u32 items", size);
     let layout = match Layout::array::<u32>(size) {
         Ok(v) => v,
         Err(e) => {

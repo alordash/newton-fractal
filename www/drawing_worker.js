@@ -1,11 +1,22 @@
 const WASM_MODULE_SOURCE_PATH = '../pkg/newton_fractal_bg.wasm';
 importScripts('../pkg/newton_fractal.js');
-const { fill_pixels_js } = wasm_bindgen;
+const { fill_pixels_js, fill_pixels_simd_js } = wasm_bindgen;
 function actualCallback(e) {
     let message = e.data;
-    let { plotScale, roots, iterationsCount, colors, partOffset, partsCount, bufferPtr } = message;
-    let data = fill_pixels_js(plotScale, roots, iterationsCount, colors, partOffset, partsCount, bufferPtr);
-    console.log(`test worker #${partOffset}: data.length :>> `, data.length);
+    let { drawingModeId, plotScale, roots, iterationsCount, colors, partOffset, partsCount, bufferPtr } = message;
+    let data;
+    switch (drawingModeId) {
+        case 0:
+            data = fill_pixels_simd_js(plotScale, roots, iterationsCount, colors, partOffset, partsCount, bufferPtr);
+            break;
+        case 1:
+            data = fill_pixels_js(plotScale, roots, iterationsCount, colors, partOffset, partsCount, bufferPtr);
+            break;
+        default:
+            console.log(`Unknown drawing mode, drawing with simds`);
+            data = fill_pixels_simd_js(plotScale, roots, iterationsCount, colors, partOffset, partsCount, bufferPtr);
+            break;
+    }
     postMessage({ workerId: partOffset, doneDrawing: true }, undefined);
 }
 let mod;

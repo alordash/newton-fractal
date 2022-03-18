@@ -25,28 +25,27 @@ async function draw(drawingMode: DrawingModes = <DrawingModes><any>drawingModeSe
 
     let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors);
     if (result == false) {
-        console.log(`Error running drawing workers`);
-    } else {
-        let drawingResult = await result;
-        let data = new Uint8ClampedArray(drawingResult.data);
-        let { elapsedMs, plotScale: { x_display_range: width, y_display_range: height } } = drawingResult;
+        return;
+    }
+    let drawingResult = await result;
+    let data = new Uint8ClampedArray(drawingResult.data);
+    let { elapsedMs, plotScale: { x_display_range: width, y_display_range: height } } = drawingResult;
 
-        let fps = 1000 / elapsedMs;
-        let precisionPower = 10;
-        if (fps < 1) {
-            precisionPower = 100;
-        }
-        fps = Math.round(fps * precisionPower) / precisionPower;
+    let fps = 1000 / elapsedMs;
+    let precisionPower = 10;
+    if (fps < 1) {
+        precisionPower = 100;
+    }
+    fps = Math.round(fps * precisionPower) / precisionPower;
 
-        loggerDiv.innerHTML = `Drawing technic: ${drawingMode}</br>
+    loggerDiv.innerHTML = `Drawing technic: ${drawingMode}</br>
 Took: ${elapsedMs}ms</br>
 <b>FPS: ${fps}</b>`;
 
-        let imageData = new ImageData(data, width, height);
-        mainCanvasContext.putImageData(imageData, 0, 0);
+    let imageData = new ImageData(data, width, height);
+    mainCanvasContext.putImageData(imageData, 0, 0);
 
-        plotRoots(plotScale, roots);
-    }
+    plotRoots(plotScale, roots);
 }
 
 let mainCanvas = <HTMLCanvasElement>document.getElementById("main-canvas");
