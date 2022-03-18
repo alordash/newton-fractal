@@ -116,7 +116,7 @@ function runDrawingWorkers(drawingMode: DrawingModes, plotScale: PlotScale, root
         return drawingWorkersInitPromise;
     }
 
-    if (drawingWork != undefined || readyWorkersCount != drawingWorkersCount) {
+    if (readyWorkersCount != drawingWorkersCount) {
         return false;
     }
 

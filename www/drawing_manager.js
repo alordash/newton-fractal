@@ -77,7 +77,7 @@ function runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, color
     if (drawingWorkersInitPromise != undefined) {
         return drawingWorkersInitPromise;
     }
-    if (drawingWork != undefined || readyWorkersCount != drawingWorkersCount) {
+    if (readyWorkersCount != drawingWorkersCount) {
         return false;
     }
     let drawingModeId = Object.values(DrawingModes).indexOf(drawingMode);
