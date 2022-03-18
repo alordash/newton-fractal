@@ -125,8 +125,9 @@ async function run() {
     mainCanvas.addEventListener("click", CanvasClick);
     mainCanvas.addEventListener("mousemove", CanvasMouseMove);
     window.addEventListener("resize", WindowResize);
-    WindowResize();
-    draw();
+    let iterationsCount = parseInt(iterationsCountRange.value);
+    let firstDraw = runDrawingWorkers(drawingModeSelect.value, plotScale, roots, iterationsCount, regionColors);
+    firstDraw.then(() => WindowResize());
 }
 run();
 //# sourceMappingURL=ui_logic.js.map

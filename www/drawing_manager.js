@@ -5,6 +5,10 @@ const DRAWING_WORKER_SOURCE_PATH = 'drawing_worker.js';
 let drawingWorkersCount = navigator.hardwareConcurrency;
 let drawingWorkers = [];
 let readyWorkersCount = 0;
+let drawingWorkersInitResolve;
+let drawingWorkersInitPromise = new Promise((resolve, _) => {
+    drawingWorkersInitResolve = resolve;
+});
 var DrawingModes;
 (function (DrawingModes) {
     DrawingModes["CpuWasmSimd"] = "CPU-wasm-simd";
@@ -23,15 +27,9 @@ class DrawingWork {
     }
 }
 let drawingWork;
-const drawingWorkerCallback = async function (ev) {
+const drawingWorkerDrawingCallback = async function (ev) {
     let now = Date.now();
-    let message = ev.data;
-    let { workerId, doneDrawing } = message;
     readyWorkersCount++;
-    if (!doneDrawing) {
-        console.log(`Worker #${workerId} initialized`);
-        return;
-    }
     if (readyWorkersCount == drawingWorkersCount) {
         let data = new Uint8ClampedArray(wasmModule.memory.buffer, drawingWork.bufferPtr, drawingWork.bufferSize);
         let drawingResult = {
@@ -45,9 +43,20 @@ const drawingWorkerCallback = async function (ev) {
         drawingWork = undefined;
     }
 };
+const drawingWorkerInitCallback = function (ev) {
+    let workerId = ev.data;
+    drawingWorkers[workerId].onmessage = drawingWorkerDrawingCallback;
+    readyWorkersCount++;
+    console.log(`Worker #${workerId} initialized`);
+    if (readyWorkersCount == drawingWorkersCount) {
+        console.log(`All workers are initialized`);
+        drawingWorkersInitResolve(undefined);
+        drawingWorkersInitPromise = undefined;
+    }
+};
 function createDrawingWorker(sourcePath) {
     let worker = new Worker(sourcePath);
-    worker.onmessage = drawingWorkerCallback;
+    worker.onmessage = drawingWorkerInitCallback;
     return worker;
 }
 function initializeWorkers(sharedMemory) {
@@ -65,6 +74,9 @@ async function initializeDrawing() {
     initializeWorkers(sharedMemory);
 }
 function runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, colors, concurrency = drawingWorkersCount) {
+    if (drawingWorkersInitPromise != undefined) {
+        return drawingWorkersInitPromise;
+    }
     if (drawingWork != undefined || readyWorkersCount != drawingWorkersCount) {
         return false;
     }

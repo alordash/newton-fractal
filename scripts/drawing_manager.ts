@@ -10,6 +10,11 @@ let drawingWorkersCount = navigator.hardwareConcurrency;
 let drawingWorkers: Worker[] = [];
 let readyWorkersCount = 0;
 
+let drawingWorkersInitResolve: (value: unknown) => void;
+let drawingWorkersInitPromise = new Promise((resolve, _) => {
+    drawingWorkersInitResolve = resolve;
+});
+
 enum DrawingModes {
     CpuWasmSimd = "CPU-wasm-simd",
     CpuWasmScalar = "CPU-wasm-scalar",
@@ -47,18 +52,11 @@ class DrawingWork {
 
 let drawingWork: DrawingWork;
 
-const drawingWorkerCallback = async function (ev: MessageEvent<{ workerId: number, doneDrawing: boolean }>) {
+const drawingWorkerDrawingCallback = async function (ev: MessageEvent<number>) {
     let now = Date.now();
-
-    let message = ev.data;
-    let { workerId, doneDrawing } = message;
-
     readyWorkersCount++;
 
-    if (!doneDrawing) {
-        console.log(`Worker #${workerId} initialized`);
-        return;
-    }
+    // let workerId = ev.data;
     // console.log(`Worker #${workerId} done drawing`);
 
     if (readyWorkersCount == drawingWorkersCount) {
@@ -76,9 +74,23 @@ const drawingWorkerCallback = async function (ev: MessageEvent<{ workerId: numbe
     }
 }
 
+const drawingWorkerInitCallback = function (ev: MessageEvent<number>) {
+    let workerId = ev.data;
+    drawingWorkers[workerId].onmessage = drawingWorkerDrawingCallback;
+
+    readyWorkersCount++;
+    console.log(`Worker #${workerId} initialized`);
+
+    if (readyWorkersCount == drawingWorkersCount) {
+        console.log(`All workers are initialized`);
+        drawingWorkersInitResolve(undefined);
+        drawingWorkersInitPromise = undefined;
+    }
+}
+
 function createDrawingWorker(sourcePath: string | URL) {
     let worker = new Worker(sourcePath);
-    worker.onmessage = drawingWorkerCallback;
+    worker.onmessage = drawingWorkerInitCallback;
     return worker;
 }
 
@@ -100,6 +112,10 @@ async function initializeDrawing() {
 }
 
 function runDrawingWorkers(drawingMode: DrawingModes, plotScale: PlotScale, roots: number[][], iterationsCount: number, colors: number[][], concurrency = drawingWorkersCount) {
+    if (drawingWorkersInitPromise != undefined) {
+        return drawingWorkersInitPromise;
+    }
+
     if (drawingWork != undefined || readyWorkersCount != drawingWorkersCount) {
         return false;
     }

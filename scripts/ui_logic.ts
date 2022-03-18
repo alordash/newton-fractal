@@ -29,7 +29,7 @@ Calculation in process...</br>
     if (result == false) {
         return;
     }
-    let drawingResult = await result;
+    let drawingResult = <DrawingResult>await result;
     let data = new Uint8ClampedArray(drawingResult.data);
     let { elapsedMs, plotScale: { x_display_range: width, y_display_range: height } } = drawingResult;
 
@@ -154,8 +154,10 @@ async function run() {
     mainCanvas.addEventListener("mousemove", CanvasMouseMove);
 
     window.addEventListener("resize", WindowResize);
-    WindowResize();
-    draw();
+
+    let iterationsCount = parseInt(iterationsCountRange.value);
+    let firstDraw = runDrawingWorkers(<DrawingModes><any>drawingModeSelect.value, plotScale, roots, iterationsCount, regionColors);
+    (<Promise<void>>firstDraw).then(() => WindowResize());
 }
 
 run();

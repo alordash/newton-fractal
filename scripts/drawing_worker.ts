@@ -23,14 +23,13 @@ function actualCallback(e: MessageEvent<{ drawingModeId: number, plotScale: any,
             break;
     }
 
-    postMessage({ workerId: partOffset, doneDrawing: true }, undefined);
+    postMessage(partOffset, undefined);
 }
 
-let mod: InitOutput;
 onmessage = async function (e: MessageEvent<{ workerId: number, sharedMemory: WebAssembly.Memory }>) {
     let { workerId, sharedMemory } = e.data;
     await wasm_bindgen(WASM_MODULE_SOURCE_PATH, sharedMemory);
 
     self.onmessage = actualCallback;
-    postMessage({ workerId, doneDrawing: false }, undefined);
+    postMessage(workerId, undefined);
 }

@@ -17,13 +17,12 @@ function actualCallback(e) {
             data = fill_pixels_simd_js(plotScale, roots, iterationsCount, colors, partOffset, partsCount, bufferPtr);
             break;
     }
-    postMessage({ workerId: partOffset, doneDrawing: true }, undefined);
+    postMessage(partOffset, undefined);
 }
-let mod;
 onmessage = async function (e) {
     let { workerId, sharedMemory } = e.data;
     await wasm_bindgen(WASM_MODULE_SOURCE_PATH, sharedMemory);
     self.onmessage = actualCallback;
-    postMessage({ workerId, doneDrawing: false }, undefined);
+    postMessage(workerId, undefined);
 };
 //# sourceMappingURL=drawing_worker.js.map
