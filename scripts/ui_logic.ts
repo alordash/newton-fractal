@@ -141,7 +141,7 @@ iterationsCountDisplay.value = iterationsCountRange.value;
 
 iterationsCountRange.addEventListener("change", () => {
     iterationsCountDisplay.value = iterationsCountRange.value;
-    // runDrawingWorker();
+    draw();
 });
 
 async function run() {
