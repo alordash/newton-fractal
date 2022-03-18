@@ -6,6 +6,23 @@ use std::ptr::addr_of;
 
 use crate::simd_constants::SimdHelper;
 
+#[wasm_bindgen]
+pub fn newton_method_approx_js(x: f32, y: f32, roots: JsValue) -> JsValue {
+    let z = Complex32 { re: x, im: y };
+    let roots: Vec<(f32, f32)> = roots.into_serde().unwrap();
+    let complex_roots: Vec<Complex32> = roots
+        .iter()
+        .map(|pair| Complex32 {
+            re: pair.0,
+            im: pair.1,
+        })
+        .collect();
+
+    let result = newton_method_approx(z, &complex_roots);
+    let result = (result.0, (result.1.re, result.1.im));
+    JsValue::from_serde(&result).unwrap()
+}
+
 pub fn newton_method_approx(z: Complex32, roots: &[Complex32]) -> (usize, Complex32) {
     let mut sum = Complex32::new(0.0, 0.0);
     for (i, root) in roots.iter().enumerate() {
