@@ -12,13 +12,34 @@ const rootPointSize = 4.0;
 let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
 const CLICK_POINT_DISTANCE = 0.125;
 let holdingPointIndex = -1;
+const TOTAL_FPS_RESET_THRESHOLD = 1000000;
+let totalFps = 0;
+let fpsMeasures = 0;
+function resetFps() {
+    totalFps = 0;
+    fpsMeasures = 0;
+}
+function calculateFps(elapsedMs) {
+    fpsMeasures += 1;
+    let fps = 1000 / elapsedMs;
+    totalFps += fps;
+    if (totalFps > TOTAL_FPS_RESET_THRESHOLD) {
+        totalFps = fps;
+        fpsMeasures = 1;
+    }
+    let precisionPower = 10;
+    if (fps < 1) {
+        precisionPower = 100;
+    }
+    fps = Math.round(fps * precisionPower) / precisionPower;
+    elapsedMs = Math.round(elapsedMs * 100) / 100;
+}
 async function draw(drawingMode = drawingModeSelect.value) {
     let iterationsCount = parseInt(iterationsCountRange.value);
     loggerDiv.innerHTML = `Roots count: ${roots.length}</br>
 ———————————</br>
 Drawing technic: ${drawingMode}</br>
-Calculation in process...</br>
-<b>FPS: ...</b>`;
+<b>Average FPS: ${Math.round(totalFps * 10 / fpsMeasures) / 10}</b>`;
     let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors);
     if (result == false) {
         return;
@@ -26,18 +47,11 @@ Calculation in process...</br>
     let drawingResult = await result;
     let data = new Uint8ClampedArray(drawingResult.data);
     let { elapsedMs, plotScale: { x_display_range: width, y_display_range: height } } = drawingResult;
-    let fps = 1000 / elapsedMs;
-    let precisionPower = 10;
-    if (fps < 1) {
-        precisionPower = 100;
-    }
-    fps = Math.round(fps * precisionPower) / precisionPower;
-    elapsedMs = Math.round(elapsedMs * 100) / 100;
+    calculateFps(elapsedMs);
     loggerDiv.innerHTML = `Roots count: ${roots.length}</br>
 ———————————</br>
 Drawing technic: ${drawingMode}</br>
-Took: ${elapsedMs}ms</br>
-<b>FPS: ${fps}</b>`;
+<b>Average FPS: ${Math.round(totalFps * 10 / fpsMeasures) / 10}</b>`;
     let imageData = new ImageData(data, width, height);
     mainCanvasContext.putImageData(imageData, 0, 0);
     plotRoots(plotScale, roots);
@@ -72,9 +86,11 @@ async function CanvasClick(me) {
         return;
     let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
     if (me.shiftKey) {
+        resetFps();
         addRoot(x, y);
     }
     else if (me.ctrlKey) {
+        resetFps();
         let { id, dst } = getClosestRoot(x, y);
         roots.splice(id, 1);
     }
@@ -116,9 +132,14 @@ for (const value of Object.values(DrawingModes)) {
     option.innerText = value.toString();
     drawingModeSelect.options.add(option);
 }
+drawingModeSelect.addEventListener('change', () => {
+    resetFps();
+    draw();
+});
 iterationsCountDisplay.value = iterationsCountRange.value;
 iterationsCountRange.addEventListener("change", () => {
     iterationsCountDisplay.value = iterationsCountRange.value;
+    resetFps();
     draw();
 });
 async function run() {
