@@ -73,7 +73,7 @@ async function initializeDrawing() {
     wasmModule = await wasm_bindgen(WASM_MODULE_SOURCE_PATH, sharedMemory);
     initializeWorkers(sharedMemory);
 }
-function runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, colors, concurrency = drawingWorkersCount) {
+function runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, colors, threadsCount = drawingWorkersCount) {
     if (drawingWorkersInitPromise != undefined) {
         return drawingWorkersInitPromise;
     }
@@ -85,10 +85,10 @@ function runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, color
     let u32BufferSize = width * height;
     let bufferPtr = wasm_bindgen.create_u32_buffer(u32BufferSize);
     drawingWork = new DrawingWork(drawingMode, plotScale, bufferPtr, u32BufferSize * 4);
-    readyWorkersCount -= concurrency;
+    readyWorkersCount -= threadsCount;
     drawingWork.startTime = performance.now();
-    for (let i = 0; i < concurrency; i++) {
-        drawingWorkers[i].postMessage({ drawingModeId, plotScale, roots, iterationsCount, colors, partOffset: i, partsCount: concurrency, bufferPtr });
+    for (let i = 0; i < threadsCount; i++) {
+        drawingWorkers[i].postMessage({ drawingModeId, plotScale, roots, iterationsCount, colors, partOffset: i, partsCount: threadsCount, bufferPtr });
     }
     return drawingWork.promise;
 }

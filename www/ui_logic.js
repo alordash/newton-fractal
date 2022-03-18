@@ -34,9 +34,15 @@ function calculateFps(elapsedMs) {
     elapsedMs = Math.round(elapsedMs * 100) / 100;
 }
 let waitingForDrawing = false;
-async function draw(drawingMode = drawingModeSelect.value) {
+async function draw(drawingMode, threadsCount) {
+    if (drawingMode == undefined) {
+        drawingMode = drawingModeSelect.value;
+    }
+    if (threadsCount == undefined) {
+        threadsCount = parseInt(threadsCountRange.value);
+    }
     let iterationsCount = parseInt(iterationsCountRange.value);
-    let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors);
+    let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors, threadsCount);
     if (result == false) {
         waitingForDrawing = true;
         return;
@@ -62,6 +68,8 @@ let mainCanvasContext = mainCanvas.getContext("2d");
 let drawingModeSelect = document.getElementById("drawingModeSelect");
 let iterationsCountRange = document.getElementById("iterationsCount");
 let iterationsCountDisplay = document.getElementById("iterationsCountDisplay");
+let threadsCountRange = document.getElementById("threadsCount");
+let threadsCountDisplay = document.getElementById("threadsCountDisplay");
 let loggerDiv = document.getElementById("logger");
 function plotPoint(x, y, size, plotScale) {
     let [canvasX, canvasY] = transformPointToCanvasScale(x, y, plotScale);
@@ -140,6 +148,13 @@ drawingModeSelect.addEventListener('change', () => {
 iterationsCountDisplay.value = iterationsCountRange.value;
 iterationsCountRange.addEventListener("change", () => {
     iterationsCountDisplay.value = iterationsCountRange.value;
+    resetFps();
+    draw();
+});
+threadsCountRange.max = navigator.hardwareConcurrency.toString();
+threadsCountDisplay.value = threadsCountRange.value;
+threadsCountRange.addEventListener("change", () => {
+    threadsCountDisplay.value = threadsCountRange.value;
     resetFps();
     draw();
 });
