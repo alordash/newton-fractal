@@ -1,109 +1,39 @@
-import init, { fill_pixels, fill_pixels_simd } from '../pkg/newton_fractal.js';
-import { fillPixelsJavascript } from './newtons_fractal.js';
-import { PlotScale } from './plotter.js';
+const WASM_MODULE_SOURCE_PATH = '../pkg/newton_fractal_bg.wasm';
 
-enum WorkerCommands {
-    Init,
-    Draw,
-}
+importScripts('../pkg/newton_fractal.js');
+importScripts('./newtons_fractal.js');
 
-enum DrawingModes {
-    CPU_WASM_SIMD = "CPU-wasm-simd",
-    CPU_WASM_SCALAR = "CPU-wasm-scalar",
-    CPU_JS_SCALAR = "CPU-js-scalar",
-}
+const { fill_pixels_js, fill_pixels_simd_js, get_wasm_memory } = wasm_bindgen;
 
-type DrawingConfig = {
-    drawingMode: DrawingModes,
-    plotScale: PlotScale,
-    roots: number[][],
-    iterationsCount: number,
-    regionColors: number[][]
-}
+function actualCallback(e: MessageEvent<{ drawingModeId: number, plotScale: any, roots: number[][], iterationsCount: number, colors: number[][], partOffset: number, partsCount: number, bufferPtr: number }>) {
+    let message = e.data;
+    let { drawingModeId, plotScale, roots, iterationsCount, colors, partOffset, partsCount, bufferPtr } = message;
 
-type DrawingResult = {
-    drawingMode: DrawingModes,
-    elapsedMs: number,
-    imageData: ImageData
-}
-
-type WorkerMessage = {
-    command: WorkerCommands,
-    drawingConfig?: DrawingConfig,
-}
-
-type WorkerResult = {
-    command: WorkerCommands,
-    drawingResult?: DrawingResult
-}
-
-function draw(config: DrawingConfig): DrawingResult {
-    let { plotScale, roots, drawingMode, iterationsCount, regionColors } = config;
-
-    let data: Uint8ClampedArray;
-    let start: Date, end: Date;
-    switch (drawingMode) {
-        case DrawingModes.CPU_JS_SCALAR:
-            start = new Date();
-            data = fillPixelsJavascript(plotScale, roots, iterationsCount, regionColors);
-            end = new Date();
+    switch (drawingModeId) {
+        case 0:
+            fill_pixels_simd_js(plotScale, roots, iterationsCount, colors, bufferPtr, partOffset, partsCount);
             break;
-        case DrawingModes.CPU_WASM_SCALAR:
-            start = new Date();
-            data = fill_pixels(plotScale, roots, iterationsCount, regionColors);
-            end = new Date();
-            break;
-        case DrawingModes.CPU_WASM_SIMD:
-            start = new Date();
-            data = fill_pixels_simd(plotScale, roots, iterationsCount, regionColors);
-            end = new Date();
+        case 1:
+            fill_pixels_js(plotScale, roots, iterationsCount, colors, bufferPtr, partOffset, partsCount);
             break;
 
-        default:
-            break;
-    }
-    let imageData = new ImageData(data, plotScale.x_display_range, plotScale.y_display_range);
-    let elapsedMs = end.getTime() - start.getTime();
-    return { drawingMode, elapsedMs, imageData };
-}
-
-function postCustomMessage(message: WorkerResult) {
-    postMessage(message);
-}
-
-onmessage = async function (e: MessageEvent<WorkerMessage>) {
-    let { data } = e;
-    let command = data.command;
-
-    switch (command) {
-        case WorkerCommands.Init:
-            {
-                await init();
-                postCustomMessage({
-                    command
-                });
-            }
-            break;
-        case WorkerCommands.Draw:
-            {
-                let { drawingConfig } = data;
-                let drawingResult = draw(drawingConfig);
-                postCustomMessage({
-                    command,
-                    drawingResult
-                });
-            }
+        case 2:
+            let memory = <WebAssembly.Memory>get_wasm_memory();
+            fillPixelsJavascript(<SharedArrayBuffer>memory.buffer, plotScale, roots, iterationsCount, colors, bufferPtr, partOffset, partsCount);
             break;
         default:
+            console.log(`Unknown drawing mode, drawing with simds`);
+            fill_pixels_simd_js(plotScale, roots, iterationsCount, colors, bufferPtr, partOffset, partsCount);
             break;
     }
+
+    postMessage(partOffset, undefined);
 }
 
-export {
-    WorkerCommands,
-    DrawingModes,
-    DrawingConfig,
-    DrawingResult,
-    WorkerMessage,
-    WorkerResult
+onmessage = async function (e: MessageEvent<{ workerId: number, sharedMemory: WebAssembly.Memory }>) {
+    let { workerId, sharedMemory } = e.data;
+    await wasm_bindgen(WASM_MODULE_SOURCE_PATH, sharedMemory);
+
+    self.onmessage = actualCallback;
+    postMessage(workerId, undefined);
 }

@@ -1,14 +1,61 @@
 import { regionColors } from './colors.js';
-import { WorkerCommands, DrawingModes } from './drawing_worker.js';
-import { transformPointToPlotScale, transformPointToCanvasScale } from './newtons_fractal.js';
 import { PlotScale, roots, addRoot, getClosestRoot } from './plotter.js';
+import { runDrawingWorkers } from './drawing_manager.js';
+var DrawingModes;
+(function (DrawingModes) {
+    DrawingModes["CpuWasmSimd"] = "CPU-wasm-simd";
+    DrawingModes["CpuWasmScalar"] = "CPU-wasm-scalar";
+    DrawingModes["CpuJsScalar"] = "CPU-js-scalar";
+})(DrawingModes || (DrawingModes = {}));
 const rootPointSize = 4.0;
 let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
 const CLICK_POINT_DISTANCE = 0.125;
 let holdingPointIndex = -1;
-let drawingWorker;
-function sendMessageToWorker(message) {
-    drawingWorker.postMessage(message);
+const TOTAL_FPS_RESET_THRESHOLD = 1000000;
+let totalFps = 0;
+let fpsMeasures = 0;
+function resetFps() {
+    totalFps = 0;
+    fpsMeasures = 0;
+}
+function calculateFps(elapsedMs) {
+    fpsMeasures += 1;
+    let fps = 1000 / elapsedMs;
+    totalFps += fps;
+    if (totalFps > TOTAL_FPS_RESET_THRESHOLD) {
+        totalFps = fps;
+        fpsMeasures = 1;
+    }
+    let precisionPower = 10;
+    if (fps < 1) {
+        precisionPower = 100;
+    }
+    fps = Math.round(fps * precisionPower) / precisionPower;
+    elapsedMs = Math.round(elapsedMs * 100) / 100;
+}
+let waitingForDrawing = false;
+async function draw(drawingMode = drawingModeSelect.value) {
+    let iterationsCount = parseInt(iterationsCountRange.value);
+    let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors);
+    if (result == false) {
+        waitingForDrawing = true;
+        return;
+    }
+    waitingForDrawing = false;
+    let drawingResult = await result;
+    let data = new Uint8ClampedArray(drawingResult.data);
+    let { elapsedMs, plotScale: { x_display_range: width, y_display_range: height } } = drawingResult;
+    calculateFps(elapsedMs);
+    loggerDiv.innerHTML = `Roots count: ${roots.length}</br>
+———————————</br>
+Drawing technic: ${drawingMode}</br>
+<b>Average FPS: ${Math.round(totalFps * 10 / fpsMeasures) / 10}</b>`;
+    let imageData = new ImageData(data, width, height);
+    mainCanvasContext.putImageData(imageData, 0, 0);
+    plotRoots(plotScale, roots);
+    if (waitingForDrawing) {
+        draw();
+    }
 }
 let mainCanvas = document.getElementById("main-canvas");
 let mainCanvasContext = mainCanvas.getContext("2d");
@@ -31,76 +78,24 @@ function plotRoots(plotScale, roots) {
         plotPoint(x, y, rootPointSize, plotScale);
     }
 }
-function formDrawingConfig(drawingMode = drawingModeSelect.value) {
-    let iterationsCount = parseInt(iterationsCountRange.value);
-    return {
-        drawingMode,
-        plotScale,
-        roots,
-        iterationsCount,
-        regionColors
-    };
-}
-let doneDrawing = true;
-function runDrawingWorker(drawingMode = drawingModeSelect.value) {
-    let drawingConfig = formDrawingConfig(drawingMode);
-    loggerDiv.innerHTML = `Drawing technic: ${drawingMode}</br>
-    Calculation in process...</br>
-    <b>FPS: ...</b>`;
-    doneDrawing = false;
-    sendMessageToWorker({
-        command: WorkerCommands.Draw,
-        drawingConfig
-    });
-}
-function drawingCallback(drawingResult) {
-    let { elapsedMs, drawingMode, imageData } = drawingResult;
-    let fps = 1000 / elapsedMs;
-    let precisionPower = 10;
-    if (fps < 1) {
-        precisionPower = 100;
-    }
-    fps = Math.round(fps * precisionPower) / precisionPower;
-    loggerDiv.innerHTML = `Drawing technic: ${drawingMode}</br>
-Took: ${elapsedMs}ms</br>
-<b>FPS: ${fps}</b>`;
-    mainCanvasContext.putImageData(imageData, 0, 0);
-    plotRoots(plotScale, roots);
-    doneDrawing = true;
-    if (awaitingForResize) {
-        WindowResize();
-    }
-}
 function resizeCanvas(width, height) {
     mainCanvas.width = width;
     mainCanvas.height = height;
 }
-function drawingWorkerCallback(e) {
-    let { data } = e;
-    let command = data.command;
-    switch (command) {
-        case WorkerCommands.Init:
-            WindowResize();
-            break;
-        case WorkerCommands.Draw:
-            drawingCallback(data.drawingResult);
-            break;
-        default:
-            break;
-    }
-}
-function CanvasClick(me) {
+async function CanvasClick(me) {
     if (holdingPointIndex != -1)
         return;
     let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
     if (me.shiftKey) {
+        resetFps();
         addRoot(x, y);
     }
     else if (me.ctrlKey) {
+        resetFps();
         let { id, dst } = getClosestRoot(x, y);
         roots.splice(id, 1);
     }
-    runDrawingWorker();
+    draw();
 }
 function CanvasMouseDown(me) {
     let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
@@ -120,48 +115,42 @@ function CanvasMouseMove(me) {
         holdingPointIndex = -1;
         return;
     }
-    if (doneDrawing) {
-        let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
-        roots[holdingPointIndex] = [x, y];
-        runDrawingWorker();
-    }
+    let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
+    roots[holdingPointIndex] = [x, y];
+    draw();
 }
-let awaitingForResize = false;
-function WindowResize() {
+async function WindowResize() {
     let { innerWidth, innerHeight } = window;
-    if (doneDrawing) {
-        awaitingForResize = false;
-        plotScale = PlotScale.calculatePlotScale(innerWidth, innerHeight);
-        let drawingConfig = formDrawingConfig();
-        resizeCanvas(drawingConfig.plotScale.x_display_range, drawingConfig.plotScale.y_display_range);
-        runDrawingWorker();
-    }
-    else {
-        awaitingForResize = true;
-    }
+    plotScale = PlotScale.calculatePlotScale(innerWidth, innerHeight);
+    resizeCanvas(plotScale.x_display_range, plotScale.y_display_range);
+    draw();
 }
+console.log('DrawingModes :>> ', DrawingModes);
+console.log('Object.(DrawingModes) :>> ', Object.values(DrawingModes));
 for (const value of Object.values(DrawingModes)) {
     let option = document.createElement("option");
-    option.value = value;
-    option.innerText = value;
+    option.value = value.toString();
+    option.innerText = value.toString();
     drawingModeSelect.options.add(option);
 }
+drawingModeSelect.addEventListener('change', () => {
+    resetFps();
+    draw();
+});
 iterationsCountDisplay.value = iterationsCountRange.value;
 iterationsCountRange.addEventListener("change", () => {
     iterationsCountDisplay.value = iterationsCountRange.value;
-    runDrawingWorker();
+    resetFps();
+    draw();
 });
 async function run() {
-    drawingWorker = new Worker("drawing_worker.js", { type: 'module' });
-    drawingWorker.onmessage = drawingWorkerCallback;
-    let { innerWidth, innerHeight } = window;
-    sendMessageToWorker({
-        command: WorkerCommands.Init
-    });
     mainCanvas.addEventListener("mousedown", CanvasMouseDown);
     mainCanvas.addEventListener("click", CanvasClick);
     mainCanvas.addEventListener("mousemove", CanvasMouseMove);
     window.addEventListener("resize", WindowResize);
+    let iterationsCount = parseInt(iterationsCountRange.value);
+    let firstDraw = runDrawingWorkers(drawingModeSelect.value, plotScale, roots, iterationsCount, regionColors);
+    firstDraw.then(() => WindowResize());
 }
 run();
 //# sourceMappingURL=ui_logic.js.map
