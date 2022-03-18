@@ -44,46 +44,48 @@ function transformPointToCanvasScale(x, y, plotScale) {
         ((y - plotScale.y_offset) * plotScale.y_display_range / plotScale.y_value_range),
     ];
 }
-function fillPixelsJavascript(plotScale, roots, iterationsCount, colors) {
+function calculatePartSize(totalSize, partsCount, offset, step) {
+    return Math.round((totalSize * offset) / (partsCount * step)) * step;
+}
+function fillPixelsJavascript(buffer, plotScale, roots, iterationsCount, colors, bufferPtr, partOffset = 0, partsCount = 1) {
     let { x_display_range: width, y_display_range: height } = plotScale;
     let [w_int, h_int] = [Math.round(width), Math.round(height)];
     let flatColors = new Uint8Array(colors.flat());
     let colorPacks = new Uint32Array(flatColors.buffer);
     let complexRoots = roots.map((pair) => new Complex32(pair[0], pair[1]));
-    let uint32Data = new Uint32Array(w_int * h_int);
-    let index = 0;
-    for (let y = 0; y < h_int; y++) {
-        for (let x = 0; x < w_int; x++) {
-            let minDistance = Number.MAX_SAFE_INTEGER;
-            let closestRootId = 0;
-            let [xp, yp] = transformPointToPlotScale(x, y, plotScale);
-            let z = new Complex32(xp, yp);
-            let colorId = -1;
-            for (let i = 0; i < iterationsCount; i++) {
-                let { idx, z: zNew } = newtonMethodApprox(complexRoots, z);
-                if (idx != -1) {
-                    colorId = idx;
-                    break;
-                }
-                z = zNew;
+    let filler = (x, y) => {
+        let minDistance = Number.MAX_SAFE_INTEGER;
+        let closestRootId = 0;
+        let [xp, yp] = transformPointToPlotScale(x, y, plotScale);
+        let z = new Complex32(xp, yp);
+        let colorId = -1;
+        for (let i = 0; i < iterationsCount; i++) {
+            let { idx, z: zNew } = newtonMethodApprox(complexRoots, z);
+            if (idx != -1) {
+                colorId = idx;
+                break;
             }
-            if (colorId != -1) {
-                uint32Data[index++] = colorPacks[colorId];
-                continue;
-            }
-            for (let i in complexRoots) {
-                const root = complexRoots[i];
-                let d = z.subtract(root).distance();
-                if (d < minDistance) {
-                    minDistance = d;
-                    closestRootId = +i;
-                }
-            }
-            uint32Data[index++] = colorPacks[closestRootId];
+            z = zNew;
         }
+        if (colorId != -1) {
+            return colorPacks[colorId];
+        }
+        for (let i in complexRoots) {
+            const root = complexRoots[i];
+            let d = z.subtract(root).distance();
+            if (d < minDistance) {
+                minDistance = d;
+                closestRootId = +i;
+            }
+        }
+        return colorPacks[closestRootId];
+    };
+    let totalSize = w_int * h_int;
+    let thisBorder = calculatePartSize(totalSize, partsCount, partOffset, 1);
+    let nextBorder = calculatePartSize(totalSize, partsCount, partOffset + 1, 1);
+    let u32BufferView = new Uint32Array(buffer, bufferPtr);
+    for (let i = thisBorder; i < nextBorder; i++) {
+        u32BufferView[i] = filler(i % w_int, i / w_int);
     }
-    let uint8Data = new Uint8ClampedArray(uint32Data.buffer);
-    return uint8Data;
 }
-export { transformPointToPlotScale, transformPointToCanvasScale, fillPixelsJavascript };
 //# sourceMappingURL=newtons_fractal.js.map

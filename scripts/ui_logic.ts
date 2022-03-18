@@ -1,5 +1,4 @@
 import { generateColor, regionColors } from './colors.js';
-import { transformPointToPlotScale, transformPointToCanvasScale } from './newtons_fractal.js';
 import { PlotScale, roots, addRoot, getClosestRoot } from './plotter.js';
 
 import { DrawingResult, runDrawingWorkers } from './drawing_manager.js';
@@ -46,7 +45,7 @@ function calculateFps(elapsedMs: number) {
 async function draw(drawingMode: DrawingModes = <DrawingModes><any>drawingModeSelect.value) {
     let iterationsCount = parseInt(iterationsCountRange.value);
 
-    let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors);
+    let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors, 1);
     if (result == false) {
         return;
     }

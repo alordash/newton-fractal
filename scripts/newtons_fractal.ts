@@ -1,4 +1,11 @@
-import { PlotScale } from "./plotter.js";
+type PlotScale = {
+    x_offset: number,
+    y_offset: number,
+    x_value_range: number,
+    y_value_range: number,
+    x_display_range: number,
+    y_display_range: number
+}
 
 class Complex32 {
     re: number;
@@ -60,7 +67,11 @@ function transformPointToCanvasScale(x: number, y: number, plotScale: PlotScale)
     ];
 }
 
-function fillPixelsJavascript(plotScale: PlotScale, roots: number[][], iterationsCount: number, colors: number[][]): Uint8ClampedArray {
+function calculatePartSize(totalSize: number, partsCount: number, offset: number, step: number) {
+    return Math.round((totalSize * offset) / (partsCount * step)) * step;
+}
+
+function fillPixelsJavascript(buffer: SharedArrayBuffer, plotScale: PlotScale, roots: number[][], iterationsCount: number, colors: number[][], bufferPtr: number, partOffset = 0, partsCount = 1) {
     let {
         x_display_range: width,
         y_display_range: height
@@ -71,46 +82,42 @@ function fillPixelsJavascript(plotScale: PlotScale, roots: number[][], iteration
     let colorPacks = new Uint32Array(flatColors.buffer);
 
     let complexRoots: Complex32[] = roots.map((pair) => new Complex32(pair[0], pair[1]));
-    let uint32Data = new Uint32Array(w_int * h_int);
-    let index = 0;
 
-    for (let y = 0; y < h_int; y++) {
-        for (let x = 0; x < w_int; x++) {
-            let minDistance = Number.MAX_SAFE_INTEGER;
-            let closestRootId = 0;
-            let [xp, yp] = transformPointToPlotScale(x, y, plotScale);
-            let z = new Complex32(xp, yp);
-            let colorId = -1;
-            for (let i = 0; i < iterationsCount; i++) {
-                let { idx, z: zNew } = newtonMethodApprox(complexRoots, z);
-                if (idx != -1) {
-                    colorId = idx;
-                    break;
-                }
-                z = zNew;
+    let filler = (x: number, y: number) => {
+        let minDistance = Number.MAX_SAFE_INTEGER;
+        let closestRootId = 0;
+        let [xp, yp] = transformPointToPlotScale(x, y, plotScale);
+        let z = new Complex32(xp, yp);
+        let colorId = -1;
+        for (let i = 0; i < iterationsCount; i++) {
+            let { idx, z: zNew } = newtonMethodApprox(complexRoots, z);
+            if (idx != -1) {
+                colorId = idx;
+                break;
             }
-            if (colorId != -1) {
-                uint32Data[index++] = colorPacks[colorId];
-                continue;
-            }
-            for (let i in complexRoots) {
-                const root = complexRoots[i];
-                let d = z.subtract(root).distance();
-                if (d < minDistance) {
-                    minDistance = d;
-                    closestRootId = +i;
-                }
-            }
-            uint32Data[index++] = colorPacks[closestRootId];
+            z = zNew;
         }
+        if (colorId != -1) {
+            return colorPacks[colorId];
+        }
+        for (let i in complexRoots) {
+            const root = complexRoots[i];
+            let d = z.subtract(root).distance();
+            if (d < minDistance) {
+                minDistance = d;
+                closestRootId = +i;
+            }
+        }
+        return colorPacks[closestRootId];
     }
-    let uint8Data = new Uint8ClampedArray(uint32Data.buffer);
 
-    return uint8Data;
+    let totalSize = w_int * h_int;
+    let thisBorder = calculatePartSize(totalSize, partsCount, partOffset, 1);
+    let nextBorder = calculatePartSize(totalSize, partsCount, partOffset + 1, 1);
+
+    let u32BufferView = new Uint32Array(buffer, bufferPtr);
+
+    for (let i = thisBorder; i < nextBorder; i++) {
+        u32BufferView[i] = filler(i % w_int, i / w_int);
+    }
 }
-
-export {
-    transformPointToPlotScale,
-    transformPointToCanvasScale,
-    fillPixelsJavascript
-};

@@ -123,10 +123,10 @@ pub fn fill_pixels_js(
     roots: JsValue,      // Vec<Complexf32>
     iterations_count: usize,
     colors: JsValue,
+    buffer_ptr: u32,
     part_offset: Option<usize>,
     parts_count: Option<usize>,
-    buffer_ptr: Option<u32>,
-) -> Clamped<Vec<u8>> {
+) {
     let plot_scale: PlotScale = plot_scale.into_serde().unwrap();
     let roots: Vec<Complex32> = (roots.into_serde::<Vec<(f32, f32)>>().unwrap())
         .into_iter()
@@ -141,10 +141,10 @@ pub fn fill_pixels_js(
         roots.as_slice(),
         iterations_count,
         colors,
+        buffer_ptr as *mut u32,
         part_offset,
         parts_count,
-        buffer_ptr.map(|v| v as *mut u32),
-    )
+    );
 }
 
 pub fn fill_pixels(
@@ -152,10 +152,10 @@ pub fn fill_pixels(
     roots: &[Complex32],
     iterations_count: usize,
     colors: &[u32],
+    buffer_ptr: *mut u32,
     part_offset: Option<usize>,
     parts_count: Option<usize>,
-    buffer_ptr: Option<*mut u32>,
-) -> Clamped<Vec<u8>> {
+) {
     let (part_offset, parts_count) = (
         part_offset.or(Some(0)).unwrap(),
         parts_count.or(Some(1)).unwrap(),
@@ -194,27 +194,12 @@ pub fn fill_pixels(
     let total_size = w_int * h_int;
     let this_border = calculate_part_size(total_size, parts_count, part_offset, 1);
     let next_border = calculate_part_size(total_size, parts_count, part_offset + 1, 1);
-    let size = next_border - this_border;
-
-    let mut pixels_data: Vec<u32>;
-    let buffer_ptr = match buffer_ptr {
-        Some(v) => v,
-        None => {
-            pixels_data = vec![0u32; size];
-            pixels_data.as_mut_ptr()
-        }
-    };
 
     unsafe {
         for i in this_border..next_border {
             *buffer_ptr.add(i) = filler(i % w_int, i / w_int);
         }
     }
-
-    let pixels_data: &[u8] =
-        unsafe { std::slice::from_raw_parts(buffer_ptr as *const u8, size * 4) };
-
-    Clamped(pixels_data.to_vec())
 }
 
 #[wasm_bindgen]
@@ -224,10 +209,10 @@ pub fn fill_pixels_simd_js(
     roots: JsValue,      // Vec<Complexf32>
     iterations_count: usize,
     colors: JsValue,
+    buffer_ptr: u32,
     part_offset: Option<usize>,
     parts_count: Option<usize>,
-    buffer_ptr: Option<u32>,
-) -> Clamped<Vec<u8>> {
+) {
     let plot_scale: PlotScale = plot_scale.into_serde().unwrap();
     let roots: Vec<Complex32> = (roots.into_serde::<Vec<(f32, f32)>>().unwrap())
         .into_iter()
@@ -242,9 +227,9 @@ pub fn fill_pixels_simd_js(
         roots.as_slice(),
         iterations_count,
         colors,
+        buffer_ptr as *mut ColorsPack,
         part_offset,
         parts_count,
-        buffer_ptr.map(|v| v as *mut ColorsPack),
     )
 }
 
@@ -255,10 +240,10 @@ pub fn fill_pixels_simd(
     roots: &[Complex32],
     iterations_count: usize,
     colors: &[u32],
+    buffer_ptr: *mut ColorsPack,
     part_offset: Option<usize>,
     parts_count: Option<usize>,
-    buffer_ptr: Option<*mut ColorsPack>,
-) -> Clamped<Vec<u8>> {
+) {
     let (part_offset, parts_count) = (
         part_offset.or(Some(0)).unwrap(),
         parts_count.or(Some(1)).unwrap(),
@@ -305,16 +290,6 @@ pub fn fill_pixels_simd(
     let total_size = w_int * h_int;
     let this_border = calculate_part_size(total_size, parts_count, part_offset, 4) / 4;
     let next_border = calculate_part_size(total_size, parts_count, part_offset + 1, 4) / 4;
-    let size = next_border - this_border;
-
-    let mut pixels_data: Vec<ColorsPack>;
-    let buffer_ptr = match buffer_ptr {
-        Some(v) => v,
-        None => {
-            pixels_data = vec![ColorsPack(0, 0, 0, 0); size];
-            pixels_data.as_mut_ptr()
-        }
-    };
 
     let w_int = w_int / 4;
     unsafe {
@@ -322,9 +297,4 @@ pub fn fill_pixels_simd(
             *buffer_ptr.add(i) = filler(i % w_int, i / w_int);
         }
     }
-
-    let pixels_data: &[u8] =
-        unsafe { std::slice::from_raw_parts(buffer_ptr as *const u8, size * 16) };
-
-    Clamped(pixels_data.to_vec())
 }

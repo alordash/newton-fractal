@@ -10,6 +10,11 @@ pub mod newtons_fractal;
 pub mod plotting;
 pub mod simd_constants;
 
+#[wasm_bindgen]
+pub fn get_wasm_memory() -> JsValue {
+    wasm_bindgen::memory()
+}
+
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
     log!("Initialized");
