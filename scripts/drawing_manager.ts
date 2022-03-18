@@ -42,6 +42,7 @@ const drawingWorkerCallback = async function (ev: MessageEvent<{ workerId: numbe
         let data = new Uint8ClampedArray(wasmModule.memory.buffer, drawingWork.bufferPtr, drawingWork.bufferSize);
         console.log('workers data :>> ', data);
         drawingWork.promiseResolve(data);
+        drawingWork = undefined;
     }
 }
 
@@ -68,7 +69,7 @@ async function initializeDrawing() {
     initializeWorkers(sharedMemory);
 }
 
-function runDrawingWorkers(plotScale: PlotScale, roots: number[][], iterationsCount: number, colors: number[][], concurrency = 1) {
+function runDrawingWorkers(plotScale: PlotScale, roots: number[][], iterationsCount: number, colors: number[][], concurrency = drawingWorkersCount) {
     if (drawingWork != undefined) {
         return false;
     }

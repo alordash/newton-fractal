@@ -27,6 +27,7 @@ const drawingWorkerCallback = async function (ev) {
         let data = new Uint8ClampedArray(wasmModule.memory.buffer, drawingWork.bufferPtr, drawingWork.bufferSize);
         console.log('workers data :>> ', data);
         drawingWork.promiseResolve(data);
+        drawingWork = undefined;
     }
 };
 function createDrawingWorker(sourcePath) {
@@ -48,7 +49,7 @@ async function initializeDrawing() {
     wasmModule = await wasm_bindgen(WASM_MODULE_SOURCE_PATH, sharedMemory);
     initializeWorkers(sharedMemory);
 }
-function runDrawingWorkers(plotScale, roots, iterationsCount, colors, concurrency = 1) {
+function runDrawingWorkers(plotScale, roots, iterationsCount, colors, concurrency = drawingWorkersCount) {
     if (drawingWork != undefined) {
         return false;
     }
