@@ -1,4 +1,3 @@
-use crate::drawing_config::DrawingConfig;
 use crate::{newtons_fractal::*, simd_constants::SimdHelper};
 
 use num_complex::Complex32;
@@ -16,11 +15,11 @@ use super::logging::*;
 //TODO move to other file
 pub fn calculate_part_size(
     total_size: usize,
-    total_count: usize,
+    parts_count: usize,
     offset: usize,
     step: usize,
 ) -> usize {
-    ((total_size * offset) as f32 / (total_count * step) as f32).round() as usize * step
+    ((total_size * offset) as f32 / (parts_count * step) as f32).round() as usize * step
 }
 
 //TODO move to other file
@@ -71,43 +70,14 @@ pub fn convert_colors_array<'a>(colors: &Vec<[u8; 4]>) -> &'a [u32] {
     unsafe { slice::from_raw_parts(addr_of!(colors[0]) as *mut u32, colors.len()) }
 }
 
-#[wasm_bindgen]
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct PlotScale {
-    #[wasm_bindgen(js_name = "xOffset")]
     pub x_offset: f32,
-    #[wasm_bindgen(js_name = "yOffset")]
     pub y_offset: f32,
-    #[wasm_bindgen(js_name = "xValueRange")]
     pub x_value_range: f32,
-    #[wasm_bindgen(js_name = "yValueRange")]
     pub y_value_range: f32,
-    #[wasm_bindgen(js_name = "xDisplayRange")]
     pub x_display_range: f32,
-    #[wasm_bindgen(js_name = "yDisplayRange")]
     pub y_display_range: f32,
-}
-
-#[wasm_bindgen]
-impl PlotScale {
-    #[wasm_bindgen(constructor)]
-    pub fn new(
-        x_offset: f32,
-        y_offset: f32,
-        x_value_range: f32,
-        y_value_range: f32,
-        x_display_range: f32,
-        y_display_range: f32,
-    ) -> PlotScale {
-        PlotScale {
-            x_offset,
-            y_offset,
-            x_value_range,
-            y_value_range,
-            x_display_range,
-            y_display_range,
-        }
-    }
 }
 
 pub fn transform_point_to_plot_scale(x: f32, y: f32, plot_scale: &PlotScale) -> (f32, f32) {
