@@ -28,7 +28,7 @@ class DrawingWork {
 }
 let drawingWork;
 const drawingWorkerDrawingCallback = async function (ev) {
-    let now = Date.now();
+    let now = performance.now();
     readyWorkersCount++;
     if (readyWorkersCount == drawingWorkersCount) {
         let data = new Uint8ClampedArray(wasmModule.memory.buffer, drawingWork.bufferPtr, drawingWork.bufferSize);
@@ -86,7 +86,7 @@ function runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, color
     let bufferPtr = wasm_bindgen.create_u32_buffer(u32BufferSize);
     drawingWork = new DrawingWork(drawingMode, plotScale, bufferPtr, u32BufferSize * 4);
     readyWorkersCount -= concurrency;
-    drawingWork.startTime = Date.now();
+    drawingWork.startTime = performance.now();
     for (let i = 0; i < concurrency; i++) {
         drawingWorkers[i].postMessage({ drawingModeId, plotScale, roots, iterationsCount, colors, partOffset: i, partsCount: concurrency, bufferPtr });
     }

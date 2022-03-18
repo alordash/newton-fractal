@@ -53,7 +53,7 @@ class DrawingWork {
 let drawingWork: DrawingWork;
 
 const drawingWorkerDrawingCallback = async function (ev: MessageEvent<number>) {
-    let now = Date.now();
+    let now = performance.now();
     readyWorkersCount++;
 
     // let workerId = ev.data;
@@ -128,7 +128,7 @@ function runDrawingWorkers(drawingMode: DrawingModes, plotScale: PlotScale, root
     drawingWork = new DrawingWork(drawingMode, plotScale, bufferPtr, u32BufferSize * 4);
 
     readyWorkersCount -= concurrency;
-    drawingWork.startTime = Date.now();
+    drawingWork.startTime = performance.now();
     for (let i = 0; i < concurrency; i++) {
         drawingWorkers[i].postMessage({ drawingModeId, plotScale, roots, iterationsCount, colors, partOffset: i, partsCount: concurrency, bufferPtr });
     }

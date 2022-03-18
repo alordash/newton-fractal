@@ -32,6 +32,7 @@ Calculation in process...</br>
         precisionPower = 100;
     }
     fps = Math.round(fps * precisionPower) / precisionPower;
+    elapsedMs = Math.round(elapsedMs * 100) / 100;
     loggerDiv.innerHTML = `Roots count: ${roots.length}</br>
 ———————————</br>
 Drawing technic: ${drawingMode}</br>
