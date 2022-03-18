@@ -115,14 +115,16 @@ function resizeCanvas(width: number, height: number) {
 async function CanvasClick(me: MouseEvent) {
     if (holdingPointIndex != -1) return;
     let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
+    let { id, dst } = getClosestRoot(x, y);
 
     if (me.shiftKey) {
         resetFps();
         addRoot(x, y);
     } else if (me.ctrlKey) {
         resetFps();
-        let { id, dst } = getClosestRoot(x, y);
         roots.splice(id, 1);
+    } else if (me.altKey) {
+        regionColors[id] = generateColor();
     }
 
     draw();

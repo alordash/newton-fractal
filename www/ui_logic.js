@@ -1,4 +1,4 @@
-import { regionColors } from './colors.js';
+import { generateColor, regionColors } from './colors.js';
 import { PlotScale, roots, addRoot, getClosestRoot } from './plotter.js';
 import { runDrawingWorkers } from './drawing_manager.js';
 var DrawingModes;
@@ -94,14 +94,17 @@ async function CanvasClick(me) {
     if (holdingPointIndex != -1)
         return;
     let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
+    let { id, dst } = getClosestRoot(x, y);
     if (me.shiftKey) {
         resetFps();
         addRoot(x, y);
     }
     else if (me.ctrlKey) {
         resetFps();
-        let { id, dst } = getClosestRoot(x, y);
         roots.splice(id, 1);
+    }
+    else if (me.altKey) {
+        regionColors[id] = generateColor();
     }
     draw();
 }
