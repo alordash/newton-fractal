@@ -36,10 +36,6 @@ function calculateFps(elapsedMs) {
 }
 async function draw(drawingMode = drawingModeSelect.value) {
     let iterationsCount = parseInt(iterationsCountRange.value);
-    loggerDiv.innerHTML = `Roots count: ${roots.length}</br>
-———————————</br>
-Drawing technic: ${drawingMode}</br>
-<b>Average FPS: ${Math.round(totalFps * 10 / fpsMeasures) / 10}</b>`;
     let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors);
     if (result == false) {
         return;
