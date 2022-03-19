@@ -1,4 +1,5 @@
-import { generateColor, regionColors } from './colors.js';
+import { generateColor } from './colors.js';
+import { regionColors, roots } from './global_values.js';
 
 const { newton_method_approx_wasm } = wasm_bindgen;
 
@@ -36,9 +37,6 @@ class PlotScale {
         return new PlotScale(x_offset, x_offset * k, x_range, x_range * k, width, height);
     }
 }
-
-const startRoots = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5], /*[0.75, 0.25], [-0.85, 0.5]*/];
-let roots: number[][] = startRoots;
 
 function addRoot(xMapped: number, yMapped: number) {
     roots.push([xMapped, yMapped]);
@@ -91,7 +89,6 @@ function getClosestRoot(xMapped: number, yMapped: number) {
 
 export {
     PlotScale,
-    roots,
     addRoot,
     getClosestRoot,
     getClosestRootFractalwise

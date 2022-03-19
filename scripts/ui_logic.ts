@@ -1,5 +1,7 @@
-import { generateColor, regionColors } from './colors.js';
-import { PlotScale, roots, addRoot, getClosestRoot, getClosestRootFractalwise } from './geometry_math.js';
+import { regionColors, roots } from './global_values.js';
+
+import { generateColor } from './colors.js';
+import { PlotScale, addRoot, getClosestRoot, getClosestRootFractalwise } from './geometry_math.js';
 
 import { DrawingModes, DrawingResult, runDrawingWorkers } from './drawing_manager.js';
 

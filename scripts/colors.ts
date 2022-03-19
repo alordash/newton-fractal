@@ -1,12 +1,12 @@
-let regionColors = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], /*[255, 255, 0, 255], [255, 0, 255, 255], [0, 255, 255, 255]*/];
-
 const DIM_COEFFICIENT = 1.25;
-function dimColors(colors: number[][]) {
+function dimColors(colors: number[][]): number[][] {
+    let newColors = colors;
     for (let i = 0; i < colors.length; i++) {
         for (let j = 0; j < 3; j++) {
-            colors[i][j] = Math.round(colors[i][j] / DIM_COEFFICIENT);
+            newColors[i][j] = Math.round(colors[i][j] / DIM_COEFFICIENT);
         }
     }
+    return newColors
 }
 
 function generateShade(): number {
@@ -20,6 +20,4 @@ function generateColor(): number[] {
     return [r, g, b, 255];
 }
 
-dimColors(regionColors);
-
-export { dimColors, generateColor, regionColors };
+export { dimColors, generateColor };

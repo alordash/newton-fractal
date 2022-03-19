@@ -1,5 +1,6 @@
-import { generateColor, regionColors } from './colors.js';
-import { PlotScale, roots, addRoot, getClosestRoot, getClosestRootFractalwise } from './geometry_math.js';
+import { regionColors, roots } from './global_values.js';
+import { generateColor } from './colors.js';
+import { PlotScale, addRoot, getClosestRoot, getClosestRootFractalwise } from './geometry_math.js';
 import { DrawingModes, runDrawingWorkers } from './drawing_manager.js';
 const rootPointSize = 4.0;
 const CLICK_POINT_DISTANCE = 0.125;
