@@ -77,11 +77,9 @@ const starPreset = () => {
     const starPointersCount = minStarPointersCount + randomInt(maxStarPointersCount - minStarPointersCount);
     return {
         roots: [
-            [0, 0],
-            ...getPolygonPoints(0.75, starPointersCount)
+            ...getPolygonPoints(0.75, starPointersCount, randomInt(4) * 45 * Math.PI / 180),
         ],
         colors: [
-            generateColor(),
             ...shuffleArray(repeatArrayElements([
                 ...rgbDimmed,
                 ...dimColors([[255, 255, 0, 255]])
@@ -89,13 +87,32 @@ const starPreset = () => {
         ]
     };
 };
+const parabolaPreset = () => {
+    const f = x => (4 * x * x - 2) / 1.2;
+    let k = [-0.8, -0.5, 0.5, 0.8];
+    let angle = Math.random() * Math.PI * 2;
+    let cosa = Math.cos(angle);
+    let sina = Math.sin(angle);
+    let roots = k.map(x => [
+        x * cosa - f(x) * sina,
+        x * sina + f(x) * cosa
+    ]);
+    let colors = new Array(4).fill(0).map(_ => generateColor());
+    console.log('roots :>> ', roots);
+    console.log('colors :>> ', colors);
+    return {
+        roots,
+        colors
+    };
+};
 const fractalPresets = [
     defaultPreset,
     trianglePreset,
     quadrilateralPreset,
-    starPreset
+    starPreset,
+    parabolaPreset
 ];
-let startPresetId = 3;
+let startPresetId = randomInt(fractalPresets.length - 1);
 let startPreset = fractalPresets[startPresetId]();
 let roots = startPreset.roots;
 let regionColors = startPreset.colors;

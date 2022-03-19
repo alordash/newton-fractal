@@ -1,6 +1,6 @@
 import { dimColors, generateColor } from "./colors.js";
 
-type fractalPreset = () => {
+type FractalPreset = () => {
     roots: number[][],
     colors: number[][]
 }
@@ -19,7 +19,7 @@ function shuffleArray<T>(array: T[]): T[] {
         let j = Math.floor(randomInt(i));
         [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
     }
-    return newArray
+    return newArray;
 }
 
 function repeatArrayElements<T>(source: T[], repeats: number, offset = 0): T[] {
@@ -44,7 +44,7 @@ function getPolygonPoints(radius: number, vertexCount: number, startAngleInRad =
     return roots;
 }
 
-const defaultPreset: fractalPreset = () => {
+const defaultPreset: FractalPreset = () => {
     return {
         roots: [
             [-0.5, -0.25],
@@ -52,10 +52,10 @@ const defaultPreset: fractalPreset = () => {
             [0, 0.5]
         ],
         colors: rgbDimmed
-    }
+    };
 };
 
-const trianglePreset: fractalPreset = () => {
+const trianglePreset: FractalPreset = () => {
     return {
         roots: [
             ...getPolygonPoints(1, 3)
@@ -65,10 +65,10 @@ const trianglePreset: fractalPreset = () => {
             generateColor(),
             generateColor()
         ]
-    }
+    };
 };
 
-const quadrilateralPreset: fractalPreset = () => {
+const quadrilateralPreset: FractalPreset = () => {
     return {
         roots: [
             [1, 0.6],
@@ -82,20 +82,18 @@ const quadrilateralPreset: fractalPreset = () => {
             [115, 74, 25, 255],
             [66, 12, 15, 255]
         ]
-    }
-}
+    };
+};
 
 const minStarPointersCount = 3;
 const maxStarPointersCount = 5;
-const starPreset: fractalPreset = () => {
+const starPreset: FractalPreset = () => {
     const starPointersCount = minStarPointersCount + randomInt(maxStarPointersCount - minStarPointersCount);
     return {
         roots: [
-            [0, 0],
-            ...getPolygonPoints(0.75, starPointersCount)//, randomInt(4) * 45 * Math.PI / 180),
+            ...getPolygonPoints(0.75, starPointersCount, randomInt(4) * 45 * Math.PI / 180),
         ],
         colors: [
-            generateColor(),
             ...shuffleArray(repeatArrayElements(
                 [
                     ...rgbDimmed,
@@ -105,17 +103,37 @@ const starPreset: fractalPreset = () => {
                 randomInt(3)
             ))
         ]
-    }
-}
+    };
+};
 
-const fractalPresets: fractalPreset[] = [
+const parabolaPreset: FractalPreset = () => {
+    const f = x => (4 * x * x - 2) / 1.2;
+    let k = [-0.8, -0.5, 0.5, 0.8];
+    let angle = Math.random() * Math.PI * 2;
+    let cosa = Math.cos(angle);
+    let sina = Math.sin(angle);
+    let roots = k.map(x => [
+        x * cosa - f(x) * sina,
+        x * sina + f(x) * cosa
+    ]);
+    let colors = new Array(4).fill(0).map(_ => generateColor());
+    console.log('roots :>> ', roots);
+    console.log('colors :>> ', colors);
+    return {
+        roots,
+        colors
+    };
+};
+
+const fractalPresets: FractalPreset[] = [
     defaultPreset,
     trianglePreset,
     quadrilateralPreset,
-    starPreset
-]
+    starPreset,
+    parabolaPreset
+];
 
-let startPresetId = 3//Math.floor(Math.random() * fractalPresets.length);
+let startPresetId = randomInt(fractalPresets.length - 1);
 let startPreset = fractalPresets[startPresetId]();
 let roots = startPreset.roots;
 let regionColors = startPreset.colors;
