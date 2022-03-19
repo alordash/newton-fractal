@@ -10,7 +10,7 @@ use logging::*;
 pub mod fractal_calculation;
 pub mod geometry_math;
 pub mod plotting;
-pub mod simd_constants;
+pub mod simd_math;
 
 #[wasm_bindgen]
 pub fn get_wasm_memory() -> JsValue {

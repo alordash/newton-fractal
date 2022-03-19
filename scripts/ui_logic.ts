@@ -1,18 +1,12 @@
 import { generateColor, regionColors } from './colors.js';
 import { PlotScale, roots, addRoot, getClosestRoot, getClosestRootFractalwise } from './geometry_math.js';
 
-import { DrawingResult, runDrawingWorkers } from './drawing_manager.js';
-
-enum DrawingModes {
-    CpuWasmSimd = "CPU-wasm-simd",
-    CpuWasmScalar = "CPU-wasm-scalar",
-    CpuJsScalar = "CPU-js-scalar"
-}
+import { DrawingModes, DrawingResult, runDrawingWorkers } from './drawing_manager.js';
 
 const rootPointSize = 4.0;
+const CLICK_POINT_DISTANCE = 0.125;
 
 let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
-const CLICK_POINT_DISTANCE = 0.125;
 let holdingPointIndex = -1;
 
 const TOTAL_FPS_RESET_THRESHOLD = 1_000_000;
@@ -42,6 +36,13 @@ function calculateFps(elapsedMs: number) {
     elapsedMs = Math.round(elapsedMs * 100) / 100;
 }
 
+function updateInfoPanel(drawingMode: DrawingModes) {
+    loggerDiv.innerHTML = `Roots count: ${roots.length}</br>
+———————————</br>
+Drawing technic: ${drawingMode}</br>
+<b>Average FPS: ${Math.round(totalFps * 10 / fpsMeasures) / 10}</b>`;
+}
+
 let waitingForDrawing = false;
 
 async function draw(drawingMode?: DrawingModes, threadsCount?: number) {
@@ -66,10 +67,7 @@ async function draw(drawingMode?: DrawingModes, threadsCount?: number) {
 
     calculateFps(elapsedMs);
 
-    loggerDiv.innerHTML = `Roots count: ${roots.length}</br>
-———————————</br>
-Drawing technic: ${drawingMode}</br>
-<b>Average FPS: ${Math.round(totalFps * 10 / fpsMeasures) / 10}</b>`;
+    updateInfoPanel(drawingMode);
 
     let imageData = new ImageData(data, width, height);
     mainCanvasContext.putImageData(imageData, 0, 0);
@@ -80,15 +78,6 @@ Drawing technic: ${drawingMode}</br>
         draw();
     }
 }
-
-let mainCanvas = <HTMLCanvasElement>document.getElementById("main-canvas");
-let mainCanvasContext = mainCanvas.getContext("2d");
-let drawingModeSelect = <HTMLSelectElement>document.getElementById("drawingModeSelect");
-let iterationsCountRange = <HTMLInputElement>document.getElementById("iterationsCount");
-let iterationsCountDisplay = <HTMLOutputElement>document.getElementById("iterationsCountDisplay");
-let threadsCountRange = <HTMLInputElement>document.getElementById("threadsCount");
-let threadsCountDisplay = <HTMLOutputElement>document.getElementById("threadsCountDisplay");
-let loggerDiv = document.getElementById("logger");
 
 function plotPoint(x: number, y: number, size: number, plotScale: PlotScale) {
     let [canvasX, canvasY] = transformPointToCanvasScale(x, y, plotScale);
@@ -121,7 +110,7 @@ async function CanvasClick(me: MouseEvent) {
         resetFps();
         addRoot(x, y);
     } else if (me.ctrlKey) {
-        let { id, dst } = getClosestRoot(x, y, iterationsCount);
+        let { id, dst } = getClosestRoot(x, y);
         resetFps();
         roots.splice(id, 1);
     } else if (me.altKey) {
@@ -134,8 +123,8 @@ async function CanvasClick(me: MouseEvent) {
 
 function CanvasMouseDown(me: MouseEvent) {
     let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
-    let iterationsCount = parseInt(iterationsCountRange.value);
-    let { id, dst } = getClosestRoot(x, y, iterationsCount);
+    
+    let { id, dst } = getClosestRoot(x, y);
     if (dst < CLICK_POINT_DISTANCE) {
         holdingPointIndex = id;
     } else {
@@ -169,8 +158,14 @@ async function WindowResize() {
     draw();
 }
 
-console.log('DrawingModes :>> ', DrawingModes);
-console.log('Object.(DrawingModes) :>> ', Object.values(DrawingModes));
+let mainCanvas = <HTMLCanvasElement>document.getElementById("main-canvas");
+let mainCanvasContext = mainCanvas.getContext("2d");
+let drawingModeSelect = <HTMLSelectElement>document.getElementById("drawingModeSelect");
+let iterationsCountRange = <HTMLInputElement>document.getElementById("iterationsCount");
+let iterationsCountDisplay = <HTMLOutputElement>document.getElementById("iterationsCountDisplay");
+let threadsCountRange = <HTMLInputElement>document.getElementById("threadsCount");
+let threadsCountDisplay = <HTMLOutputElement>document.getElementById("threadsCountDisplay");
+let loggerDiv = document.getElementById("logger");
 
 for (const value of Object.values(DrawingModes)) {
     let option = <HTMLOptionElement>document.createElement("option");

@@ -68,7 +68,7 @@ function initializeWorkers(sharedMemory) {
         drawingWorkers[i].postMessage({ workerId: i, sharedMemory });
     }
 }
-async function initializeDrawing() {
+async function initializeDrawingManager() {
     let sharedMemory = new WebAssembly.Memory({ initial: 100, maximum: 1000, shared: true });
     wasmModule = await wasm_bindgen(WASM_MODULE_SOURCE_PATH, sharedMemory);
     initializeWorkers(sharedMemory);
@@ -83,7 +83,7 @@ function runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, color
     let drawingModeId = Object.values(DrawingModes).indexOf(drawingMode);
     let { x_display_range: width, y_display_range: height } = plotScale;
     let u32BufferSize = width * height;
-    let bufferPtr = wasm_bindgen.create_u32_buffer(u32BufferSize);
+    let bufferPtr = create_u32_buffer(u32BufferSize);
     drawingWork = new DrawingWork(drawingMode, plotScale, bufferPtr, u32BufferSize * 4);
     readyWorkersCount -= threadsCount;
     drawingWork.startTime = performance.now();
@@ -92,6 +92,6 @@ function runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, color
     }
     return drawingWork.promise;
 }
-initializeDrawing();
-export { runDrawingWorkers };
+initializeDrawingManager();
+export { DrawingModes, runDrawingWorkers };
 //# sourceMappingURL=drawing_manager.js.map

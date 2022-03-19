@@ -3,7 +3,7 @@ const WASM_MODULE_SOURCE_PATH = '../pkg/newton_fractal_bg.wasm';
 importScripts('../pkg/newton_fractal.js');
 importScripts('./fractal_calculation.js');
 
-const { fill_pixels_js, DrawingModes: WasmDrawingModes, get_wasm_memory } = wasm_bindgen;
+const { fill_pixels_wasm, DrawingModes: WasmDrawingModes, get_wasm_memory } = wasm_bindgen;
 
 function actualCallback(e: MessageEvent<{ drawingModeId: number, plotScale: any, roots: number[][], iterationsCount: number, colors: number[][], partOffset: number, partsCount: number, bufferPtr: number }>) {
     let message = e.data;
@@ -11,10 +11,10 @@ function actualCallback(e: MessageEvent<{ drawingModeId: number, plotScale: any,
 
     switch (drawingModeId) {
         case 0:
-            fill_pixels_js(WasmDrawingModes.Simd, plotScale, roots, iterationsCount, colors, bufferPtr, partOffset, partsCount);
+            fill_pixels_wasm(WasmDrawingModes.Simd, plotScale, roots, iterationsCount, colors, bufferPtr, partOffset, partsCount);
             break;
         case 1:
-            fill_pixels_js(WasmDrawingModes.Scalar, plotScale, roots, iterationsCount, colors, bufferPtr, partOffset, partsCount);
+            fill_pixels_wasm(WasmDrawingModes.Scalar, plotScale, roots, iterationsCount, colors, bufferPtr, partOffset, partsCount);
             break;
 
         case 2:
@@ -23,7 +23,7 @@ function actualCallback(e: MessageEvent<{ drawingModeId: number, plotScale: any,
             break;
         default:
             console.log(`Unknown drawing mode, drawing with simds`);
-            fill_pixels_js(WasmDrawingModes.Simd, plotScale, roots, iterationsCount, colors, bufferPtr, partOffset, partsCount);
+            fill_pixels_wasm(WasmDrawingModes.Simd, plotScale, roots, iterationsCount, colors, bufferPtr, partOffset, partsCount);
             break;
     }
 
@@ -34,6 +34,6 @@ onmessage = async function (e: MessageEvent<{ workerId: number, sharedMemory: We
     let { workerId, sharedMemory } = e.data;
     await wasm_bindgen(WASM_MODULE_SOURCE_PATH, sharedMemory);
 
-    self.onmessage = actualCallback;
+    onmessage = actualCallback;
     postMessage(workerId, undefined);
 }

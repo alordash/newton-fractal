@@ -1,6 +1,6 @@
 import { generateColor, regionColors } from './colors.js';
 
-const { newton_method_approx_js } = wasm_bindgen;
+const { newton_method_approx_wasm } = wasm_bindgen;
 
 class PlotScale {
     x_offset: number;
@@ -26,6 +26,7 @@ class PlotScale {
         this.y_display_range = y_display_range;
     }
 
+    // Coefficients control canvas appearing size
     static calculatePlotScale(innerWidth: number, innerHeight: number): PlotScale {
         const width = Math.round(innerWidth * 0.65 / 4) * 4;
         const height = Math.round(innerHeight * 0.75);
@@ -52,7 +53,7 @@ function getClosestRootFractalwise(xMapped: number, yMapped: number, iterationsC
     let minDst = Number.MAX_SAFE_INTEGER;
 
     for (let i = 0; i < iterationsCount; i++) {
-        let result = newton_method_approx_js(xMapped, yMapped, roots);
+        let result = newton_method_approx_wasm(xMapped, yMapped, roots);
         let id = result[0];
         if (id < roots.length) {
             return { id, dst: 0 };
@@ -73,19 +74,19 @@ function getClosestRootFractalwise(xMapped: number, yMapped: number, iterationsC
     return { id, dst: minDst };
 }
 
-function getClosestRoot(xMapped: number, yMapped: number, a: number) {
+function getClosestRoot(xMapped: number, yMapped: number) {
     let id = 0;
     let minDst = Number.MAX_SAFE_INTEGER;
     for (let i = 0; i < roots.length; i++) {
         let [x, y] = roots[i];
         let [dx, dy] = [x - xMapped, y - yMapped];
         let dst = Math.sqrt(dx * dx + dy * dy);
-        if(dst < minDst) {
+        if (dst < minDst) {
             minDst = dst;
             id = i;
         }
     }
-    return {id, dst: minDst};
+    return { id, dst: minDst };
 }
 
 export {

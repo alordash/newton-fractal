@@ -53,7 +53,7 @@ function fillPixelsJavascript(buffer, plotScale, roots, iterationsCount, colors,
     let flatColors = new Uint8Array(colors.flat());
     let colorPacks = new Uint32Array(flatColors.buffer);
     let complexRoots = roots.map((pair) => new Complex32(pair[0], pair[1]));
-    let filler = (x, y) => {
+    const filler = (x, y) => {
         let minDistance = Number.MAX_SAFE_INTEGER;
         let closestRootId = 0;
         let [xp, yp] = transformPointToPlotScale(x, y, plotScale);

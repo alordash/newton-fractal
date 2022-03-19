@@ -4,10 +4,10 @@ use wasm_bindgen::prelude::*;
 use std::arch::wasm32::*;
 use std::ptr::addr_of;
 
-use crate::simd_constants::SimdHelper;
+use crate::simd_math::SimdMath;
 
 #[wasm_bindgen]
-pub fn newton_method_approx_js(x: f32, y: f32, roots: JsValue) -> JsValue {
+pub fn newton_method_approx_wasm(x: f32, y: f32, roots: JsValue) -> JsValue {
     let z = Complex32 { re: x, im: y };
     let roots: Vec<(f32, f32)> = roots.into_serde().unwrap();
     let complex_roots: Vec<Complex32> = roots
@@ -49,10 +49,10 @@ pub unsafe fn simd_newton_method_approx_for_two_numbers(two_z: v128, roots: &[Co
 #[target_feature(enable = "simd128")]
 pub fn simd_newton_method_approx(z: u64, roots: &[Complex32]) -> u64 {
     // In scalar implementation we process only one root at a time.
-    // When using SIMDs, we process two roots at the same time.
-    // We have f32x4 [A, B, C, D], in which (A, B): re and im parts
-    // of first complex value and (C, D): re and im parts of second
-    // complex value.
+    // Using SIMD commands we can process two roots at the same time.
+    // We create f32x4 vector [A, B, C, D], in which 'A' and 'B' are "real" and
+    // "imaginary" parts of first complex value and 'C' and 'D' are "real"
+    // and "imaginary" parts of second complex value as well.
 
     let mut _sum = f32x4_splat(0.0);
     let _z = unsafe { v128_load64_splat(&z) };
@@ -64,14 +64,14 @@ pub fn simd_newton_method_approx(z: u64, roots: &[Complex32]) -> u64 {
             // 1. Subtraction (z - root)
             let _diff = f32x4_sub(_z, *(roots_chunk.as_ptr() as *const v128));
 
-            // 1*. Check if difference == 0 <=> z == one of roots
-            let _diff_eq = f64x2_eq(_diff, SimdHelper::F64_ZEROES);
+            // 1*. Check: if difference == 0 => z is one of roots
+            let _diff_eq = f64x2_eq(_diff, SimdMath::F64_ZEROES);
             if v128_any_true(_diff_eq) {
                 return z;
             }
 
-            // 2. Inversion (1.0 / _diff <=> 1.0 / (z - root))
-            let _inversion = SimdHelper::complex_number_inversion(_diff);
+            // 2. Inversion (1.0 / (z - root))
+            let _inversion = SimdMath::complex_number_inversion(_diff);
 
             // 3. Addition (sum += 1.0 / (z - root))
             _sum = f32x4_add(_sum, _inversion);
@@ -83,16 +83,16 @@ pub fn simd_newton_method_approx(z: u64, roots: &[Complex32]) -> u64 {
     // Process odd root
     if let Some(rem) = rem.get(0) {
         unsafe {
-            // This process is same as the processing of two roots, except second
-            // complex value in vector is equal to 0 <=> vector: [A, B, 0, 0];
+            // This part of code does exactly what the previous cycle does,
+            // except second complex value in vector is equal to 0: [A, B, 0, 0];
 
             let rem_as_u64 = addr_of!(*rem) as *const u64;
             let _diff = f32x4_sub(_z, v128_load64_zero(rem_as_u64));
-            let _diff_eq = f64x2_eq(_diff, SimdHelper::F64_ZEROES);
+            let _diff_eq = f64x2_eq(_diff, SimdMath::F64_ZEROES);
             if v128_any_true(_diff_eq) {
                 return *rem_as_u64;
             }
-            let _inversion = SimdHelper::complex_number_inversion(_diff);
+            let _inversion = SimdMath::complex_number_inversion(_diff);
 
             _sum = f32x4_add(_sum, _inversion);
         }
@@ -103,7 +103,7 @@ pub fn simd_newton_method_approx(z: u64, roots: &[Complex32]) -> u64 {
 
     // Return value: z - 1.0 / sum
     unsafe {
-        let _inversion = SimdHelper::complex_number_inversion(_sum);
+        let _inversion = SimdMath::complex_number_inversion(_sum);
         let _sub = f32x4_sub(_z, _inversion);
         *(addr_of!(_sub) as *const u64)
     }

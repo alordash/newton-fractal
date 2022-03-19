@@ -83,7 +83,7 @@ function fillPixelsJavascript(buffer: SharedArrayBuffer, plotScale: PlotScale, r
 
     let complexRoots: Complex32[] = roots.map((pair) => new Complex32(pair[0], pair[1]));
 
-    let filler = (x: number, y: number) => {
+    const filler = (x: number, y: number) => {
         let minDistance = Number.MAX_SAFE_INTEGER;
         let closestRootId = 0;
         let [xp, yp] = transformPointToPlotScale(x, y, plotScale);

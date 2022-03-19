@@ -1,4 +1,4 @@
-use crate::{fractal_calculation::*, geometry_math::*, simd_constants::SimdHelper};
+use crate::{fractal_calculation::*, geometry_math::*, simd_math::SimdMath};
 
 use num_complex::Complex32;
 use wasm_bindgen::prelude::*;
@@ -10,6 +10,13 @@ use std::slice;
 
 use super::logging::*;
 
+#[repr(u8)]
+#[wasm_bindgen]
+pub enum DrawingModes {
+    Simd,
+    Scalar,
+}
+
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct ColorsPack(u32, u32, u32, u32);
 
@@ -18,19 +25,11 @@ pub fn convert_colors_array<'a>(colors: &Vec<[u8; 4]>) -> &'a [u32] {
     unsafe { slice::from_raw_parts(addr_of!(colors[0]) as *mut u32, colors.len()) }
 }
 
-#[repr(u8)]
 #[wasm_bindgen]
-pub enum DrawingModes {
-    Simd,
-    Scalar,
-}
-
-#[wasm_bindgen]
-#[target_feature(enable = "simd128")]
-pub fn fill_pixels_js(
+pub fn fill_pixels_wasm(
     drawing_mode: DrawingModes,
     plot_scale: JsValue, // PlotScale
-    roots: JsValue,      // Vec<Complexf32>
+    roots: JsValue,      // Vec<[f32; 2]>
     iterations_count: usize,
     colors: JsValue,
     buffer_ptr: u32,
@@ -132,7 +131,6 @@ pub fn fill_pixels_scalar(
     }
 }
 
-// TODO replace all "4" with sizeof(ColorsPack)
 #[target_feature(enable = "simd128")]
 pub fn fill_pixels_simd(
     plot_scale: &PlotScale,
@@ -156,8 +154,8 @@ pub fn fill_pixels_simd(
     let (w_int, h_int) = (width as usize, height as usize);
 
     let filler = |x: usize, y: usize| {
-        let mut _min_distances = SimdHelper::F32_MAXIMUMS;
-        let mut _closest_root_ids = SimdHelper::I32_ZEROES;
+        let mut _min_distances = SimdMath::F32_MAXIMUMS;
+        let mut _closest_root_ids = SimdMath::I32_ZEROES;
         // Simd can be used here
         let (x, y) = (4.0 * x as f32, y as f32);
         let mut _points1 = simd_transform_point_to_plot_scale(x + 0.0, y, x + 1.0, y, &plot_scale);
@@ -172,8 +170,8 @@ pub fn fill_pixels_simd(
             for (i, &root) in roots.iter().enumerate() {
                 let _ids = i32x4_splat(i as i32);
                 let _root = v128_load64_splat(addr_of!(root) as *const u64);
-                let _sqrt1 = SimdHelper::calculate_distance(_points1, _root);
-                let _sqrt2 = SimdHelper::calculate_distance(_points2, _root);
+                let _sqrt1 = SimdMath::calculate_distance(_points1, _root);
+                let _sqrt2 = SimdMath::calculate_distance(_points2, _root);
                 let _distance = i32x4_shuffle::<0, 2, 4, 6>(_sqrt1, _sqrt2);
                 let _le_check = f32x4_lt(_distance, _min_distances);
                 _min_distances = f32x4_pmin(_distance, _min_distances);
