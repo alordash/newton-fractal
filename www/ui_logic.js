@@ -1,4 +1,4 @@
-import { randomizeFractal, regionColors, roots } from './global_values.js';
+import { changePreset, regionColors, roots } from './global_values.js';
 import { generateColor } from './colors.js';
 import { PlotScale, addRoot, getClosestRoot, getClosestRootFractalwise } from './geometry_math.js';
 import { DrawingModes, runDrawingWorkers } from './drawing_manager.js';
@@ -137,7 +137,7 @@ let iterationsCountDisplay = document.getElementById("iterationsCountDisplay");
 let threadsCountRange = document.getElementById("threadsCount");
 let threadsCountDisplay = document.getElementById("threadsCountDisplay");
 let loggerDiv = document.getElementById("logger");
-let randomizeFractalButton = document.getElementById("randomizeFractalButton");
+let changePresetButton = document.getElementById("changePresetButton");
 for (const value of Object.values(DrawingModes)) {
     let option = document.createElement("option");
     option.value = value.toString();
@@ -161,15 +161,16 @@ threadsCountRange.addEventListener("change", () => {
     resetFps();
     draw();
 });
-const randomizeFractalButtonCallback = () => {
-    randomizeFractal();
+const changePresetButtonCallback = () => {
+    changePreset();
     resetFps();
     draw();
 };
-randomizeFractalButton.addEventListener("click", randomizeFractalButtonCallback);
+changePresetButton.addEventListener("click", changePresetButtonCallback);
 window.addEventListener("keydown", e => {
-    if (e.key.toLocaleLowerCase() == 'r') {
-        randomizeFractalButtonCallback();
+    let c = e.key.toLocaleLowerCase();
+    if (c == 'c' || c == 'с') {
+        changePresetButtonCallback();
     }
 });
 async function run() {

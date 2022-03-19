@@ -58,7 +58,7 @@ const defaultPreset: FractalPreset = () => {
 const trianglePreset: FractalPreset = () => {
     return {
         roots: [
-            ...getPolygonPoints(1, 3)
+            ...getPolygonPoints(0.5 + 1.2 * Math.random(), 3)
         ],
         colors: [
             generateColor(),
@@ -71,10 +71,10 @@ const trianglePreset: FractalPreset = () => {
 const quadrilateralPreset: FractalPreset = () => {
     return {
         roots: [
-            [1, 0.6],
-            [-1, -0.6],
-            [-1, 0.6],
-            [1, -0.6]
+            [1.5, 0.9],
+            [-1.5, -0.9],
+            [-1.5, 0.9],
+            [1.5, -0.9]
         ],
         colors: [
             [0, 204, 0, 255],
@@ -138,11 +138,11 @@ let startPreset = fractalPresets[startPresetId]();
 let roots = startPreset.roots;
 let regionColors = startPreset.colors;
 
-function randomizeFractal() {
+function changePreset() {
     let startPresetId = randomInt(fractalPresets.length - 1);
     let startPreset = fractalPresets[startPresetId]();
     roots = startPreset.roots;
     regionColors = startPreset.colors;
 }
 
-export { roots, regionColors, randomizeFractal };
+export { roots, regionColors, changePreset };
