@@ -116,5 +116,11 @@ let startPresetId = randomInt(fractalPresets.length - 1);
 let startPreset = fractalPresets[startPresetId]();
 let roots = startPreset.roots;
 let regionColors = startPreset.colors;
-export { roots, regionColors };
+function randomizeFractal() {
+    let startPresetId = randomInt(fractalPresets.length - 1);
+    let startPreset = fractalPresets[startPresetId]();
+    roots = startPreset.roots;
+    regionColors = startPreset.colors;
+}
+export { roots, regionColors, randomizeFractal };
 //# sourceMappingURL=global_values.js.map

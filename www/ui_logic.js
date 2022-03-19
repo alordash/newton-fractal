@@ -1,4 +1,4 @@
-import { regionColors, roots } from './global_values.js';
+import { randomizeFractal, regionColors, roots } from './global_values.js';
 import { generateColor } from './colors.js';
 import { PlotScale, addRoot, getClosestRoot, getClosestRootFractalwise } from './geometry_math.js';
 import { DrawingModes, runDrawingWorkers } from './drawing_manager.js';
@@ -137,6 +137,7 @@ let iterationsCountDisplay = document.getElementById("iterationsCountDisplay");
 let threadsCountRange = document.getElementById("threadsCount");
 let threadsCountDisplay = document.getElementById("threadsCountDisplay");
 let loggerDiv = document.getElementById("logger");
+let randomizeFractalButton = document.getElementById("randomizeFractalButton");
 for (const value of Object.values(DrawingModes)) {
     let option = document.createElement("option");
     option.value = value.toString();
@@ -159,6 +160,17 @@ threadsCountRange.addEventListener("change", () => {
     threadsCountDisplay.value = threadsCountRange.value;
     resetFps();
     draw();
+});
+const randomizeFractalButtonCallback = () => {
+    randomizeFractal();
+    resetFps();
+    draw();
+};
+randomizeFractalButton.addEventListener("click", randomizeFractalButtonCallback);
+window.addEventListener("keydown", e => {
+    if (e.key.toLocaleLowerCase() == 'r') {
+        randomizeFractalButtonCallback();
+    }
 });
 async function run() {
     mainCanvas.addEventListener("mousedown", CanvasMouseDown);
