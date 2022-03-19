@@ -1,4 +1,4 @@
-import { PlotScale } from "./plotter";
+import { PlotScale } from "./geometry_math";
 const { create_u32_buffer, free_u32_buffer } = wasm_bindgen;
 
 const WASM_MODULE_SOURCE_PATH = '../pkg/newton_fractal_bg.wasm';

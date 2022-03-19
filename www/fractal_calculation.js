@@ -88,4 +88,4 @@ function fillPixelsJavascript(buffer, plotScale, roots, iterationsCount, colors,
         u32BufferView[i] = filler(i % w_int, i / w_int);
     }
 }
-//# sourceMappingURL=newtons_fractal.js.map
+//# sourceMappingURL=fractal_calculation.js.map

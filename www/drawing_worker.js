@@ -1,16 +1,16 @@
 const WASM_MODULE_SOURCE_PATH = '../pkg/newton_fractal_bg.wasm';
 importScripts('../pkg/newton_fractal.js');
-importScripts('./newtons_fractal.js');
-const { fill_pixels_js, fill_pixels_simd_js, get_wasm_memory } = wasm_bindgen;
+importScripts('./fractal_calculation.js');
+const { fill_pixels_js, DrawingModes: WasmDrawingModes, get_wasm_memory } = wasm_bindgen;
 function actualCallback(e) {
     let message = e.data;
     let { drawingModeId, plotScale, roots, iterationsCount, colors, partOffset, partsCount, bufferPtr } = message;
     switch (drawingModeId) {
         case 0:
-            fill_pixels_simd_js(plotScale, roots, iterationsCount, colors, bufferPtr, partOffset, partsCount);
+            fill_pixels_js(WasmDrawingModes.Simd, plotScale, roots, iterationsCount, colors, bufferPtr, partOffset, partsCount);
             break;
         case 1:
-            fill_pixels_js(plotScale, roots, iterationsCount, colors, bufferPtr, partOffset, partsCount);
+            fill_pixels_js(WasmDrawingModes.Scalar, plotScale, roots, iterationsCount, colors, bufferPtr, partOffset, partsCount);
             break;
         case 2:
             let memory = get_wasm_memory();
@@ -18,7 +18,7 @@ function actualCallback(e) {
             break;
         default:
             console.log(`Unknown drawing mode, drawing with simds`);
-            fill_pixels_simd_js(plotScale, roots, iterationsCount, colors, bufferPtr, partOffset, partsCount);
+            fill_pixels_js(WasmDrawingModes.Simd, plotScale, roots, iterationsCount, colors, bufferPtr, partOffset, partsCount);
             break;
     }
     postMessage(partOffset, undefined);
