@@ -77,9 +77,9 @@ const quadrilateralPreset: FractalPreset = () => {
             [1.5, -0.9]
         ],
         colors: [
-            [0, 204, 0, 255],
+            generateColor(),
             [123, 157, 104, 255],
-            [115, 74, 25, 255],
+            generateColor(),
             [66, 12, 15, 255]
         ]
     };
