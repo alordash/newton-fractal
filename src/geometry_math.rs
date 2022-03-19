@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::arch::wasm32::*;
 use std::ptr::addr_of;
 
+#[repr(C)]
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct PlotScale {
     pub x_offset: f32,
@@ -27,6 +28,9 @@ pub fn transform_point_to_canvas_scale(x: f32, y: f32, plot_scale: &PlotScale) -
     )
 }
 
+// Formula:
+// x = x_offset + x * x_value_range / width
+// y = y_offset + y * y_value_range / height
 #[target_feature(enable = "simd128")]
 pub fn simd_transform_point_to_plot_scale(
     x1: f32,
@@ -35,19 +39,43 @@ pub fn simd_transform_point_to_plot_scale(
     y2: f32,
     plot_scale: &PlotScale,
 ) -> v128 {
-    // Formula:
-    // x = x_offset + x * x_value_range / width
-    // y = y_offset + y * y_value_range / height
+    // Note: because values in PlotScale are located linear
+    // in memory we can use pointer to x-related values
+    // to extract simultaneously both x- and y-related
+    // values. To do this, the pointer is cast to u64.
     unsafe {
         let _source_points = f32x4(x1, y1, x2, y2);
-        // _ranges = [x_range, y_range, x_range, y_range]
+        // For short x_value_range = xr, y_value_range = yr
+        // _ranges = [xr, yr, xr, yr]
         let _ranges = v128_load64_splat(addr_of!(plot_scale.x_value_range) as *const u64);
+
         // _sizes = [width, height, width, height]
         let _sizes = v128_load64_splat(addr_of!(plot_scale.x_display_range) as *const u64);
-        // _offsets = [x_offset, y_offset, x_offset, y_offset]
+
+        // For short x_offset = xo, y_offset = yo
+        // _offsets = [xo, yo, xo, yo]
         let _offsets = v128_load64_splat(addr_of!(plot_scale.x_offset) as *const u64);
+
+        // x * x_value_range
+        // [x1 * xr, y1 * yr, x2 * xr, y2 * yr]
         let _mul = f32x4_mul(_source_points, _ranges);
+
+        // x * x_value_range / width
+        // [
+        //     x1 * xr / width,
+        //     y1 * yr / height,
+        //     x2 * xr / width,
+        //     y2 * yr / height
+        // ]
         let _div = f32x4_div(_mul, _sizes);
+
+        // x_offset + x * x_value_range / width
+        // [
+        //     xo + x1 * xr / width,
+        //     yo + y1 * yr / height,
+        //     xo + x2 * xr / width,
+        //     yo + y2 * yr / height
+        // ]
         f32x4_add(_div, _offsets)
     }
 }

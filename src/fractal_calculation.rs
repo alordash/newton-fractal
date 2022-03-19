@@ -61,7 +61,7 @@ pub fn simd_newton_method_approx(z: u64, roots: &[Complex32]) -> u64 {
     for roots_chunk in roots_chunks_iter {
         unsafe {
             // General formula: sum += 1.0 / (z - root)
-            // 1. Subtraction (z - root)
+            // 1. Subtraction: z - root
             let _diff = f32x4_sub(_z, *(roots_chunk.as_ptr() as *const v128));
 
             // 1*. Check: if difference == 0 => z is one of roots
@@ -70,10 +70,10 @@ pub fn simd_newton_method_approx(z: u64, roots: &[Complex32]) -> u64 {
                 return z;
             }
 
-            // 2. Inversion (1.0 / (z - root))
+            // 2. Inversion: 1.0 / (z - root)
             let _inversion = SimdMath::complex_number_inversion(_diff);
 
-            // 3. Addition (sum += 1.0 / (z - root))
+            // 3. Addition: sum += 1.0 / (z - root)
             _sum = f32x4_add(_sum, _inversion);
         }
     }
