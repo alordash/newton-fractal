@@ -1,10 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-
 use std::arch::wasm32::*;
 use std::ptr::addr_of;
-
-use super::logging::*;
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct PlotScale {
@@ -23,6 +20,13 @@ pub fn transform_point_to_plot_scale(x: f32, y: f32, plot_scale: &PlotScale) -> 
     )
 }
 
+pub fn transform_point_to_canvas_scale(x: f32, y: f32, plot_scale: &PlotScale) -> (f32, f32) {
+    (
+        ((x - plot_scale.x_offset) * plot_scale.x_display_range / plot_scale.x_value_range),
+        ((y - plot_scale.y_offset) * plot_scale.y_display_range / plot_scale.y_value_range),
+    )
+}
+
 #[target_feature(enable = "simd128")]
 pub fn simd_transform_point_to_plot_scale(
     x1: f32,
@@ -32,8 +36,8 @@ pub fn simd_transform_point_to_plot_scale(
     plot_scale: &PlotScale,
 ) -> v128 {
     // Formula:
-    // x = x_offset + x * x_range / width
-    // y = y_offset + y * y_range / height
+    // x = x_offset + x * x_value_range / width
+    // y = y_offset + y * y_value_range / height
     unsafe {
         let _source_points = f32x4(x1, y1, x2, y2);
         // _ranges = [x_range, y_range, x_range, y_range]
@@ -46,11 +50,4 @@ pub fn simd_transform_point_to_plot_scale(
         let _div = f32x4_div(_mul, _sizes);
         f32x4_add(_div, _offsets)
     }
-}
-
-pub fn transform_point_to_canvas_scale(x: f32, y: f32, plot_scale: &PlotScale) -> (f32, f32) {
-    (
-        ((x - plot_scale.x_offset) * plot_scale.x_display_range / plot_scale.x_value_range),
-        ((y - plot_scale.y_offset) * plot_scale.y_display_range / plot_scale.y_value_range),
-    )
 }

@@ -6,6 +6,18 @@ use std::ptr::addr_of;
 
 use crate::simd_math::SimdMath;
 
+pub fn newton_method_approx(z: Complex32, roots: &[Complex32]) -> (usize, Complex32) {
+    let mut sum = Complex32::new(0.0, 0.0);
+    for (i, root) in roots.iter().enumerate() {
+        let diff = z - root;
+        if diff.re == 0.0 && diff.im == 0.0 {
+            return (i, z);
+        }
+        sum += 1.0 / diff;
+    }
+    (usize::MAX, z - 1.0 / sum)
+}
+
 #[wasm_bindgen]
 pub fn newton_method_approx_wasm(x: f32, y: f32, roots: JsValue) -> JsValue {
     let z = Complex32 { re: x, im: y };
@@ -21,18 +33,6 @@ pub fn newton_method_approx_wasm(x: f32, y: f32, roots: JsValue) -> JsValue {
     let result = newton_method_approx(z, &complex_roots);
     let result = (result.0, (result.1.re, result.1.im));
     JsValue::from_serde(&result).unwrap()
-}
-
-pub fn newton_method_approx(z: Complex32, roots: &[Complex32]) -> (usize, Complex32) {
-    let mut sum = Complex32::new(0.0, 0.0);
-    for (i, root) in roots.iter().enumerate() {
-        let diff = z - root;
-        if diff.re == 0.0 && diff.im == 0.0 {
-            return (i, z);
-        }
-        sum += 1.0 / diff;
-    }
-    (usize::MAX, z - 1.0 / sum)
 }
 
 #[inline]

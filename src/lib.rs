@@ -5,7 +5,6 @@ use wasm_bindgen::prelude::*;
 
 #[macro_use]
 mod logging;
-use logging::*;
 
 pub mod fractal_calculation;
 pub mod geometry_math;

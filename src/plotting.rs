@@ -8,8 +8,6 @@ use std::mem::{transmute, ManuallyDrop};
 use std::ptr::addr_of;
 use std::slice;
 
-use super::logging::*;
-
 #[repr(u8)]
 #[wasm_bindgen]
 pub enum DrawingModes {
