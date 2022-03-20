@@ -1,0 +1,1 @@
+{"version":3,"file":"webgl2_drawing.js","sourceRoot":"","sources":["../../scripts/webgl/webgl2_drawing.ts"],"names":[],"mappings":"AAAA,IAAI,GAA2B,CAAC;AAEhC,SAAS,iBAAiB,CAAC,MAAyB;IAChD,GAAG,GAAG,MAAM,CAAC,UAAU,CAAC,QAAQ,EAAE,EAAE,eAAe,EAAE,kBAAkB,EAAE,CAAC,CAAC;IAC3E,OAAO,CAAC,GAAG,CAAC,iBAAiB,EAAE,GAAG,CAAC,CAAC;AACxC,CAAC;AAED,OAAO,EACH,iBAAiB,EACpB,CAAA"}

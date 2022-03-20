@@ -2,6 +2,7 @@ import { changePreset, regionColors, roots } from './visuals/fractal_presets.js'
 import { generateColor } from './visuals/colors.js';
 import { PlotScale, addRoot, getClosestRoot, getClosestRootFractalwise } from './math/geometry.js';
 import { DrawingModes, runDrawingWorkers } from './drawing/drawing_manager.js';
+import { InitWebgl2Drawing } from './webgl/webgl2_drawing.js';
 const rootPointSize = 4.0;
 const CLICK_POINT_DISTANCE = 0.125;
 let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
@@ -55,7 +56,7 @@ async function draw(drawingMode, threadsCount) {
     calculateFps(elapsedMs);
     updateInfoPanel(drawingMode);
     let imageData = new ImageData(data, width, height);
-    mainCanvasContext.putImageData(imageData, 0, 0);
+    cpuCanvasContext.putImageData(imageData, 0, 0);
     plotRoots(plotScale, roots);
     if (waitingForDrawing) {
         draw();
@@ -63,13 +64,13 @@ async function draw(drawingMode, threadsCount) {
 }
 function plotPoint(x, y, size, plotScale) {
     let [canvasX, canvasY] = transformPointToCanvasScale(x, y, plotScale);
-    mainCanvasContext.moveTo(canvasX, canvasY);
-    mainCanvasContext.beginPath();
-    mainCanvasContext.arc(canvasX, canvasY, size, 0, Math.PI * 2);
-    mainCanvasContext.fillStyle = "wheat";
-    mainCanvasContext.fill();
-    mainCanvasContext.stroke();
-    mainCanvasContext.closePath();
+    cpuCanvasContext.moveTo(canvasX, canvasY);
+    cpuCanvasContext.beginPath();
+    cpuCanvasContext.arc(canvasX, canvasY, size, 0, Math.PI * 2);
+    cpuCanvasContext.fillStyle = "wheat";
+    cpuCanvasContext.fill();
+    cpuCanvasContext.stroke();
+    cpuCanvasContext.closePath();
 }
 function plotRoots(plotScale, roots) {
     for (let [x, y] of roots) {
@@ -77,8 +78,8 @@ function plotRoots(plotScale, roots) {
     }
 }
 function resizeCanvas(width, height) {
-    mainCanvas.width = width;
-    mainCanvas.height = height;
+    gpuCanvas.width = cpuCanvas.width = width;
+    gpuCanvas.height = cpuCanvas.height = height;
 }
 async function CanvasClick(me) {
     if (holdingPointIndex != -1)
@@ -129,8 +130,9 @@ async function WindowResize() {
     resetFps();
     draw();
 }
-let mainCanvas = document.getElementById("main-canvas");
-let mainCanvasContext = mainCanvas.getContext("2d");
+let cpuCanvas = document.getElementById("cpuCanvas");
+let cpuCanvasContext = cpuCanvas.getContext("2d");
+let gpuCanvas = document.getElementById("gpuCanvas");
 let drawingModeSelect = document.getElementById("drawingModeSelect");
 let iterationsCountRange = document.getElementById("iterationsCount");
 let iterationsCountDisplay = document.getElementById("iterationsCountDisplay");
@@ -174,9 +176,10 @@ window.addEventListener("keydown", e => {
     }
 });
 async function run() {
-    mainCanvas.addEventListener("mousedown", CanvasMouseDown);
-    mainCanvas.addEventListener("click", CanvasClick);
-    mainCanvas.addEventListener("mousemove", CanvasMouseMove);
+    InitWebgl2Drawing(gpuCanvas);
+    cpuCanvas.addEventListener("mousedown", CanvasMouseDown);
+    cpuCanvas.addEventListener("click", CanvasClick);
+    cpuCanvas.addEventListener("mousemove", CanvasMouseMove);
     window.addEventListener("resize", WindowResize);
     let iterationsCount = parseInt(iterationsCountRange.value);
     let firstDraw = runDrawingWorkers(drawingModeSelect.value, plotScale, roots, iterationsCount, regionColors);
