@@ -5,8 +5,8 @@ type FractalPreset = () => {
     colors: number[][]
 }
 
-let rgbDimmed = dimColors([
-    [255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255]
+let rgbyDimmed = dimColors([
+    [255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], [255, 255, 0, 255]
 ]);
 
 function randomInt(max: number) {
@@ -25,6 +25,7 @@ function shuffleArray<T>(array: T[]): T[] {
 function repeatArrayElements<T>(source: T[], repeats: number, offset = 0): T[] {
     let result: T[] = [];
     let sourceLength = source.length;
+    offset = offset % sourceLength
     for (let i = 0; i < repeats; i++) {
         result.push(source[offset]);
         offset = (offset + 1) % sourceLength;
@@ -51,20 +52,16 @@ const defaultPreset: FractalPreset = () => {
             [-0.75, 0.25],
             [0, 0.5]
         ],
-        colors: rgbDimmed
+        colors: rgbyDimmed
     };
 };
 
 const trianglePreset: FractalPreset = () => {
     return {
         roots: [
-            ...getPolygonPoints(0.5 + 1.2 * Math.random(), 3)
+            ...getPolygonPoints(0.5 + 0.9 * Math.random(), 3)
         ],
-        colors: [
-            generateColor(),
-            generateColor(),
-            generateColor()
-        ]
+        colors: repeatArrayElements(rgbyDimmed, 3, randomInt(2))
     };
 };
 
@@ -91,14 +88,11 @@ const starPreset: FractalPreset = () => {
     const starPointersCount = minStarPointersCount + randomInt(maxStarPointersCount - minStarPointersCount);
     return {
         roots: [
-            ...getPolygonPoints(0.75, starPointersCount, randomInt(4) * 45 * Math.PI / 180),
+            ...getPolygonPoints(0.75, starPointersCount, (5 + randomInt(4) * 40) * Math.PI / 180),
         ],
         colors: [
             ...shuffleArray(repeatArrayElements(
-                [
-                    ...rgbDimmed,
-                    ...dimColors([[255, 255, 0, 255]])
-                ],
+                rgbyDimmed,
                 starPointersCount,
                 randomInt(3)
             ))
@@ -109,16 +103,15 @@ const starPreset: FractalPreset = () => {
 const parabolaPreset: FractalPreset = () => {
     const f = x => (4 * x * x - 2) / 1.2;
     let k = [-0.8, -0.5, 0.5, 0.8];
-    let angle = Math.random() * Math.PI * 2;
+    let angle = randomInt(2) * Math.PI / 2;
     let cosa = Math.cos(angle);
     let sina = Math.sin(angle);
     let roots = k.map(x => [
         x * cosa - f(x) * sina,
         x * sina + f(x) * cosa
     ]);
-    let colors = new Array(4).fill(0).map(_ => generateColor());
-    console.log('roots :>> ', roots);
-    console.log('colors :>> ', colors);
+    let colors = repeatArrayElements([...rgbyDimmed, generateColor()], 4, randomInt(3));
+
     return {
         roots,
         colors
