@@ -65,7 +65,7 @@ const trianglePreset: FractalPreset = () => {
     };
 };
 
-const quadrilateralPreset: FractalPreset = () => {
+const rectanglePreset: FractalPreset = () => {
     return {
         roots: [
             [1.5, 0.9],
@@ -121,7 +121,7 @@ const parabolaPreset: FractalPreset = () => {
 const fractalPresets: FractalPreset[] = [
     defaultPreset,
     trianglePreset,
-    quadrilateralPreset,
+    rectanglePreset,
     starPreset,
     parabolaPreset
 ];

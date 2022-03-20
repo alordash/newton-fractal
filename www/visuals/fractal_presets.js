@@ -52,7 +52,7 @@ const trianglePreset = () => {
         colors: repeatArrayElements(rgbyDimmed, 3, randomInt(2))
     };
 };
-const quadrilateralPreset = () => {
+const rectanglePreset = () => {
     return {
         roots: [
             [1.5, 0.9],
@@ -100,7 +100,7 @@ const parabolaPreset = () => {
 const fractalPresets = [
     defaultPreset,
     trianglePreset,
-    quadrilateralPreset,
+    rectanglePreset,
     starPreset,
     parabolaPreset
 ];
