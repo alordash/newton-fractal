@@ -1,18 +1,21 @@
-import { createProgram, createShader, drawBlankRectangle } from "./boilerplater.js";
-let ctx;
+import { GLManager } from "./gl_manager.js";
+let gl;
 async function InitWebgl2Drawing(canvas) {
-    ctx = canvas.getContext("webgl2", { powerPreference: "high-performance" });
-    console.log('webgl2 ctx :>> ', ctx);
-    ctx.viewport(0, 0, ctx.canvas.width, ctx.canvas.height);
-    ctx.clearColor(0, 0, 0, 0);
-    ctx.clear(ctx.COLOR_BUFFER_BIT);
-    ctx.canvas.width = ctx.canvas.clientWidth;
-    ctx.canvas.height = ctx.canvas.clientHeight;
-    let vertexShader = await createShader(ctx, ctx.VERTEX_SHADER, "../webgl/vertex.vert");
-    let fragmentShader = await createShader(ctx, ctx.FRAGMENT_SHADER, "../webgl/fragment.frag");
-    let program = createProgram(ctx, vertexShader, fragmentShader);
-    ctx.useProgram(program);
-    drawBlankRectangle(ctx, program);
+    let ctx = canvas.getContext("webgl2", { powerPreference: "high-performance" });
+    gl = await GLManager.Create(ctx, "../webgl/vertex.vert", "../webgl/fragment.frag");
+    gl.Initialise();
+    return gl;
 }
-export { InitWebgl2Drawing };
+function drawNewtonFractal(plotScale, roots, colors) {
+    let { ctx, program } = gl;
+    let len = roots.length;
+    let flatRoots = roots.flat();
+    let flatColors = colors.flat();
+    gl.setIntUniform(len, "roots_count");
+    gl.setFloatVec2Uniform(flatRoots, "roots");
+    gl.setFloatVec4Uniform(flatColors, "colors");
+    gl.setPlotScaleUniforms(plotScale);
+    gl.drawBlankRectangle();
+}
+export { InitWebgl2Drawing, drawNewtonFractal };
 //# sourceMappingURL=webgl2_drawing.js.map

@@ -12,10 +12,10 @@ class PlotScale {
     }
     static calculatePlotScale(innerWidth, innerHeight) {
         const width = Math.round(innerWidth * 0.65 / 4) * 4;
-        const height = Math.round(innerHeight * 0.75);
+        const height = Math.round(innerHeight * 0.4);
         const k = height / width;
         const x_range = 4;
-        const x_offset = -2;
+        const x_offset = -1;
         return new PlotScale(x_offset, x_offset * k, x_range, x_range * k, width, height);
     }
 }

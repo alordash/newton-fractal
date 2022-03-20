@@ -2,7 +2,7 @@ import { changePreset, regionColors, roots } from './visuals/fractal_presets.js'
 import { generateColor } from './visuals/colors.js';
 import { PlotScale, addRoot, getClosestRoot, getClosestRootFractalwise } from './math/geometry.js';
 import { DrawingModes, runDrawingWorkers } from './drawing/drawing_manager.js';
-import { InitWebgl2Drawing } from './webgl/webgl2_drawing.js';
+import { drawNewtonFractal, InitWebgl2Drawing } from './webgl/webgl2_drawing.js';
 const rootPointSize = 4.0;
 const CLICK_POINT_DISTANCE = 0.125;
 let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
@@ -36,6 +36,8 @@ Drawing technic: ${drawingMode}</br>
 }
 let waitingForDrawing = false;
 async function draw(drawingMode, threadsCount) {
+    console.log('plotScale :>> ', plotScale);
+    drawNewtonFractal(plotScale, roots, regionColors);
     if (drawingMode == undefined) {
         drawingMode = drawingModeSelect.value;
     }
@@ -182,9 +184,10 @@ async function run() {
     window.addEventListener("resize", WindowResize);
     let iterationsCount = parseInt(iterationsCountRange.value);
     let firstDraw = runDrawingWorkers(drawingModeSelect.value, plotScale, roots, iterationsCount, regionColors);
-    firstDraw.then(() => {
+    firstDraw.then(async () => {
         WindowResize();
-        InitWebgl2Drawing(gpuCanvas);
+        await InitWebgl2Drawing(gpuCanvas);
+        drawNewtonFractal(plotScale, roots, regionColors);
     });
 }
 run();
