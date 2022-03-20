@@ -51,18 +51,13 @@ impl SimdMath {
     #[target_feature(enable = "simd128")]
     pub fn calculate_distance(_points1: v128, _points2: v128) -> v128 {
         // [
-        //     x1 - x2,
-        //     y1 - y2,
-        //     x3 - x4,
-        //     y3 - y4
+        //     x1 - x2 (= A),
+        //     y1 - y2 (= B),
+        //     x3 - x4 (= C),
+        //     y3 - y4 (= D)
         // ]
         let _diff = f32x4_sub(_points1, _points2);
 
-        // For short:
-        // A = x1 - x2
-        // B = y1 - y2
-        // C = x3 - x4
-        // D = y3 - y4
         // [A^2, B^2, C^2, D^2]
         let _squares = f32x4_mul(_diff, _diff);
 
