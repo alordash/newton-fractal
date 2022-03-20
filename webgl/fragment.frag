@@ -42,8 +42,13 @@ void main() {
       min_dst_index = i;
     }
   }
-  if (min_dst < point_display_threshold) {
+  float coef = point_display_threshold / x_display_range;
+  if (min_dst < coef * 1600.0) {
+    if(min_dst < coef * 1000.0) {
+    out_color = vec4(1, 1, 1, 1);
+    } else {
     out_color = vec4(0, 0, 0, 1);
+    }
   } else {
     out_color = colors[min_dst_index];
   }

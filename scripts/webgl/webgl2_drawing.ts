@@ -5,18 +5,17 @@ let gl: GLManager;
 async function InitWebgl2Drawing(canvas: HTMLCanvasElement) {
     let ctx = canvas.getContext("webgl2", { powerPreference: "high-performance" });
 
-    gl = await GLManager.Create(ctx, "../webgl/vertex.vert", "../webgl/fragment.frag");
-    gl.Initialise();
+    gl = await GLManager.create(ctx, "../webgl/vertex.vert", "../webgl/fragment.frag");
+    gl.initialise();
 
     return gl;
 }
 
 function drawNewtonFractal(plotScale: PlotScale, roots: number[][], colors: number[][]) {
-    let { ctx, program } = gl;
     let len = roots.length;
 
     let flatRoots = roots.flat();
-    let flatColors = colors.flat();
+    let flatColors = colors.flat().map(v => v / 255.0);
 
     gl.setIntUniform(len, "roots_count");
     gl.setFloatVec2Uniform(flatRoots, "roots");
@@ -29,5 +28,6 @@ function drawNewtonFractal(plotScale: PlotScale, roots: number[][], colors: numb
 
 export {
     InitWebgl2Drawing,
-    drawNewtonFractal
+    drawNewtonFractal,
+    gl
 }

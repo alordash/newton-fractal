@@ -2,7 +2,7 @@ import { changePreset, regionColors, roots } from './visuals/fractal_presets.js'
 import { generateColor } from './visuals/colors.js';
 import { PlotScale, addRoot, getClosestRoot, getClosestRootFractalwise } from './math/geometry.js';
 import { DrawingModes, DrawingResult, runDrawingWorkers } from './drawing/drawing_manager.js';
-import { drawNewtonFractal, InitWebgl2Drawing } from './webgl/webgl2_drawing.js';
+import { drawNewtonFractal, InitWebgl2Drawing, gl } from './webgl/webgl2_drawing.js';
 
 const rootPointSize = 4.0;
 const CLICK_POINT_DISTANCE = 0.125;
@@ -46,7 +46,6 @@ Drawing technic: ${drawingMode}</br>
 let waitingForDrawing = false;
 
 async function draw(drawingMode?: DrawingModes, threadsCount?: number) {
-    console.log('plotScale :>> ', plotScale);
     drawNewtonFractal(plotScale, roots, regionColors);
     if (drawingMode == undefined) {
         drawingMode = <DrawingModes><any>drawingModeSelect.value;
@@ -156,6 +155,7 @@ async function WindowResize() {
         plotScale.x_display_range,
         plotScale.y_display_range
     );
+    gl.resize();
     resetFps();
     draw();
 }

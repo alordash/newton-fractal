@@ -15,7 +15,7 @@ class PlotScale {
         const height = Math.round(innerHeight * 0.4);
         const k = height / width;
         const x_range = 4;
-        const x_offset = -1;
+        const x_offset = -2;
         return new PlotScale(x_offset, x_offset * k, x_range, x_range * k, width, height);
     }
 }

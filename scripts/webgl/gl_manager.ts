@@ -4,13 +4,19 @@ class GLManager {
     fragShader: WebGLShader;
     program: WebGLProgram;
 
-    Initialise() {
-        let ctx = this.ctx;
+    initialise() {
+        let { ctx } = this;
         let { width, height } = ctx.canvas;
         ctx.viewport(0, 0, width, height);
 
         ctx.clearColor(0, 0, 0, 0);
         ctx.clear(ctx.COLOR_BUFFER_BIT);
+    }
+
+    resize() {
+        let { ctx } = this;
+        let { width, height } = ctx.canvas;
+        ctx.viewport(0, 0, width, height);
     }
 
     drawBlankRectangle() {
@@ -82,7 +88,7 @@ class GLManager {
         this.setFloatUniform(y_display_range, "y_display_range");
     }
 
-    static async Create(ctx: WebGL2RenderingContext, vertShaderSourceUrl: string, fragShaderSourceUrl: string) {
+    static async create(ctx: WebGL2RenderingContext, vertShaderSourceUrl: string, fragShaderSourceUrl: string) {
         let gl = new GLManager();
         gl.ctx = ctx;
         gl.vertShader = await GLManager.createShader(ctx, ctx.VERTEX_SHADER, vertShaderSourceUrl);

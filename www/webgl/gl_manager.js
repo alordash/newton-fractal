@@ -1,10 +1,15 @@
 class GLManager {
-    Initialise() {
-        let ctx = this.ctx;
+    initialise() {
+        let { ctx } = this;
         let { width, height } = ctx.canvas;
         ctx.viewport(0, 0, width, height);
         ctx.clearColor(0, 0, 0, 0);
         ctx.clear(ctx.COLOR_BUFFER_BIT);
+    }
+    resize() {
+        let { ctx } = this;
+        let { width, height } = ctx.canvas;
+        ctx.viewport(0, 0, width, height);
     }
     drawBlankRectangle() {
         let { ctx } = this;
@@ -56,7 +61,7 @@ class GLManager {
         this.setFloatUniform(x_display_range, "x_display_range");
         this.setFloatUniform(y_display_range, "y_display_range");
     }
-    static async Create(ctx, vertShaderSourceUrl, fragShaderSourceUrl) {
+    static async create(ctx, vertShaderSourceUrl, fragShaderSourceUrl) {
         let gl = new GLManager();
         gl.ctx = ctx;
         gl.vertShader = await GLManager.createShader(ctx, ctx.VERTEX_SHADER, vertShaderSourceUrl);
