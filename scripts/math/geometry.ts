@@ -1,5 +1,5 @@
-import { generateColor } from './colors.js';
-import { regionColors, roots } from './global_values.js';
+import { generateColor } from '../visuals/colors.js';
+import { regionColors, roots } from '../visuals/fractal_presets.js';
 
 const { newton_method_approx_wasm } = wasm_bindgen;
 

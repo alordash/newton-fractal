@@ -1,9 +1,9 @@
-import { changePreset, regionColors, roots } from './global_values.js';
+import { changePreset, regionColors, roots } from './visuals/fractal_presets.js';
 
-import { generateColor } from './colors.js';
-import { PlotScale, addRoot, getClosestRoot, getClosestRootFractalwise } from './geometry_math.js';
+import { generateColor } from './visuals/colors.js';
+import { PlotScale, addRoot, getClosestRoot, getClosestRootFractalwise } from './math/geometry.js';
 
-import { DrawingModes, DrawingResult, runDrawingWorkers } from './drawing_manager.js';
+import { DrawingModes, DrawingResult, runDrawingWorkers } from './drawing/drawing_manager.js';
 
 const rootPointSize = 4.0;
 const CLICK_POINT_DISTANCE = 0.125;

@@ -1,5 +1,6 @@
-import { generateColor, regionColors } from './colors.js';
-const { newton_method_approx_js } = wasm_bindgen;
+import { generateColor } from '../visuals/colors.js';
+import { regionColors, roots } from '../visuals/global_values.js';
+const { newton_method_approx_wasm } = wasm_bindgen;
 class PlotScale {
     constructor(x_offset, y_offset, x_value_range, y_value_range, x_display_range, y_display_range) {
         this.x_offset = x_offset;
@@ -18,8 +19,6 @@ class PlotScale {
         return new PlotScale(x_offset, x_offset * k, x_range, x_range * k, width, height);
     }
 }
-const startRoots = [[-0.5, -0.25], [-0.75, 0.25], [0, 0.5],];
-let roots = startRoots;
 function addRoot(xMapped, yMapped) {
     roots.push([xMapped, yMapped]);
     console.log(`Added new root at: (${xMapped}, ${yMapped})`);
@@ -31,7 +30,7 @@ function getClosestRootFractalwise(xMapped, yMapped, iterationsCount) {
     let id = 0;
     let minDst = Number.MAX_SAFE_INTEGER;
     for (let i = 0; i < iterationsCount; i++) {
-        let result = newton_method_approx_js(xMapped, yMapped, roots);
+        let result = newton_method_approx_wasm(xMapped, yMapped, roots);
         let id = result[0];
         if (id < roots.length) {
             return { id, dst: 0 };
@@ -50,7 +49,7 @@ function getClosestRootFractalwise(xMapped, yMapped, iterationsCount) {
     }
     return { id, dst: minDst };
 }
-function getClosestRoot(xMapped, yMapped, a) {
+function getClosestRoot(xMapped, yMapped) {
     let id = 0;
     let minDst = Number.MAX_SAFE_INTEGER;
     for (let i = 0; i < roots.length; i++) {
@@ -64,5 +63,5 @@ function getClosestRoot(xMapped, yMapped, a) {
     }
     return { id, dst: minDst };
 }
-export { PlotScale, roots, addRoot, getClosestRoot, getClosestRootFractalwise };
-//# sourceMappingURL=plotter.js.map
+export { PlotScale, addRoot, getClosestRoot, getClosestRootFractalwise };
+//# sourceMappingURL=geometry_math.js.map
