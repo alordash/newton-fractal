@@ -16,8 +16,8 @@ let drawingWorkersInitPromise = new Promise((resolve, _) => {
 });
 
 enum DrawingModes {
-    CpuWasmSimd = "CPU-wasm-simd",
     CpuWasmScalar = "CPU-wasm-scalar",
+    CpuWasmSimd = "CPU-wasm-simd",
     CpuJsScalar = "CPU-js-scalar"
 }
 

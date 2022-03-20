@@ -11,8 +11,8 @@ let drawingWorkersInitPromise = new Promise((resolve, _) => {
 });
 var DrawingModes;
 (function (DrawingModes) {
-    DrawingModes["CpuWasmSimd"] = "CPU-wasm-simd";
     DrawingModes["CpuWasmScalar"] = "CPU-wasm-scalar";
+    DrawingModes["CpuWasmSimd"] = "CPU-wasm-simd";
     DrawingModes["CpuJsScalar"] = "CPU-js-scalar";
 })(DrawingModes || (DrawingModes = {}));
 class DrawingWork {

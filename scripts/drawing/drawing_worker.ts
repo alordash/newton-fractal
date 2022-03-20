@@ -11,10 +11,10 @@ function actualCallback(e: MessageEvent<{ drawingModeId: number, plotScale: any,
 
     switch (drawingModeId) {
         case 0:
-            fill_pixels_wasm(WasmDrawingModes.Simd, plotScale, roots, iterationsCount, colors, bufferPtr, partOffset, partsCount);
+            fill_pixels_wasm(WasmDrawingModes.Scalar, plotScale, roots, iterationsCount, colors, bufferPtr, partOffset, partsCount);
             break;
         case 1:
-            fill_pixels_wasm(WasmDrawingModes.Scalar, plotScale, roots, iterationsCount, colors, bufferPtr, partOffset, partsCount);
+            fill_pixels_wasm(WasmDrawingModes.Simd, plotScale, roots, iterationsCount, colors, bufferPtr, partOffset, partsCount);
             break;
 
         case 2:
