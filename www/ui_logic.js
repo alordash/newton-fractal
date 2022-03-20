@@ -2,7 +2,7 @@ import { changePreset, regionColors, roots } from './visuals/fractal_presets.js'
 import { generateColor } from './visuals/colors.js';
 import { PlotScale, addRoot, getClosestRoot, getClosestRootFractalwise } from './math/geometry.js';
 import { DrawingModes, runDrawingWorkers } from './drawing/drawing_manager.js';
-import { InitWebgl2Drawing } from './webgl/webgl2_drawing.js';
+import { InitWebgl2Drawing } from './drawing/webgl2_drawing.js';
 const rootPointSize = 4.0;
 const CLICK_POINT_DISTANCE = 0.125;
 let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
