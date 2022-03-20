@@ -39,7 +39,6 @@ function calculateFps(elapsedMs: number) {
 
 function updateInfoPanel(drawingMode: DrawingModes) {
     loggerDiv.innerHTML = `Roots count: ${roots.length}</br>
-———————————</br>
 Drawing technic: ${drawingMode}</br>
 <b>Average FPS: ${Math.round(totalFps * 10 / fpsMeasures) / 10}</b>`;
 }
