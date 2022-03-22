@@ -2,6 +2,7 @@ import { changePreset, regionColors, roots } from './visuals/fractal_presets.js'
 import { generateColor } from './visuals/colors.js';
 import { PlotScale, addRoot, getClosestRoot, getClosestRootFractalwise } from './math/geometry.js';
 import { DrawingModes, runDrawingWorkers } from './drawing/drawing_manager.js';
+import { drawNewtonFractal, InitWebgl2Drawing, gl } from './webgl/webgl2_drawing.js';
 const rootPointSize = 4.0;
 const CLICK_POINT_DISTANCE = 0.125;
 let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
@@ -35,6 +36,7 @@ Drawing technic: ${drawingMode}</br>
 }
 let waitingForDrawing = false;
 async function draw(drawingMode, threadsCount) {
+    drawNewtonFractal(plotScale, roots, regionColors);
     if (drawingMode == undefined) {
         drawingMode = drawingModeSelect.value;
     }
@@ -61,7 +63,6 @@ async function draw(drawingMode, threadsCount) {
     }
 }
 function plotPoint(x, y, size, plotScale) {
-    rootsCanvasContext.clearRect(0, 0, rootsCanvas.width, rootsCanvas.height);
     let [canvasX, canvasY] = transformPointToCanvasScale(x, y, plotScale);
     rootsCanvasContext.moveTo(canvasX, canvasY);
     rootsCanvasContext.beginPath();
@@ -72,15 +73,18 @@ function plotPoint(x, y, size, plotScale) {
     rootsCanvasContext.closePath();
 }
 function plotRoots(plotScale, roots) {
+    rootsCanvasContext.clearRect(0, 0, rootsCanvas.width, rootsCanvas.height);
     for (let [x, y] of roots) {
         plotPoint(x, y, rootPointSize, plotScale);
     }
 }
 function resizeCanvas(width, height) {
     rootsCanvas.width =
-        cpuCanvas.width = width;
+        gpuCanvas.width =
+            cpuCanvas.width = width;
     rootsCanvas.height =
-        cpuCanvas.height = height;
+        gpuCanvas.height =
+            cpuCanvas.height = height;
 }
 async function CanvasClick(me) {
     if (holdingPointIndex != -1)
@@ -128,6 +132,7 @@ async function WindowResize() {
     let { innerWidth, innerHeight } = window;
     plotScale = PlotScale.calculatePlotScale(innerWidth, innerHeight);
     resizeCanvas(plotScale.x_display_range, plotScale.y_display_range);
+    gl.resize();
     resetFps();
     draw();
 }
@@ -135,6 +140,7 @@ let cpuCanvas = document.getElementById("cpuCanvas");
 let cpuCanvasContext = cpuCanvas.getContext("2d");
 let rootsCanvas = document.getElementById("rootsCanvas");
 let rootsCanvasContext = rootsCanvas.getContext("2d");
+let gpuCanvas = document.getElementById("gpuCanvas");
 let drawingModeSelect = document.getElementById("drawingModeSelect");
 let iterationsCountRange = document.getElementById("iterationsCount");
 let iterationsCountDisplay = document.getElementById("iterationsCountDisplay");
@@ -178,6 +184,7 @@ window.addEventListener("keydown", e => {
     }
 });
 async function run() {
+    InitWebgl2Drawing(gpuCanvas);
     cpuCanvas.addEventListener("mousedown", CanvasMouseDown);
     cpuCanvas.addEventListener("click", CanvasClick);
     cpuCanvas.addEventListener("mousemove", CanvasMouseMove);
@@ -186,6 +193,8 @@ async function run() {
     let firstDraw = runDrawingWorkers(drawingModeSelect.value, plotScale, roots, iterationsCount, regionColors);
     firstDraw.then(async () => {
         WindowResize();
+        await InitWebgl2Drawing(gpuCanvas);
+        drawNewtonFractal(plotScale, roots, regionColors);
     });
 }
 run();
