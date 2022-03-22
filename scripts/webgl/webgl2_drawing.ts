@@ -11,13 +11,14 @@ async function InitWebgl2Drawing(canvas: HTMLCanvasElement) {
     return gl;
 }
 
-function drawNewtonFractal(plotScale: PlotScale, roots: number[][], colors: number[][]) {
+function drawNewtonFractal(plotScale: PlotScale, iterationsCount: number, roots: number[][], colors: number[][]) {
     let len = roots.length;
 
     let flatRoots = roots.flat();
     let flatColors = colors.flat().map(v => v / 255.0);
 
     gl.setIntUniform(len, "roots_count");
+    gl.setIntUniform(iterationsCount, "iterations_count");
     gl.setFloatVec2Uniform(flatRoots, "roots");
     gl.setFloatVec4Uniform(flatColors, "colors");
 

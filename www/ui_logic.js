@@ -10,6 +10,9 @@ let holdingPointIndex = -1;
 const TOTAL_FPS_RESET_THRESHOLD = 1000000;
 let totalFps = 0;
 let fpsMeasures = 0;
+function getIterationsCount() {
+    return parseInt(iterationsCountRange.value);
+}
 function resetFps() {
     totalFps = 0;
     fpsMeasures = 0;
@@ -36,14 +39,14 @@ Drawing technic: ${drawingMode}</br>
 }
 let waitingForDrawing = false;
 async function draw(drawingMode, threadsCount) {
-    drawNewtonFractal(plotScale, roots, regionColors);
+    let iterationsCount = getIterationsCount();
+    drawNewtonFractal(plotScale, iterationsCount, roots, regionColors);
     if (drawingMode == undefined) {
         drawingMode = drawingModeSelect.value;
     }
     if (threadsCount == undefined) {
         threadsCount = parseInt(threadsCountRange.value);
     }
-    let iterationsCount = parseInt(iterationsCountRange.value);
     let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors, threadsCount);
     if (result == false) {
         waitingForDrawing = true;
@@ -90,7 +93,7 @@ async function CanvasClick(me) {
     if (holdingPointIndex != -1)
         return;
     let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
-    let iterationsCount = parseInt(iterationsCountRange.value);
+    let iterationsCount = getIterationsCount();
     if (me.shiftKey) {
         resetFps();
         addRoot(x, y);
@@ -189,12 +192,12 @@ async function run() {
     cpuCanvas.addEventListener("click", CanvasClick);
     cpuCanvas.addEventListener("mousemove", CanvasMouseMove);
     window.addEventListener("resize", WindowResize);
-    let iterationsCount = parseInt(iterationsCountRange.value);
+    let iterationsCount = getIterationsCount();
     let firstDraw = runDrawingWorkers(drawingModeSelect.value, plotScale, roots, iterationsCount, regionColors);
     firstDraw.then(async () => {
         WindowResize();
         await InitWebgl2Drawing(gpuCanvas);
-        drawNewtonFractal(plotScale, roots, regionColors);
+        drawNewtonFractal(plotScale, getIterationsCount(), roots, regionColors);
     });
 }
 run();

@@ -76,16 +76,16 @@ class GLManager {
             y_offset,
             x_value_range,
             y_value_range,
-            x_display_range,
-            y_display_range
+            // x_display_range,
+            // y_display_range
         } = plotScale;
 
         this.setFloatUniform(x_offset, "x_offset");
         this.setFloatUniform(y_offset, "y_offset");
         this.setFloatUniform(x_value_range, "x_value_range");
         this.setFloatUniform(y_value_range, "y_value_range");
-        this.setFloatUniform(x_display_range, "x_display_range");
-        this.setFloatUniform(y_display_range, "y_display_range");
+        // this.setFloatUniform(x_display_range, "x_display_range");
+        // this.setFloatUniform(y_display_range, "y_display_range");
     }
 
     static async create(ctx: WebGL2RenderingContext, vertShaderSourceUrl: string, fragShaderSourceUrl: string) {

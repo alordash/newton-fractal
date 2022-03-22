@@ -14,6 +14,10 @@ const TOTAL_FPS_RESET_THRESHOLD = 1_000_000;
 let totalFps = 0;
 let fpsMeasures = 0;
 
+function getIterationsCount() {
+    return parseInt(iterationsCountRange.value);
+}
+
 function resetFps() {
     totalFps = 0;
     fpsMeasures = 0;
@@ -46,15 +50,15 @@ Drawing technic: ${drawingMode}</br>
 let waitingForDrawing = false;
 
 async function draw(drawingMode?: DrawingModes, threadsCount?: number) {
-    drawNewtonFractal(plotScale, roots, regionColors);
+    let iterationsCount = getIterationsCount();
+    drawNewtonFractal(plotScale, iterationsCount, roots, regionColors);
+
     if (drawingMode == undefined) {
         drawingMode = <DrawingModes><any>drawingModeSelect.value;
     }
     if (threadsCount == undefined) {
         threadsCount = parseInt(threadsCountRange.value);
     }
-
-    let iterationsCount = parseInt(iterationsCountRange.value);
 
     let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors, threadsCount);
     if (result == false) {
@@ -110,7 +114,7 @@ function resizeCanvas(width: number, height: number) {
 async function CanvasClick(me: MouseEvent) {
     if (holdingPointIndex != -1) return;
     let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
-    let iterationsCount = parseInt(iterationsCountRange.value);
+    let iterationsCount = getIterationsCount();
 
     if (me.shiftKey) {
         resetFps();
@@ -229,13 +233,13 @@ async function run() {
 
     window.addEventListener("resize", WindowResize);
 
-    let iterationsCount = parseInt(iterationsCountRange.value);
+    let iterationsCount = getIterationsCount();
     let firstDraw = runDrawingWorkers(<DrawingModes><any>drawingModeSelect.value, plotScale, roots, iterationsCount, regionColors);
     (<Promise<void>>firstDraw).then(async () => {
         WindowResize();
         await InitWebgl2Drawing(gpuCanvas);
 
-        drawNewtonFractal(plotScale, roots, regionColors);
+        drawNewtonFractal(plotScale, getIterationsCount(), roots, regionColors);
     });
 }
 
