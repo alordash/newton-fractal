@@ -19,11 +19,6 @@ uniform float y_value_range;
 in vec2 pos;
 out vec4 out_color;
 
-struct ApproxResult {
-  int index;
-  vec2 z;
-};
-
 vec2 transform_shader_point_to_plot_scale(vec2 p) {
   vec2 mul = vec2(x_value_range / 2.0, y_value_range / 2.0);
   return p * mul +
@@ -35,47 +30,38 @@ vec2 complex_inverse(vec2 z) {
   return vec2(z.x / square_sum, -z.y / square_sum);
 }
 
-ApproxResult newton_method_approx(vec2 z) {
+vec2 newton_method_approx(vec2 z) {
   vec2 sum = vec2(0.0, 0.0);
   for (int i = 0; i < roots_count; i++) {
     vec2 diff = z - roots[i];
     if (length(diff) < 1e-10) {
-      return ApproxResult(i, z);
+      return z;
     }
     sum += complex_inverse(diff);
   }
-  return ApproxResult(-1, z - complex_inverse(sum));
+  return z - complex_inverse(sum);
 }
 
-ApproxResult find_root(vec2 z) {
+vec2 find_root(vec2 z) {
   for (int i = 0; i < iterations_count; i++) {
-    ApproxResult result = newton_method_approx(z);
-    if (result.index != -1) {
-      return result;
-    }
-    z = result.z;
+    z = newton_method_approx(z);
   }
-  return ApproxResult(-1, z);
+  return z;
 }
 
 void main() {
   vec2 z = transform_shader_point_to_plot_scale(pos);
   z = vec2(z.x, -z.y);
-  ApproxResult found_root = find_root(z);
-  if (found_root.index != -1) {
-    out_color = colors[found_root.index];
-  } else {
-    vec2 root = found_root.z;
+  vec2 root = find_root(z);
 
-    float min_dst = 1.0 / 0.0;
-    int min_dst_index = 1;
-    for (int i = 0; i < roots_count; i++) {
-      float dst = distance(root, roots[i]);
-      if (dst < min_dst) {
-        min_dst = dst;
-        min_dst_index = i;
-      }
+  float min_dst = 1.0 / 0.0;
+  int min_dst_index = 1;
+  for (int i = 0; i < roots_count; i++) {
+    float dst = distance(root, roots[i]);
+    if (dst < min_dst) {
+      min_dst = dst;
+      min_dst_index = i;
     }
-    out_color = colors[min_dst_index];
   }
+  out_color = colors[min_dst_index];
 }
