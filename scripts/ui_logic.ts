@@ -2,7 +2,7 @@ import { changePreset, regionColors, roots } from './visuals/fractal_presets.js'
 import { generateColor } from './visuals/colors.js';
 import { PlotScale, addRoot, getClosestRoot, getClosestRootFractalwise } from './math/geometry.js';
 import { DrawingModes, DrawingResult, runDrawingWorkers } from './drawing/drawing_manager.js';
-import { drawNewtonFractal, InitWebgl2Drawing, gl } from './webgl/webgl2_drawing.js';
+// import { drawNewtonFractal, InitWebgl2Drawing, gl } from './webgl/webgl2_drawing.js';
 
 const rootPointSize = 4.0;
 const CLICK_POINT_DISTANCE = 0.125;
@@ -46,7 +46,7 @@ Drawing technic: ${drawingMode}</br>
 let waitingForDrawing = false;
 
 async function draw(drawingMode?: DrawingModes, threadsCount?: number) {
-    drawNewtonFractal(plotScale, roots, regionColors);
+    // drawNewtonFractal(plotScale, roots, regionColors);
     if (drawingMode == undefined) {
         drawingMode = <DrawingModes><any>drawingModeSelect.value;
     }
@@ -81,14 +81,15 @@ async function draw(drawingMode?: DrawingModes, threadsCount?: number) {
 }
 
 function plotPoint(x: number, y: number, size: number, plotScale: PlotScale) {
+    rootsCanvasContext.clearRect(0, 0, rootsCanvas.width, rootsCanvas.height);
     let [canvasX, canvasY] = transformPointToCanvasScale(x, y, plotScale);
-    cpuCanvasContext.moveTo(canvasX, canvasY);
-    cpuCanvasContext.beginPath();
-    cpuCanvasContext.arc(canvasX, canvasY, size, 0, Math.PI * 2);
-    cpuCanvasContext.fillStyle = "wheat";
-    cpuCanvasContext.fill();
-    cpuCanvasContext.stroke();
-    cpuCanvasContext.closePath();
+    rootsCanvasContext.moveTo(canvasX, canvasY);
+    rootsCanvasContext.beginPath();
+    rootsCanvasContext.arc(canvasX, canvasY, size, 0, Math.PI * 2);
+    rootsCanvasContext.fillStyle = "wheat";
+    rootsCanvasContext.fill();
+    rootsCanvasContext.stroke();
+    rootsCanvasContext.closePath();
 }
 
 function plotRoots(plotScale: PlotScale, roots: number[][]) {
@@ -98,8 +99,12 @@ function plotRoots(plotScale: PlotScale, roots: number[][]) {
 }
 
 function resizeCanvas(width: number, height: number) {
-    gpuCanvas.width = cpuCanvas.width = width;
-    gpuCanvas.height = cpuCanvas.height = height;
+    rootsCanvas.width =
+        // gpuCanvas.width = 
+        cpuCanvas.width = width;
+    rootsCanvas.height =
+        // gpuCanvas.height = 
+        cpuCanvas.height = height;
 }
 
 async function CanvasClick(me: MouseEvent) {
@@ -155,14 +160,16 @@ async function WindowResize() {
         plotScale.x_display_range,
         plotScale.y_display_range
     );
-    gl.resize();
+    // gl.resize();
     resetFps();
     draw();
 }
 
 let cpuCanvas = <HTMLCanvasElement>document.getElementById("cpuCanvas");
 let cpuCanvasContext = cpuCanvas.getContext("2d");
-let gpuCanvas = <HTMLCanvasElement>document.getElementById("gpuCanvas");
+let rootsCanvas = <HTMLCanvasElement>document.getElementById("rootsCanvas");
+let rootsCanvasContext = rootsCanvas.getContext("2d");
+// let gpuCanvas = <HTMLCanvasElement>document.getElementById("gpuCanvas");
 let drawingModeSelect = <HTMLSelectElement>document.getElementById("drawingModeSelect");
 let iterationsCountRange = <HTMLInputElement>document.getElementById("iterationsCount");
 let iterationsCountDisplay = <HTMLOutputElement>document.getElementById("iterationsCountDisplay");
@@ -214,7 +221,7 @@ window.addEventListener("keydown", e => {
 });
 
 async function run() {
-    InitWebgl2Drawing(gpuCanvas);
+    // InitWebgl2Drawing(gpuCanvas);
 
     cpuCanvas.addEventListener("mousedown", CanvasMouseDown);
     cpuCanvas.addEventListener("click", CanvasClick);
@@ -226,9 +233,9 @@ async function run() {
     let firstDraw = runDrawingWorkers(<DrawingModes><any>drawingModeSelect.value, plotScale, roots, iterationsCount, regionColors);
     (<Promise<void>>firstDraw).then(async () => {
         WindowResize();
-        await InitWebgl2Drawing(gpuCanvas);
+        // await InitWebgl2Drawing(gpuCanvas);
 
-        drawNewtonFractal(plotScale, roots, regionColors);
+        // drawNewtonFractal(plotScale, roots, regionColors);
     });
 }
 
