@@ -16,7 +16,7 @@ let holdingPointIndex = -1;
 
 const TOTAL_FPS_RESET_THRESHOLD = 1_000_000;
 let totalFps = 0;
-let fpsMeasures = 0;
+let fpsMeasures = -2;
 
 function getIterationsCount() {
     return parseInt(iterationsCountRange.value);
@@ -24,11 +24,14 @@ function getIterationsCount() {
 
 function resetFps() {
     totalFps = 0;
-    fpsMeasures = 0;
+    fpsMeasures = -2;
 }
 
 function calculateFps(elapsedMs: number) {
     fpsMeasures += 1;
+    if (fpsMeasures <= 0) {
+        return;
+    }
     let fps = 1000 / elapsedMs;
     totalFps += fps;
     if (totalFps > TOTAL_FPS_RESET_THRESHOLD) {
@@ -41,14 +44,13 @@ function calculateFps(elapsedMs: number) {
         precisionPower = 100;
     }
     fps = Math.round(fps * precisionPower) / precisionPower;
-
-    elapsedMs = Math.round(elapsedMs * 100) / 100;
 }
 
-function updateInfoPanel(drawingMode: DrawingModes, approximate = false) {
+function updateInfoPanel(drawingMode: DrawingModes, elapsedMs: number, approximate = false) {
     loggerDiv.innerHTML = `Roots count: ${roots.length}</br>
 Drawing technic: ${drawingMode}</br>
-<b>Average FPS: ${approximate ? '~' : ''}${Math.round(totalFps * 10 / fpsMeasures) / 10}</b>`;
+Took: ${elapsedMs}ms<br>
+<b>Average FPS: ${approximate ? '~' : ''}${fpsMeasures <= 0 ? 0 : Math.round(totalFps * 10 / fpsMeasures) / 10}</b>`;
 }
 
 let waitingForDrawing = false;
@@ -90,7 +92,8 @@ async function draw(drawingMode?: DrawingModes, threadsCount?: number) {
 
     calculateFps(elapsedMs);
 
-    updateInfoPanel(drawingMode, fpsIsApproximate);
+    elapsedMs = Math.round(elapsedMs * 100) / 100;
+    updateInfoPanel(drawingMode, elapsedMs, fpsIsApproximate);
 
     plotRoots(plotScale, roots);
 
@@ -160,8 +163,8 @@ function CanvasMouseDown(me: MouseEvent) {
 function CanvasMouseMove(me: MouseEvent) {
     if (holdingPointIndex == -1) {
         let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
-        let {id, dst} = getClosestRoot(x, y);
-        if(dst < CLICK_POINT_DISTANCE) {
+        let { id, dst } = getClosestRoot(x, y);
+        if (dst < CLICK_POINT_DISTANCE) {
             document.body.style.cursor = "all-scroll";
         } else {
             document.body.style.cursor = "auto";
@@ -213,7 +216,7 @@ for (const value of Object.values(DrawingModes)) {
 
 drawingModeSelect.addEventListener('change', () => {
     let drawingMode = <DrawingModes>drawingModeSelect.value;
-    if(drawingMode == DrawingModes.GpuGlslScalar) {
+    if (drawingMode == DrawingModes.GpuGlslScalar) {
         cpuIterationsCount = getIterationsCount();
         iterationsCountRange.max = gpuMaxIterationsCount.toString();
         cpuCanvas.style.display = 'none';
@@ -256,7 +259,7 @@ const changePresetButtonCallback = () => {
 };
 changePresetButton.addEventListener("click", changePresetButtonCallback);
 window.addEventListener("keydown", e => {
-    if(e.ctrlKey || e.shiftKey) {
+    if (e.ctrlKey || e.shiftKey) {
         return;
     }
     let c = e.key.toLocaleLowerCase();

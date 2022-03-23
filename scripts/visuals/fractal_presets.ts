@@ -59,7 +59,7 @@ const defaultPreset: FractalPreset = () => {
 const trianglePreset: FractalPreset = () => {
     return {
         roots: [
-            ...getPolygonPoints(0.5 + 0.9 * Math.random(), 3)
+            ...getPolygonPoints(0.35 + 0.75 * Math.random(), 3)
         ],
         colors: repeatArrayElements(rgbyDimmed, 3, randomInt(2))
     };

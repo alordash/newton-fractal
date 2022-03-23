@@ -12,16 +12,19 @@ let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeig
 let holdingPointIndex = -1;
 const TOTAL_FPS_RESET_THRESHOLD = 1000000;
 let totalFps = 0;
-let fpsMeasures = 0;
+let fpsMeasures = -2;
 function getIterationsCount() {
     return parseInt(iterationsCountRange.value);
 }
 function resetFps() {
     totalFps = 0;
-    fpsMeasures = 0;
+    fpsMeasures = -2;
 }
 function calculateFps(elapsedMs) {
     fpsMeasures += 1;
+    if (fpsMeasures <= 0) {
+        return;
+    }
     let fps = 1000 / elapsedMs;
     totalFps += fps;
     if (totalFps > TOTAL_FPS_RESET_THRESHOLD) {
@@ -33,12 +36,12 @@ function calculateFps(elapsedMs) {
         precisionPower = 100;
     }
     fps = Math.round(fps * precisionPower) / precisionPower;
-    elapsedMs = Math.round(elapsedMs * 100) / 100;
 }
-function updateInfoPanel(drawingMode, approximate = false) {
+function updateInfoPanel(drawingMode, elapsedMs, approximate = false) {
     loggerDiv.innerHTML = `Roots count: ${roots.length}</br>
 Drawing technic: ${drawingMode}</br>
-<b>Average FPS: ${approximate ? '~' : ''}${Math.round(totalFps * 10 / fpsMeasures) / 10}</b>`;
+Took: ${elapsedMs}ms<br>
+<b>Average FPS: ${approximate ? '~' : ''}${fpsMeasures <= 0 ? 0 : Math.round(totalFps * 10 / fpsMeasures) / 10}</b>`;
 }
 let waitingForDrawing = false;
 async function draw(drawingMode, threadsCount) {
@@ -73,7 +76,8 @@ async function draw(drawingMode, threadsCount) {
         cpuCanvasContext.putImageData(imageData, 0, 0);
     }
     calculateFps(elapsedMs);
-    updateInfoPanel(drawingMode, fpsIsApproximate);
+    elapsedMs = Math.round(elapsedMs * 100) / 100;
+    updateInfoPanel(drawingMode, elapsedMs, fpsIsApproximate);
     plotRoots(plotScale, roots);
     if (waitingForDrawing) {
         draw();
