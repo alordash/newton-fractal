@@ -3,6 +3,9 @@ import { generateColor } from './visuals/colors.js';
 import { PlotScale, addRoot, getClosestRoot, getClosestRootFractalwise } from './math/geometry.js';
 import { DrawingModes, runDrawingWorkers } from './drawing/drawing_manager.js';
 import { drawNewtonFractalGpu, InitWebgl2Drawing, gl } from './webgl/webgl2_drawing.js';
+let cpuIterationsCount = 0;
+const cpuMaxIterationsCount = 25;
+const gpuMaxIterationsCount = 250;
 const rootPointSize = 4.0;
 const CLICK_POINT_DISTANCE = 0.125;
 let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
@@ -171,11 +174,15 @@ for (const value of Object.values(DrawingModes)) {
 drawingModeSelect.addEventListener('change', () => {
     let drawingMode = drawingModeSelect.value;
     if (drawingMode == DrawingModes.GpuGlslScalar) {
+        cpuIterationsCount = getIterationsCount();
+        iterationsCountRange.max = gpuMaxIterationsCount.toString();
         cpuCanvas.style.display = 'none';
         gpuCanvas.style.display = 'block';
         threadsCountRange.disabled = true;
     }
     else {
+        iterationsCountDisplay.value = iterationsCountRange.value = cpuIterationsCount.toString();
+        iterationsCountRange.max = cpuMaxIterationsCount.toString();
         cpuCanvas.style.display = 'block';
         gpuCanvas.style.display = 'none';
         threadsCountRange.disabled = false;
@@ -217,7 +224,9 @@ async function run() {
     rootsCanvas.addEventListener("click", CanvasClick);
     rootsCanvas.addEventListener("mousemove", CanvasMouseMove);
     window.addEventListener("resize", WindowResize);
+    iterationsCountRange.max = cpuMaxIterationsCount.toString();
     let iterationsCount = getIterationsCount();
+    cpuIterationsCount = iterationsCount;
     let firstDraw = runDrawingWorkers(drawingModeSelect.value, plotScale, roots, iterationsCount, regionColors);
     firstDraw.then(async () => {
         WindowResize();
