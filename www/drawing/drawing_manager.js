@@ -11,10 +11,10 @@ let drawingWorkersInitPromise = new Promise((resolve, _) => {
 });
 var DrawingModes;
 (function (DrawingModes) {
+    DrawingModes["CpuJsScalar"] = "CPU-js";
     DrawingModes["CpuWasmScalar"] = "CPU-wasm-scalar";
     DrawingModes["CpuWasmSimd"] = "CPU-wasm-simd";
-    DrawingModes["CpuJsScalar"] = "CPU-js-scalar";
-    DrawingModes["GpuGlslScalar"] = "GPU-GLSL-scalar";
+    DrawingModes["GpuGlslScalar"] = "GPU";
 })(DrawingModes || (DrawingModes = {}));
 class DrawingWork {
     constructor(drawingMode, plotScale, bufferPtr, bufferSize) {

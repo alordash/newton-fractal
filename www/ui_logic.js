@@ -190,6 +190,7 @@ drawingModeSelect.addEventListener('change', () => {
     resetFps();
     draw();
 });
+drawingModeSelect.value = DrawingModes.CpuWasmScalar;
 iterationsCountDisplay.value = iterationsCountRange.value;
 iterationsCountRange.addEventListener("change", () => {
     iterationsCountDisplay.value = iterationsCountRange.value;
@@ -227,7 +228,7 @@ async function run() {
     iterationsCountRange.max = cpuMaxIterationsCount.toString();
     let iterationsCount = getIterationsCount();
     cpuIterationsCount = iterationsCount;
-    let firstDraw = runDrawingWorkers(drawingModeSelect.value, plotScale, roots, iterationsCount, regionColors);
+    let firstDraw = runDrawingWorkers(DrawingModes.CpuWasmScalar, plotScale, roots, iterationsCount, regionColors);
     firstDraw.then(async () => {
         WindowResize();
         await InitWebgl2Drawing(gpuCanvas);
