@@ -1,4 +1,4 @@
-use crate::{fractal_calculation::*, geometry_math::*, simd_math::SimdMath};
+use crate::{fractal_calculation::*, geometry::*, simd_math::SimdMath};
 
 use num_complex::Complex32;
 use wasm_bindgen::prelude::*;

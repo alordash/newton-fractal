@@ -6,7 +6,7 @@ use wasm_bindgen::prelude::*;
 mod logging;
 
 pub mod fractal_calculation;
-pub mod geometry_math;
+pub mod geometry;
 pub mod fractal_plotting;
 pub mod simd_math;
 pub mod memory_manager;
