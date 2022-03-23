@@ -6,6 +6,8 @@ Runtime [Newton's fractal](https://en.wikipedia.org/wiki/Newton_fractal) rendere
 
 Inspired by [3blue1brown](https://www.3blue1brown.com/)'s [video about Newton's fractal](https://youtu.be/-RdOwhmqP5s).
 
+![Demo preview](./demo/11-250.png)
+
 ## Drawing techniques
 
 ### <details> <summary>1. Javascript</summary> [fractal_calculation.ts](https://github.com/alordash/newton-fractal/blob/main/scripts/math/fractal_calculation.ts) and [geometry.ts](https://github.com/alordash/newton-fractal/blob/main/scripts/math/geometry.ts) </details>
