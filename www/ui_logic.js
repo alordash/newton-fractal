@@ -7,7 +7,7 @@ let cpuIterationsCount = 0;
 const cpuMaxIterationsCount = 25;
 const gpuMaxIterationsCount = 250;
 const rootPointSize = 4.0;
-const CLICK_POINT_DISTANCE = 0.125;
+const CLICK_POINT_DISTANCE = 0.05;
 let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
 let holdingPointIndex = -1;
 const TOTAL_FPS_RESET_THRESHOLD = 1000000;
@@ -135,6 +135,14 @@ function CanvasMouseDown(me) {
 }
 function CanvasMouseMove(me) {
     if (holdingPointIndex == -1) {
+        let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
+        let { id, dst } = getClosestRoot(x, y);
+        if (dst < CLICK_POINT_DISTANCE) {
+            document.body.style.cursor = "all-scroll";
+        }
+        else {
+            document.body.style.cursor = "auto";
+        }
         return;
     }
     if (me.buttons != 1) {
