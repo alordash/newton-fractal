@@ -120,10 +120,10 @@ const parabolaPreset: FractalPreset = () => {
 
 const fractalPresets: FractalPreset[] = [
     defaultPreset,
-    // trianglePreset,
-    // rectanglePreset,
-    // starPreset,
-    // parabolaPreset
+    trianglePreset,
+    rectanglePreset,
+    starPreset,
+    parabolaPreset
 ];
 
 let startPresetId = randomInt(fractalPresets.length - 1);
