@@ -55,7 +55,8 @@ void main() {
   vec2 root = find_root(z);
 
   float min_dst = 1.0 / 0.0;
-  int min_dst_index = 1;
+
+  int min_dst_index = 0;
   for (int i = 0; i < roots_count; i++) {
     float dst = distance(root, roots[i]);
     if (dst < min_dst) {
