@@ -1,6 +1,7 @@
 import { GLManager } from "./gl_manager.js";
 
 let gl: GLManager;
+let drawing = false;
 
 async function InitWebgl2Drawing(canvas: HTMLCanvasElement) {
     let ctx = canvas.getContext("webgl2", { powerPreference: "high-performance" });
@@ -11,7 +12,11 @@ async function InitWebgl2Drawing(canvas: HTMLCanvasElement) {
     return gl;
 }
 
-function drawNewtonFractal(plotScale: PlotScale, iterationsCount: number, roots: number[][], colors: number[][]) {
+async function drawNewtonFractalGpu(plotScale: PlotScale, iterationsCount: number, roots: number[][], colors: number[][]) {
+    if(drawing) {
+        return -1;
+    }
+    drawing = true;
     let len = roots.length;
 
     let flatRoots = roots.flat();
@@ -24,11 +29,13 @@ function drawNewtonFractal(plotScale: PlotScale, iterationsCount: number, roots:
 
     gl.setPlotScaleUniforms(plotScale);
 
-    gl.drawBlankRectangle();
+    let elapsedMs = await gl.drawBlankRectangle();
+    drawing = false;
+    return elapsedMs;
 }
 
 export {
     InitWebgl2Drawing,
-    drawNewtonFractal,
+    drawNewtonFractalGpu,
     gl
 }

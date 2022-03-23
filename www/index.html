@@ -105,7 +105,8 @@
         }
     </script>
     <canvas id="cpuCanvas" class="myCanvas" style="display: block; top: 8px;"></canvas>
-    <canvas id="rootsCanvas" class="myCanvas" style="display: block; top: 8px; position: absolute; pointer-events: none;"></canvas>
+    <canvas id="rootsCanvas" class="myCanvas"
+        style="display: block; top: 8px; position: absolute; pointer-events: none;"></canvas>
     <canvas id="gpuCanvas" class="myCanvas" style="display: block;"></canvas>
     <div style="display: flex; flex-direction: row;">
         <div style="position: relative; display: inline-block; width: 0; height: 0px;">
@@ -143,6 +144,22 @@
     <script src="../pkg/newton_fractal.js"></script>
     <script src="./math/fractal_calculation.js"></script>
     <script src="./ui_logic.js" type="module"></script>
+    <div>fps: <span id="fps"></span></div>
+    <script>
+        const fpsElem = document.querySelector("#fps");
+
+        let then = 0;
+        function render(now) {
+            now *= 0.001;                          // convert to seconds
+            const deltaTime = now - then;          // compute time since last frame
+            then = now;                            // remember time for next frame
+            const fps = 1 / deltaTime;             // compute frames per second
+            fpsElem.textContent = fps.toFixed(1);  // update fps display
+
+            requestAnimationFrame(render);
+        }
+        requestAnimationFrame(render);
+    </script>
 </body>
 
 </html>

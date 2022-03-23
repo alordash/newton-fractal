@@ -14,6 +14,7 @@ var DrawingModes;
     DrawingModes["CpuWasmScalar"] = "CPU-wasm-scalar";
     DrawingModes["CpuWasmSimd"] = "CPU-wasm-simd";
     DrawingModes["CpuJsScalar"] = "CPU-js-scalar";
+    DrawingModes["GpuGlslScalar"] = "GPU-GLSL-scalar";
 })(DrawingModes || (DrawingModes = {}));
 class DrawingWork {
     constructor(drawingMode, plotScale, bufferPtr, bufferSize) {

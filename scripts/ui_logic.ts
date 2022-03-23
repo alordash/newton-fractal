@@ -2,7 +2,7 @@ import { changePreset, regionColors, roots } from './visuals/fractal_presets.js'
 import { generateColor } from './visuals/colors.js';
 import { PlotScale, addRoot, getClosestRoot, getClosestRootFractalwise } from './math/geometry.js';
 import { DrawingModes, DrawingResult, runDrawingWorkers } from './drawing/drawing_manager.js';
-import { drawNewtonFractal, InitWebgl2Drawing, gl } from './webgl/webgl2_drawing.js';
+import { drawNewtonFractalGpu, InitWebgl2Drawing, gl } from './webgl/webgl2_drawing.js';
 
 const rootPointSize = 4.0;
 const CLICK_POINT_DISTANCE = 0.125;
@@ -51,7 +51,6 @@ let waitingForDrawing = false;
 
 async function draw(drawingMode?: DrawingModes, threadsCount?: number) {
     let iterationsCount = getIterationsCount();
-    drawNewtonFractal(plotScale, iterationsCount, roots, regionColors);
 
     if (drawingMode == undefined) {
         drawingMode = <DrawingModes><any>drawingModeSelect.value;
@@ -60,22 +59,32 @@ async function draw(drawingMode?: DrawingModes, threadsCount?: number) {
         threadsCount = parseInt(threadsCountRange.value);
     }
 
-    let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors, threadsCount);
-    if (result == false) {
-        waitingForDrawing = true;
-        return;
+    let elapsedMs: number;
+
+    if (drawingMode == DrawingModes.GpuGlslScalar) {
+        elapsedMs = await drawNewtonFractalGpu(plotScale, iterationsCount, roots, regionColors);
+        if(elapsedMs == -1) {
+            return;
+        }
+    } else {
+        let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors, threadsCount);
+        if (result == false) {
+            waitingForDrawing = true;
+            return;
+        }
+        waitingForDrawing = false;
+        let drawingResult = <DrawingResult>await result;
+        let data = new Uint8ClampedArray(drawingResult.data);
+        let { plotScale: { x_display_range: width, y_display_range: height } } = drawingResult;
+        elapsedMs = drawingResult.elapsedMs;
+
+        let imageData = new ImageData(data, width, height);
+        cpuCanvasContext.putImageData(imageData, 0, 0);
     }
-    waitingForDrawing = false;
-    let drawingResult = <DrawingResult>await result;
-    let data = new Uint8ClampedArray(drawingResult.data);
-    let { elapsedMs, plotScale: { x_display_range: width, y_display_range: height } } = drawingResult;
 
     calculateFps(elapsedMs);
 
     updateInfoPanel(drawingMode);
-
-    let imageData = new ImageData(data, width, height);
-    cpuCanvasContext.putImageData(imageData, 0, 0);
 
     plotRoots(plotScale, roots);
 
@@ -239,7 +248,7 @@ async function run() {
         WindowResize();
         await InitWebgl2Drawing(gpuCanvas);
 
-        drawNewtonFractal(plotScale, getIterationsCount(), roots, regionColors);
+        await drawNewtonFractalGpu(plotScale, getIterationsCount(), roots, regionColors);
     });
 }
 

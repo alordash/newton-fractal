@@ -11,7 +11,7 @@ class GLManager {
         let { width, height } = ctx.canvas;
         ctx.viewport(0, 0, width, height);
     }
-    drawBlankRectangle() {
+    async drawBlankRectangle() {
         let { ctx } = this;
         let positionAttributeLocation = ctx.getAttribLocation(this.program, "a_position");
         let positionBuffer = ctx.createBuffer();
@@ -30,7 +30,18 @@ class GLManager {
         ctx.enableVertexAttribArray(positionAttributeLocation);
         ctx.vertexAttribPointer(positionAttributeLocation, 2, ctx.FLOAT, false, 0, 0);
         ctx.bindVertexArray(vao);
+        let sync = ctx.fenceSync(ctx.SYNC_GPU_COMMANDS_COMPLETE, 0);
+        let i = 0;
+        let start = performance.now();
         ctx.drawArrays(ctx.TRIANGLES, 0, 6);
+        ctx.flush();
+        while (ctx.getSyncParameter(sync, ctx.SYNC_STATUS) == ctx.UNSIGNALED) {
+            await new Promise(resolve => setTimeout(resolve, 1));
+        }
+        let end = performance.now();
+        let elapsedMs = end - start;
+        ctx.deleteSync(sync);
+        return elapsedMs;
     }
     setIntUniform(x, uniform_name) {
         let { ctx } = this;
@@ -53,13 +64,11 @@ class GLManager {
         ctx.uniform4fv(location, x);
     }
     setPlotScaleUniforms(plotScale) {
-        let { x_offset, y_offset, x_value_range, y_value_range, x_display_range, y_display_range } = plotScale;
+        let { x_offset, y_offset, x_value_range, y_value_range, } = plotScale;
         this.setFloatUniform(x_offset, "x_offset");
         this.setFloatUniform(y_offset, "y_offset");
         this.setFloatUniform(x_value_range, "x_value_range");
         this.setFloatUniform(y_value_range, "y_value_range");
-        this.setFloatUniform(x_display_range, "x_display_range");
-        this.setFloatUniform(y_display_range, "y_display_range");
     }
     static async create(ctx, vertShaderSourceUrl, fragShaderSourceUrl) {
         let gl = new GLManager();

@@ -19,7 +19,7 @@ class GLManager {
         ctx.viewport(0, 0, width, height);
     }
 
-    drawBlankRectangle() {
+    async drawBlankRectangle() {
         let { ctx } = this;
         let positionAttributeLocation = ctx.getAttribLocation(this.program, "a_position");
 
@@ -42,8 +42,23 @@ class GLManager {
         ctx.vertexAttribPointer(positionAttributeLocation, 2, ctx.FLOAT, false, 0, 0);
 
         ctx.bindVertexArray(vao);
+        
+        let sync = ctx.fenceSync(ctx.SYNC_GPU_COMMANDS_COMPLETE, 0);
 
+        let i = 0;
+        let start = performance.now();
         ctx.drawArrays(ctx.TRIANGLES, 0, 6);
+        ctx.flush();
+
+        while(ctx.getSyncParameter(sync, ctx.SYNC_STATUS) == ctx.UNSIGNALED) {
+            await new Promise(resolve => setTimeout(resolve, 1));
+        }
+
+        let end = performance.now();
+        let elapsedMs = end - start;
+
+        ctx.deleteSync(sync);
+        return elapsedMs;
     }
 
     setIntUniform(x: number, uniform_name: string) {
