@@ -192,6 +192,9 @@ const changePresetButtonCallback = () => {
 };
 changePresetButton.addEventListener("click", changePresetButtonCallback);
 window.addEventListener("keydown", e => {
+    if (e.ctrlKey || e.shiftKey) {
+        return;
+    }
     let c = e.key.toLocaleLowerCase();
     if (c == 'c' || c == 'с') {
         changePresetButtonCallback();
