@@ -203,8 +203,12 @@ for (const value of Object.values(DrawingModes)) {
 drawingModeSelect.addEventListener('change', () => {
     let drawingMode = <DrawingModes>drawingModeSelect.value;
     if(drawingMode == DrawingModes.GpuGlslScalar) {
+        cpuCanvas.style.display = 'none';
+        gpuCanvas.style.display = 'block';
         threadsCountRange.disabled = true;
     } else {
+        cpuCanvas.style.display = 'block';
+        gpuCanvas.style.display = 'none';
         threadsCountRange.disabled = false;
     }
     resetFps();
@@ -247,9 +251,9 @@ window.addEventListener("keydown", e => {
 async function run() {
     InitWebgl2Drawing(gpuCanvas);
 
-    cpuCanvas.addEventListener("mousedown", CanvasMouseDown);
-    cpuCanvas.addEventListener("click", CanvasClick);
-    cpuCanvas.addEventListener("mousemove", CanvasMouseMove);
+    rootsCanvas.addEventListener("mousedown", CanvasMouseDown);
+    rootsCanvas.addEventListener("click", CanvasClick);
+    rootsCanvas.addEventListener("mousemove", CanvasMouseMove);
 
     window.addEventListener("resize", WindowResize);
 
