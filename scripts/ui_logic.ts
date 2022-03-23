@@ -201,6 +201,12 @@ for (const value of Object.values(DrawingModes)) {
 }
 
 drawingModeSelect.addEventListener('change', () => {
+    let drawingMode = <DrawingModes>drawingModeSelect.value;
+    if(drawingMode == DrawingModes.GpuGlslScalar) {
+        threadsCountRange.disabled = true;
+    } else {
+        threadsCountRange.disabled = false;
+    }
     resetFps();
     draw();
 });
