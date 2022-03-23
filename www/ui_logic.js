@@ -32,14 +32,15 @@ function calculateFps(elapsedMs) {
     fps = Math.round(fps * precisionPower) / precisionPower;
     elapsedMs = Math.round(elapsedMs * 100) / 100;
 }
-function updateInfoPanel(drawingMode) {
+function updateInfoPanel(drawingMode, approximate = false) {
     loggerDiv.innerHTML = `Roots count: ${roots.length}</br>
 Drawing technic: ${drawingMode}</br>
-<b>Average FPS: ${Math.round(totalFps * 10 / fpsMeasures) / 10}</b>`;
+<b>Average FPS: ${approximate ? '~' : ''}${Math.round(totalFps * 10 / fpsMeasures) / 10}</b>`;
 }
 let waitingForDrawing = false;
 async function draw(drawingMode, threadsCount) {
     let iterationsCount = getIterationsCount();
+    let fpsIsApproximate = false;
     if (drawingMode == undefined) {
         drawingMode = drawingModeSelect.value;
     }
@@ -52,6 +53,7 @@ async function draw(drawingMode, threadsCount) {
         if (elapsedMs == -1) {
             return;
         }
+        fpsIsApproximate = true;
     }
     else {
         let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors, threadsCount);
@@ -68,7 +70,7 @@ async function draw(drawingMode, threadsCount) {
         cpuCanvasContext.putImageData(imageData, 0, 0);
     }
     calculateFps(elapsedMs);
-    updateInfoPanel(drawingMode);
+    updateInfoPanel(drawingMode, fpsIsApproximate);
     plotRoots(plotScale, roots);
     if (waitingForDrawing) {
         draw();

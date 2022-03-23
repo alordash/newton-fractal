@@ -41,16 +41,17 @@ function calculateFps(elapsedMs: number) {
     elapsedMs = Math.round(elapsedMs * 100) / 100;
 }
 
-function updateInfoPanel(drawingMode: DrawingModes) {
+function updateInfoPanel(drawingMode: DrawingModes, approximate = false) {
     loggerDiv.innerHTML = `Roots count: ${roots.length}</br>
 Drawing technic: ${drawingMode}</br>
-<b>Average FPS: ${Math.round(totalFps * 10 / fpsMeasures) / 10}</b>`;
+<b>Average FPS: ${approximate ? '~' : ''}${Math.round(totalFps * 10 / fpsMeasures) / 10}</b>`;
 }
 
 let waitingForDrawing = false;
 
 async function draw(drawingMode?: DrawingModes, threadsCount?: number) {
     let iterationsCount = getIterationsCount();
+    let fpsIsApproximate = false;
 
     if (drawingMode == undefined) {
         drawingMode = <DrawingModes><any>drawingModeSelect.value;
@@ -63,9 +64,10 @@ async function draw(drawingMode?: DrawingModes, threadsCount?: number) {
 
     if (drawingMode == DrawingModes.GpuGlslScalar) {
         elapsedMs = await drawNewtonFractalGpu(plotScale, iterationsCount, roots, regionColors);
-        if(elapsedMs == -1) {
+        if (elapsedMs == -1) {
             return;
         }
+        fpsIsApproximate = true;
     } else {
         let result = runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, regionColors, threadsCount);
         if (result == false) {
@@ -84,7 +86,7 @@ async function draw(drawingMode?: DrawingModes, threadsCount?: number) {
 
     calculateFps(elapsedMs);
 
-    updateInfoPanel(drawingMode);
+    updateInfoPanel(drawingMode, fpsIsApproximate);
 
     plotRoots(plotScale, roots);
 
