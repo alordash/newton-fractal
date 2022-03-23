@@ -13,7 +13,7 @@ pub fn newton_method_approx(z: Complex32, roots: &[Complex32]) -> (usize, Comple
         if diff.re == 0.0 && diff.im == 0.0 {
             return (i, z);
         }
-        sum += 1.0 / diff; 
+        sum += 1.0 / diff;
     }
     (usize::MAX, z - 1.0 / sum)
 }
