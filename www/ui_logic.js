@@ -123,7 +123,7 @@ async function CanvasClick(me) {
 function CanvasMouseDown(me) {
     let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
     let { id, dst } = getClosestRoot(x, y);
-    if (dst < CLICK_POINT_DISTANCE) {
+    if (dst < CLICK_POINT_DISTANCE && !me.shiftKey && !me.ctrlKey) {
         holdingPointIndex = id;
     }
     else {
