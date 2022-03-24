@@ -10,7 +10,7 @@ const rootPointSize = 4.0;
 const CLICK_POINT_DISTANCE = 0.05;
 let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
 let holdingPointIndex = -1;
-const TOTAL_FPS_RESET_THRESHOLD = 1000000;
+const TOTAL_FPS_RESET_THRESHOLD = 1000;
 let totalFps = 0;
 let fpsMeasures = -2;
 function getIterationsCount() {
