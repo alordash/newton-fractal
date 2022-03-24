@@ -1,6 +1,7 @@
 # Newton's fractal
 
-Runtime [Newton's fractal](https://en.wikipedia.org/wiki/Newton_fractal) renderer.
+Runtime [Newton's fractal](https://en.wikipedia.org/wiki/Newton_fractal) renderer.  
+This branch includes automatic script that moves first root in a circle and the second root up and down when canvas is clicked.
 
 ### [>>Click<<](https://alordash.github.io/newton-fractal/www/index.html) to open in your browser
 
