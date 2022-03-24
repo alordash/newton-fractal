@@ -10,7 +10,7 @@ pub fn newton_method_approx(z: Complex32, roots: &[Complex32]) -> (usize, Comple
     let mut sum = Complex32::new(0.0, 0.0);
     for (i, root) in roots.iter().enumerate() {
         let diff = z - root;
-        if diff.re == 0.0 && diff.im == 0.0 {
+        if diff.re.abs() < 0.001 && diff.im.abs() < 0.001 {
             return (i, z);
         }
         sum += 1.0 / diff;
