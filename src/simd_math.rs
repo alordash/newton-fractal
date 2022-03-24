@@ -8,6 +8,7 @@ impl SimdMath {
     pub const NEGATION_MASK_FOR_INVERSION: v128 = f32x4(1.0, -1.0, 1.0, -1.0);
     pub const F64_ZEROES: v128 = f64x2(0.0f64, 0.0f64);
     pub const F32_MAXIMUMS: v128 = f32x4(f32::MAX, f32::MAX, f32::MAX, f32::MAX);
+    pub const F32_MIN_DIFFS: v128 = f32x4(0.001, 0.001, 0.001, 0.001);
     pub const I32_ZEROES: v128 = i32x4(0, 0, 0, 0);
 
     // Formula:

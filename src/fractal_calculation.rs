@@ -64,9 +64,12 @@ pub fn simd_newton_method_approx(z: u64, roots: &[Complex32]) -> u64 {
             // 1. Subtraction: z - root
             let _diff = f32x4_sub(_z, *(roots_chunk.as_ptr() as *const v128));
 
-            // 1*. Check: if difference == 0 => z is one of roots
-            let _diff_eq = f64x2_eq(_diff, SimdMath::F64_ZEROES);
-            if v128_any_true(_diff_eq) {
+            // 1*. Check: if (difference < 0.001) => z is one of roots
+            let _diff_le = f32x4_lt(f32x4_abs(_diff), SimdMath::F32_MIN_DIFFS);
+            if v128_any_true(v128_and(
+                _diff_le,
+                i32x4_shuffle::<1, 0, 3, 2>(_diff_le, _diff_le),
+            )) {
                 return z;
             }
 
@@ -88,10 +91,15 @@ pub fn simd_newton_method_approx(z: u64, roots: &[Complex32]) -> u64 {
 
             let rem_as_u64 = addr_of!(*rem) as *const u64;
             let _diff = f32x4_sub(_z, v128_load64_zero(rem_as_u64));
-            let _diff_eq = f64x2_eq(_diff, SimdMath::F64_ZEROES);
-            if v128_any_true(_diff_eq) {
-                return *rem_as_u64;
+
+            let _diff_le = f32x4_lt(f32x4_abs(_diff), SimdMath::F32_MIN_DIFFS);
+            if v128_any_true(v128_and(
+                _diff_le,
+                i32x4_shuffle::<1, 0, 3, 2>(_diff_le, _diff_le),
+            )) {
+                return z;
             }
+            
             let _inversion = SimdMath::complex_number_inversion(_diff);
 
             _sum = f32x4_add(_sum, _inversion);
