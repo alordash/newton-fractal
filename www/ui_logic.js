@@ -38,7 +38,8 @@ function calculateFps(elapsedMs) {
     fps = Math.round(fps * precisionPower) / precisionPower;
 }
 function updateInfoPanel(drawingMode, elapsedMs, approximate = false) {
-    loggerDiv.innerHTML = `Roots count: ${roots.length}</br>
+    loggerDiv.innerHTML = `Canvas size: ${cpuCanvas.width}x${cpuCanvas.height}</br>
+Roots count: ${roots.length}</br>
 Drawing technic: ${drawingMode}</br>
 Took: ${elapsedMs}ms<br>
 <b>Average FPS: ${approximate ? '~' : ''}${fpsMeasures <= 0 ? 0 : Math.round(totalFps * 10 / fpsMeasures) / 10}</b>`;
