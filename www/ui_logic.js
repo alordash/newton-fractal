@@ -107,6 +107,8 @@ function resizeCanvas(width, height) {
         gpuCanvas.height =
             cpuCanvas.height = height;
 }
+let cycleStarted = false;
+let loopsCount = 0;
 async function CanvasClick(me) {
     if (holdingPointIndex != -1)
         return;
@@ -124,6 +126,36 @@ async function CanvasClick(me) {
     else if (me.altKey) {
         let { id, dst } = getClosestRootFractalwise(x, y, iterationsCount);
         regionColors[id] = generateColor();
+    }
+    else {
+        if (cycleStarted) {
+            return;
+        }
+        cycleStarted = true;
+        while (true) {
+            if (loopsCount > 3) {
+                loopsCount = 0;
+                cycleStarted = false;
+                break;
+            }
+            let r1 = roots[0];
+            let r2 = roots[1];
+            const r2_y = r2[1];
+            const dst = Math.sqrt(r1[0] * r1[0] + r1[1] * r1[1]);
+            const L = 200;
+            for (let i = 0; i < L; i++) {
+                let t = 2 * Math.PI * i / L;
+                const cost = Math.cos(t);
+                const sint = Math.sin(t);
+                r1[0] = dst * cost;
+                r1[1] = dst * sint;
+                r2[1] = r2_y + sint * sint / 2.0;
+                draw();
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+            r2[1] = r2_y;
+            loopsCount++;
+        }
     }
     draw();
 }

@@ -37,9 +37,9 @@ function getPolygonPoints(radius, vertexCount, startAngleInRad = 0) {
 const defaultPreset = () => {
     return {
         roots: [
-            [-0.5, -0.25],
-            [-0.75, 0.25],
-            [0, 0.5]
+            [0.55901699437494742410229341718282, 0],
+            [-0.75, -0.45],
+            [0.83, 0.23]
         ],
         colors: rgbyDimmed
     };
@@ -99,10 +99,6 @@ const parabolaPreset = () => {
 };
 const fractalPresets = [
     defaultPreset,
-    trianglePreset,
-    rectanglePreset,
-    starPreset,
-    parabolaPreset
 ];
 let startPresetId = randomInt(fractalPresets.length - 1);
 let startPreset = fractalPresets[startPresetId]();
