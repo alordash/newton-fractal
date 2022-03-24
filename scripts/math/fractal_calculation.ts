@@ -15,21 +15,28 @@ class Complex32 {
         this.im = im;
     }
 
-    add(other: Complex32): Complex32 {
-        return new Complex32(this.re + other.re, this.im + other.im);
+    clone() {
+        return new Complex32(this.re, this.im);
     }
 
-    subtract(other: Complex32): Complex32 {
-        return new Complex32(this.re - other.re, this.im - other.im);
+    add(other: Complex32) {
+        this.re += other.re;
+        this.im += other.im;
+    }
+
+    subtract(other: Complex32) {
+        this.re -= other.re;
+        this.im -= other.im;
+    }
+
+    invert() {
+        const square_sum = this.normSqr();
+        this.re /= square_sum;
+        this.im /= -square_sum;
     }
 
     normSqr(): number {
         return this.re * this.re + this.im * this.im;
-    }
-
-    invert(): Complex32 {
-        const square_sum = this.normSqr();
-        return new Complex32(this.re / square_sum, -this.im / square_sum);
     }
 
     distance(): number {
@@ -42,15 +49,21 @@ function newtonMethodApprox(roots: Complex32[], z: Complex32): {
     z: Complex32;
 } {
     let sum = new Complex32(0, 0);
-    for (let i in roots) {
-        const root = roots[i];
-        const diff = z.subtract(root);
-        if (diff.re == 0 && diff.im == 0) {
-            return { idx: +i, z };
+    let i = 0;
+    for (const root of roots) {
+        let diff = z.clone();
+        diff.subtract(root);
+        if (Math.abs(diff.re) < 0.001 && Math.abs(diff.im) < 0.001) {
+            return { idx: i, z };
         }
-        sum = sum.add(diff.invert());
+        diff.invert();
+        sum.add(diff);
+        i++;
     }
-    return { idx: -1, z: z.subtract(sum.invert()) };
+    sum.invert();
+    let result = z.clone();
+    result.subtract(sum);
+    return { idx: -1, z: result };
 }
 
 function transformPointToPlotScale(x: number, y: number, plotScale: PlotScale): number[] {
@@ -100,13 +113,16 @@ function fillPixelsJavascript(buffer: SharedArrayBuffer, plotScale: PlotScale, r
         if (colorId != -1) {
             return colorPacks[colorId];
         }
-        for (let i in complexRoots) {
-            const root = complexRoots[i];
-            let d = z.subtract(root).distance();
-            if (d < minDistance) {
-                minDistance = d;
-                closestRootId = +i;
+        let i = 0;
+        for(const root of complexRoots) {
+            let d = z.clone();
+            d.subtract(root);
+            let dst = d.distance();
+            if (dst < minDistance) {
+                minDistance = dst;
+                closestRootId = i;
             }
+            i++;
         }
         return colorPacks[closestRootId];
     }
