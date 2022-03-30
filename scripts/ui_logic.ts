@@ -4,11 +4,10 @@ import { PlotScale, addRoot, getClosestRoot, getClosestRootFractalwise } from '.
 import { DrawingModes, DrawingResult, runDrawingWorkers } from './drawing/drawing_manager.js';
 import { drawNewtonFractalGpu, InitWebgl2Drawing, gl } from './webgl/webgl2_drawing.js';
 
-let cpuIterationsCount = 0;
-const cpuMaxIterationsCount = 25;
-const gpuMaxIterationsCount = 250;
+const CPU_MAX_ITERATIONS_COUNT = 25;
+const GPU_MAX_ITERATIONS_COUNT = 250;
 
-const rootPointSize = 4.0;
+const ROOT_POINT_SIZE = 4.0;
 const CLICK_POINT_DISTANCE = 0.05;
 
 let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
@@ -117,7 +116,7 @@ function plotPoint(x: number, y: number, size: number, plotScale: PlotScale) {
 function plotRoots(plotScale: PlotScale, roots: number[][]) {
     rootsCanvasContext.clearRect(0, 0, rootsCanvas.width, rootsCanvas.height);
     for (let [x, y] of roots) {
-        plotPoint(x, y, rootPointSize, plotScale);
+        plotPoint(x, y, ROOT_POINT_SIZE, plotScale);
     }
 }
 
@@ -218,14 +217,16 @@ for (const value of Object.values(DrawingModes)) {
 drawingModeSelect.addEventListener('change', () => {
     let drawingMode = <DrawingModes>drawingModeSelect.value;
     if (drawingMode == DrawingModes.GpuGlslScalar) {
-        cpuIterationsCount = getIterationsCount();
-        iterationsCountRange.max = gpuMaxIterationsCount.toString();
+        iterationsCountRange.max = GPU_MAX_ITERATIONS_COUNT.toString();
         cpuCanvas.style.display = 'none';
         gpuCanvas.style.display = 'block';
         threadsCountRange.disabled = true;
     } else {
-        iterationsCountDisplay.value = iterationsCountRange.value = cpuIterationsCount.toString();
-        iterationsCountRange.max = cpuMaxIterationsCount.toString();
+        let iterationsCount = getIterationsCount();
+        if(iterationsCount > CPU_MAX_ITERATIONS_COUNT) {
+            iterationsCountDisplay.value = iterationsCountRange.value = CPU_MAX_ITERATIONS_COUNT.toString();
+        }
+        iterationsCountRange.max = CPU_MAX_ITERATIONS_COUNT.toString();
         cpuCanvas.style.display = 'block';
         gpuCanvas.style.display = 'none';
         threadsCountRange.disabled = false;
@@ -278,9 +279,8 @@ async function run() {
 
     window.addEventListener("resize", WindowResize);
 
-    iterationsCountRange.max = cpuMaxIterationsCount.toString();
+    iterationsCountRange.max = CPU_MAX_ITERATIONS_COUNT.toString();
     let iterationsCount = getIterationsCount();
-    cpuIterationsCount = iterationsCount;
 
     let firstDraw = runDrawingWorkers(DrawingModes.CpuWasmScalar, plotScale, roots, iterationsCount, regionColors);
     (<Promise<void>>firstDraw).then(async () => {
