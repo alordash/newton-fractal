@@ -7,42 +7,10 @@ type PlotScale = {
     y_display_range: number
 }
 
-class Complex32 {
+type Complex32 = {
     re: number;
     im: number;
-    constructor(re: number, im: number) {
-        this.re = re;
-        this.im = im;
-    }
-
-    clone() {
-        return new Complex32(this.re, this.im);
-    }
-
-    add(other: Complex32) {
-        this.re += other.re;
-        this.im += other.im;
-    }
-
-    subtract(other: Complex32) {
-        this.re -= other.re;
-        this.im -= other.im;
-    }
-
-    invert() {
-        const square_sum = this.normSqr();
-        this.re /= square_sum;
-        this.im /= -square_sum;
-    }
-
-    normSqr(): number {
-        return this.re * this.re + this.im * this.im;
-    }
-
-    distance(): number {
-        return Math.sqrt(this.re * this.re + this.im * this.im);
-    }
-}
+};
 
 function calculateDistance(x: number, y: number): number {
     let ratio = x / y;
@@ -53,26 +21,32 @@ function getRootId(roots: Complex32[], z: Complex32, iterationsCount: number): n
     let i = 0;
 
     for (let iter = 0; iter < iterationsCount; iter++) {
-        let sum = new Complex32(0, 0);
+        let sumReal = 0;
+        let sumImag = 0;
         i = 0;
         for (const root of roots) {
-            let diff = z.clone();
-            diff.subtract(root);
+            let diffReal = z.re - root.re;
+            let diffImag = z.im - root.im;
+            const squareNorm = diffReal * diffReal + diffImag * diffImag;
 
-            let squareNorm = diff.re * diff.re + diff.im * diff.im;
-            if(squareNorm < 0.001) {
+            if (squareNorm < 0.001) {
                 return i;
             }
 
-            diff.re /= squareNorm;
-            diff.im /= -squareNorm;
-            
-            sum.add(diff);
+            diffReal /= squareNorm;
+            diffImag /= -squareNorm;
+            sumReal += diffReal;
+            sumImag += diffImag;
+
             i++;
         }
 
-        sum.invert();
-        z.subtract(sum);
+        const squareNorm = sumReal * sumReal + sumImag * sumImag;
+        sumReal /= squareNorm;
+        sumImag /= -squareNorm;
+
+        z.re -= sumReal;
+        z.im -= sumImag;
     }
 
     let minDistance = Infinity;
@@ -80,9 +54,10 @@ function getRootId(roots: Complex32[], z: Complex32, iterationsCount: number): n
 
     i = 0;
     for (const root of roots) {
-        let d = z.clone();
-        d.subtract(root);
-        let distance = calculateDistance(d.re, d.im);
+        let diffReal = z.re - root.re;
+        let diffImag = z.im - root.im;
+
+        let distance = calculateDistance(diffReal, diffImag);
         if (distance < minDistance) {
             minDistance = distance;
             closestRootId = i;
@@ -120,7 +95,7 @@ function fillPixelsJavascript(buffer: SharedArrayBuffer, plotScale: PlotScale, r
 
     let flatColors = new Uint8Array(colors.flat());
     let colorPacks = new Uint32Array(flatColors.buffer);
-    let complexRoots: Complex32[] = roots.map((pair) => new Complex32(pair[0], pair[1]));
+    let complexRoots: Complex32[] = roots.map(pair => ({ re: pair[0], im: pair[1] }));
 
     let u32BufferView = new Uint32Array(buffer, bufferPtr);
 
@@ -131,7 +106,7 @@ function fillPixelsJavascript(buffer: SharedArrayBuffer, plotScale: PlotScale, r
     for (let i = thisBorder; i < nextBorder; i++) {
         let [xp, yp] = transformPointToPlotScale(i % w_int, i / w_int, plotScale);
         u32BufferView[i] = colorPacks[
-            getRootId(complexRoots, new Complex32(xp, yp), iterationsCount)
+            getRootId(complexRoots, { re: xp, im: yp }, iterationsCount)
         ];
     }
 }
