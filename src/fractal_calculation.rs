@@ -7,6 +7,7 @@ use std::ptr::addr_of;
 use crate::simd_math::SimdMath;
 
 pub fn get_root_id(mut z: Complex32, roots: &[Complex32], iterations_count: usize) -> usize {
+    // Newton's method approximation is performed inside of this cycle
     for _ in 0..iterations_count {
         let mut sum = Complex32::new(0.0, 0.0);
         for (i, root) in roots.iter().enumerate() {

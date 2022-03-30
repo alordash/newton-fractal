@@ -1,6 +1,6 @@
 import { changePreset, regionColors, roots } from './visuals/fractal_presets.js';
 import { generateColor } from './visuals/colors.js';
-import { PlotScale, addRoot, getClosestRoot, getClosestRootFractalwise } from './math/geometry.js';
+import { PlotScale, addRoot, getClosestRoot } from './math/geometry.js';
 import { DrawingModes, DrawingResult, runDrawingWorkers } from './drawing/drawing_manager.js';
 import { drawNewtonFractalGpu, InitWebgl2Drawing, gl } from './webgl/webgl2_drawing.js';
 
