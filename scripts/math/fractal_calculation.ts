@@ -46,8 +46,7 @@ class Complex32 {
 
 function calculateDistance(x: number, y: number): number {
     let ratio = x / y;
-    return x * Math.sqrt(1 + ratio * ratio);
-    // return Math.sqrt(x * x + y * y);
+    return Math.abs(y) * Math.sqrt(1 + ratio * ratio);
 }
 
 function getRootId(roots: Complex32[], z: Complex32, iterationsCount: number): number {
@@ -78,8 +77,7 @@ function getRootId(roots: Complex32[], z: Complex32, iterationsCount: number): n
     for (const root of roots) {
         let d = z.clone();
         d.subtract(root);
-        // let distance = calculateDistance(d.re, d.im);
-        let distance = Math.sqrt(d.re * d.re + d.im * d.im);
+        let distance = calculateDistance(d.re, d.im);
         if (distance < minDistance) {
             minDistance = distance;
             closestRootId = i;
