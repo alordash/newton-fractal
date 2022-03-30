@@ -23,7 +23,6 @@ function calculateDistance(x: number, y: number): number {
 
 function getRootId(roots: Complex32[], z: Complex32, iterationsCount: number): number {
     let i = 0;
-
     for (let iter = 0; iter < iterationsCount; iter++) {
         let sumReal = 0;
         let sumImag = 0;
@@ -44,18 +43,15 @@ function getRootId(roots: Complex32[], z: Complex32, iterationsCount: number): n
 
             i++;
         }
-
         const squareNorm = calculateSquareNorm(sumReal, sumImag);
         sumReal /= squareNorm;
         sumImag /= -squareNorm;
-
         z.re -= sumReal;
         z.im -= sumImag;
     }
 
     let minDistance = Infinity;
     let closestRootId = 0;
-
     i = 0;
     for (const root of roots) {
         let diffReal = z.re - root.re;
