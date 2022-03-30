@@ -58,10 +58,15 @@ function getRootId(roots: Complex32[], z: Complex32, iterationsCount: number): n
         for (const root of roots) {
             let diff = z.clone();
             diff.subtract(root);
-            if (Math.abs(diff.re) < 0.001 && Math.abs(diff.im) < 0.001) {
+
+            let squareNorm = diff.re * diff.re + diff.im * diff.im;
+            if(squareNorm < 0.001) {
                 return i;
             }
-            diff.invert();
+
+            diff.re /= squareNorm;
+            diff.im /= -squareNorm;
+            
             sum.add(diff);
             i++;
         }
