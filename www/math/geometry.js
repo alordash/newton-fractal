@@ -1,6 +1,5 @@
 import { generateColor } from '../visuals/colors.js';
 import { regionColors, roots } from '../visuals/fractal_presets.js';
-const { newton_method_approx_wasm } = wasm_bindgen;
 class PlotScale {
     constructor(x_offset, y_offset, x_value_range, y_value_range, x_display_range, y_display_range) {
         this.x_offset = x_offset;
