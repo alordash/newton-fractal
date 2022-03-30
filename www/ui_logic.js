@@ -1,6 +1,6 @@
 import { changePreset, regionColors, roots } from './visuals/fractal_presets.js';
 import { generateColor } from './visuals/colors.js';
-import { PlotScale, addRoot, getClosestRoot, getClosestRootFractalwise } from './math/geometry.js';
+import { PlotScale, addRoot, getClosestRoot } from './math/geometry.js';
 import { DrawingModes, runDrawingWorkers } from './drawing/drawing_manager.js';
 import { drawNewtonFractalGpu, InitWebgl2Drawing, gl } from './webgl/webgl2_drawing.js';
 const CPU_MAX_ITERATIONS_COUNT = 25;
@@ -122,7 +122,7 @@ async function CanvasClick(me) {
         roots.splice(id, 1);
     }
     else if (me.altKey) {
-        let { id, dst } = getClosestRootFractalwise(x, y, iterationsCount);
+        let id = wasm_bindgen.get_root_id_wasm(x, y, roots, iterationsCount);
         regionColors[id] = generateColor();
     }
     draw();
