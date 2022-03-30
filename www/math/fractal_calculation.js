@@ -1,3 +1,6 @@
+function calculateSquareNorm(x, y) {
+    return x * x + y * y;
+}
 function calculateDistance(x, y) {
     let ratio = x / y;
     return Math.abs(y) * Math.sqrt(1 + ratio * ratio);
@@ -11,7 +14,7 @@ function getRootId(roots, z, iterationsCount) {
         for (const root of roots) {
             let diffReal = z.re - root.re;
             let diffImag = z.im - root.im;
-            const squareNorm = diffReal * diffReal + diffImag * diffImag;
+            const squareNorm = calculateSquareNorm(diffReal, diffImag);
             if (squareNorm < 0.001) {
                 return i;
             }
@@ -21,7 +24,7 @@ function getRootId(roots, z, iterationsCount) {
             sumImag += diffImag;
             i++;
         }
-        const squareNorm = sumReal * sumReal + sumImag * sumImag;
+        const squareNorm = calculateSquareNorm(sumReal, sumImag);
         sumReal /= squareNorm;
         sumImag /= -squareNorm;
         z.re -= sumReal;
