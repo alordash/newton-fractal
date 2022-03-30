@@ -95,36 +95,16 @@ pub fn fill_pixels_scalar(
     } = *plot_scale;
     let (w_int, h_int) = (width as usize, height as usize);
 
-    let filler = |x: usize, y: usize| {
-        let mut min_d = f32::MAX;
-        let mut closest_root_id: usize = 0;
-        let (xp, yp) = transform_point_to_plot_scale(x as f32, y as f32, &plot_scale);
-        let mut z = Complex32::new(xp, yp);
-        for _ in 0..iterations_count {
-            let (id, new_point) = newton_method_approx(z, &roots);
-            if (id & (1 << 31)) == 0 {
-                return colors[id];
-            }
-            z = new_point;
-        }
-
-        for (i, root) in roots.iter().enumerate() {
-            let d = (z - root).norm_sqr().sqrt();
-            if d < min_d {
-                min_d = d;
-                closest_root_id = i;
-            }
-        }
-        colors[closest_root_id]
-    };
-
     let total_size = w_int * h_int;
     let this_border = calculate_part_size(total_size, parts_count, part_offset, 1);
     let next_border = calculate_part_size(total_size, parts_count, part_offset + 1, 1);
 
     unsafe {
         for i in this_border..next_border {
-            *buffer_ptr.add(i) = filler(i % w_int, i / w_int);
+            let (x, y) = transform_point_to_plot_scale((i % w_int) as f32, (i / w_int) as f32, &plot_scale);
+            *buffer_ptr.add(i) = colors[
+                get_root_id(Complex32::new(x, y), roots, iterations_count)
+            ];
         }
     }
 }

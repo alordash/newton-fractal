@@ -6,20 +6,42 @@ use std::ptr::addr_of;
 
 use crate::simd_math::SimdMath;
 
-pub fn newton_method_approx(z: Complex32, roots: &[Complex32]) -> (usize, Complex32) {
-    let mut sum = Complex32::new(0.0, 0.0);
-    for (i, root) in roots.iter().enumerate() {
-        let diff = z - root;
-        if diff.re.abs() < 0.001 && diff.im.abs() < 0.001 {
-            return (i, z);
+pub fn get_root_id(mut z: Complex32, roots: &[Complex32], iterations_count: usize) -> usize {
+    for _ in 0..iterations_count {
+        let mut sum = Complex32::new(0.0, 0.0);
+        for (i, root) in roots.iter().enumerate() {
+            let mut diff = z - root;
+            let square_norm = diff.norm_sqr();
+
+            if square_norm < 0.001 {
+                return i;
+            }
+
+            // sum += 1.0 / diff
+            diff.re /= square_norm;
+            diff.im /= -square_norm;
+            sum += diff;
         }
-        sum += 1.0 / diff;
+
+        z -= 1.0 / sum;
     }
-    (usize::MAX, z - 1.0 / sum)
+
+    let mut min_distance = f32::MAX;
+    let mut closest_root_id: usize = 0;
+
+    for (i, root) in roots.iter().enumerate() {
+        let distance = (z - root).norm_sqr().sqrt();
+        if distance < min_distance {
+            min_distance = distance;
+            closest_root_id = i;
+        }
+    }
+    closest_root_id
 }
 
+
 #[wasm_bindgen]
-pub fn newton_method_approx_wasm(x: f32, y: f32, roots: JsValue) -> JsValue {
+pub fn get_root_id_wasm(x: f32, y: f32, roots: JsValue, iterations_count: usize) -> usize {
     let z = Complex32 { re: x, im: y };
     let roots: Vec<(f32, f32)> = roots.into_serde().unwrap();
     let complex_roots: Vec<Complex32> = roots
@@ -30,9 +52,7 @@ pub fn newton_method_approx_wasm(x: f32, y: f32, roots: JsValue) -> JsValue {
         })
         .collect();
 
-    let result = newton_method_approx(z, &complex_roots);
-    let result = (result.0, (result.1.re, result.1.im));
-    JsValue::from_serde(&result).unwrap()
+    get_root_id(z, &complex_roots, iterations_count)
 }
 
 #[inline]

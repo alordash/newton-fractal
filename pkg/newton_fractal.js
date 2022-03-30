@@ -160,11 +160,12 @@ __exports.free_u32_buffer = function(size, buffer_ptr) {
 * @param {number} x
 * @param {number} y
 * @param {any} roots
-* @returns {any}
+* @param {number} iterations_count
+* @returns {number}
 */
-__exports.newton_method_approx_wasm = function(x, y, roots) {
-    var ret = wasm.newton_method_approx_wasm(x, y, addHeapObject(roots));
-    return takeObject(ret);
+__exports.get_root_id_wasm = function(x, y, roots, iterations_count) {
+    var ret = wasm.get_root_id_wasm(x, y, addHeapObject(roots), iterations_count);
+    return ret >>> 0;
 };
 
 /**
@@ -239,10 +240,6 @@ async function init(input, maybe_memory) {
     imports.wbg = {};
     imports.wbg.__wbindgen_string_new = function(arg0, arg1) {
         var ret = getStringFromWasm0(arg0, arg1);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbindgen_json_parse = function(arg0, arg1) {
-        var ret = JSON.parse(getStringFromWasm0(arg0, arg1));
         return addHeapObject(ret);
     };
     imports.wbg.__wbindgen_json_serialize = function(arg0, arg1) {
