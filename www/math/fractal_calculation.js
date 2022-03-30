@@ -26,23 +26,42 @@ class Complex32 {
         return Math.sqrt(this.re * this.re + this.im * this.im);
     }
 }
-function newtonMethodApprox(roots, z) {
-    let sum = new Complex32(0, 0);
+function calculateDistance(x, y) {
+    let ratio = x / y;
+    return x * Math.sqrt(1 + ratio * ratio);
+}
+function getRootId(roots, z, iterationsCount) {
     let i = 0;
-    for (const root of roots) {
-        let diff = z.clone();
-        diff.subtract(root);
-        if (Math.abs(diff.re) < 0.001 && Math.abs(diff.im) < 0.001) {
-            return { idx: i, z };
+    for (let iter = 0; iter < iterationsCount; iter++) {
+        let sum = new Complex32(0, 0);
+        i = 0;
+        for (const root of roots) {
+            let diff = z.clone();
+            diff.subtract(root);
+            if (Math.abs(diff.re) < 0.001 && Math.abs(diff.im) < 0.001) {
+                return i;
+            }
+            diff.invert();
+            sum.add(diff);
+            i++;
         }
-        diff.invert();
-        sum.add(diff);
+        sum.invert();
+        z.subtract(sum);
+    }
+    let minDistance = Infinity;
+    let closestRootId = 0;
+    i = 0;
+    for (const root of roots) {
+        let d = z.clone();
+        d.subtract(root);
+        let distance = Math.sqrt(d.re * d.re + d.im * d.im);
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestRootId = i;
+        }
         i++;
     }
-    sum.invert();
-    let result = z.clone();
-    result.subtract(sum);
-    return { idx: -1, z: result };
+    return closestRootId;
 }
 function transformPointToPlotScale(x, y, plotScale) {
     return [
@@ -65,42 +84,13 @@ function fillPixelsJavascript(buffer, plotScale, roots, iterationsCount, colors,
     let flatColors = new Uint8Array(colors.flat());
     let colorPacks = new Uint32Array(flatColors.buffer);
     let complexRoots = roots.map((pair) => new Complex32(pair[0], pair[1]));
-    const filler = (x, y) => {
-        let minDistance = Number.MAX_SAFE_INTEGER;
-        let closestRootId = 0;
-        let [xp, yp] = transformPointToPlotScale(x, y, plotScale);
-        let z = new Complex32(xp, yp);
-        let colorId = -1;
-        for (let i = 0; i < iterationsCount; i++) {
-            let { idx, z: zNew } = newtonMethodApprox(complexRoots, z);
-            if (idx != -1) {
-                colorId = idx;
-                break;
-            }
-            z = zNew;
-        }
-        if (colorId != -1) {
-            return colorPacks[colorId];
-        }
-        let i = 0;
-        for (const root of complexRoots) {
-            let d = z.clone();
-            d.subtract(root);
-            let dst = d.distance();
-            if (dst < minDistance) {
-                minDistance = dst;
-                closestRootId = i;
-            }
-            i++;
-        }
-        return colorPacks[closestRootId];
-    };
+    let u32BufferView = new Uint32Array(buffer, bufferPtr);
     let totalSize = w_int * h_int;
     let thisBorder = calculatePartSize(totalSize, partsCount, partOffset, 1);
     let nextBorder = calculatePartSize(totalSize, partsCount, partOffset + 1, 1);
-    let u32BufferView = new Uint32Array(buffer, bufferPtr);
     for (let i = thisBorder; i < nextBorder; i++) {
-        u32BufferView[i] = filler(i % w_int, i / w_int);
+        let [xp, yp] = transformPointToPlotScale(i % w_int, i / w_int, plotScale);
+        u32BufferView[i] = colorPacks[getRootId(complexRoots, new Complex32(xp, yp), iterationsCount)];
     }
 }
 //# sourceMappingURL=fractal_calculation.js.map
