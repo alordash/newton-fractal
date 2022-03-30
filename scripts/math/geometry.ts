@@ -46,32 +46,6 @@ function addRoot(xMapped: number, yMapped: number) {
     }
 }
 
-function getClosestRootFractalwise(xMapped: number, yMapped: number, iterationsCount: number) {
-    let id = 0;
-    let minDst = Number.MAX_SAFE_INTEGER;
-
-    for (let i = 0; i < iterationsCount; i++) {
-        let result = newton_method_approx_wasm(xMapped, yMapped, roots);
-        let id = result[0];
-        if (id < roots.length) {
-            return { id, dst: 0 };
-        }
-        xMapped = result[1][0];
-        yMapped = result[1][1];
-    }
-
-    for (let i = 0; i < roots.length; i++) {
-        let [x, y] = roots[i];
-        let [dx, dy] = [x - xMapped, y - yMapped];
-        let dst = Math.sqrt(dx * dx + dy * dy);
-        if (dst < minDst) {
-            minDst = dst;
-            id = i;
-        }
-    }
-    return { id, dst: minDst };
-}
-
 function getClosestRoot(xMapped: number, yMapped: number) {
     let id = 0;
     let minDst = Number.MAX_SAFE_INTEGER;
@@ -91,5 +65,4 @@ export {
     PlotScale,
     addRoot,
     getClosestRoot,
-    getClosestRootFractalwise
 }

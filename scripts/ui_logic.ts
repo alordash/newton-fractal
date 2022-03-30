@@ -142,7 +142,7 @@ async function CanvasClick(me: MouseEvent) {
         resetFps();
         roots.splice(id, 1);
     } else if (me.altKey) {
-        let { id, dst } = getClosestRootFractalwise(x, y, iterationsCount);
+        let id = wasm_bindgen.get_root_id_wasm(x, y, roots, iterationsCount);
         regionColors[id] = generateColor();
     }
 
