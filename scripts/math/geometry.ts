@@ -27,7 +27,7 @@ class PlotScale {
 
     // Coefficients control canvas appearing size
     static calculatePlotScale(innerWidth: number, innerHeight: number): PlotScale {
-        const width = Math.round(innerWidth * 0.65 / 4) * 4;
+        const width = Math.round(innerWidth * 0.65);
         const height = Math.round(innerHeight * 0.75);
         const k = height / width;
         const x_range = 4;
