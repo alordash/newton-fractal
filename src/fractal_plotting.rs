@@ -118,17 +118,17 @@ pub fn fill_pixels_simd(
     part_offset: Option<usize>,
     parts_count: Option<usize>,
 ) {
-    let (part_offset, parts_count) = (
-        part_offset.or(Some(0)).unwrap(),
-        parts_count.or(Some(1)).unwrap(),
-    );
-
     let PlotScale {
         x_display_range: width,
         y_display_range: height,
         ..
     } = *plot_scale;
     let (w_int, h_int) = (width as usize, height as usize);
+
+    let (part_offset, parts_count) = (
+        part_offset.or(Some(0)).unwrap(),
+        parts_count.or(Some(1)).unwrap(),
+    );
 
     let filler = |x: usize, y: usize| {
         let mut _min_distances = SimdMath::_F32_MAX;
