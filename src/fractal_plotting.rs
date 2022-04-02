@@ -174,17 +174,13 @@ pub fn fill_pixels_simd(
         }
     };
 
-    log!("w_int: {}", w_int);
     let total_size = w_int / 4;
-    log!("total_size: {}", total_size);
     let this_border = calculate_part_size(total_size, parts_count, part_offset, 1);
     let next_border = calculate_part_size(total_size, parts_count, part_offset + 1, 1);
-    log!("borders: {}...{}", this_border, next_border);
 
     unsafe {
         for y in 0..h_int {
             for x in this_border..next_border {
-                // log!("({}, {})", x, y);
                 let (xf, yf) = (4.0 * x as f32, y as f32);
                 let (mut _xs, _ys) = (f32x4_splat(xf), f32x4_splat(yf));
                 _xs = f32x4_add(_xs, f32x4(0.0, 1.0, 2.0, 3.0));
