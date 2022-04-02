@@ -135,8 +135,24 @@ pub fn fill_pixels_simd(
         let mut _closest_root_ids = SimdMath::_I32_ZERO;
         // Simd can be used here
         let (x, y) = (4.0 * x as f32, y as f32);
-        let mut _points1 = simd_transform_point_to_plot_scale(x + 0.0, y, x + 1.0, y, &plot_scale);
-        let mut _points2 = simd_transform_point_to_plot_scale(x + 2.0, y, x + 3.0, y, &plot_scale);
+        let mut _xs = f32x4_splat(x);
+        _xs = f32x4_add(_xs, f32x4(0.0, 1.0, 2.0, 3.0));
+
+        let mut _points1 = f32x4(
+            f32x4_extract_lane::<0>(_xs),
+            y,
+            f32x4_extract_lane::<1>(_xs),
+            y,
+        );
+        let mut _points2 = f32x4(
+            f32x4_extract_lane::<2>(_xs),
+            y,
+            f32x4_extract_lane::<3>(_xs),
+            y,
+        );
+
+        _points1 = simd_transform_point_to_plot_scale(_points1, &plot_scale);
+        _points2 = simd_transform_point_to_plot_scale(_points2, &plot_scale);
         for _ in 0..iterations_count {
             unsafe {
                 _points1 = simd_newton_method_approx_for_two_numbers(_points1, &roots);
@@ -147,9 +163,9 @@ pub fn fill_pixels_simd(
             for (i, &root) in roots.iter().enumerate() {
                 let _ids = i32x4_splat(i as i32);
                 let _root = v128_load64_splat(addr_of!(root) as *const u64);
-                let _sqrt1 = SimdMath::calculate_square_norm(_points1, _root);
-                let _sqrt2 = SimdMath::calculate_square_norm(_points2, _root);
-                let _distance = i32x4_shuffle::<0, 2, 4, 6>(_sqrt1, _sqrt2);
+                let _dist1 = SimdMath::calculate_square_norm(_points1, _root);
+                let _dist2 = SimdMath::calculate_square_norm(_points2, _root);
+                let _distance = i32x4_shuffle::<0, 2, 4, 6>(_dist1, _dist2);
 
                 let _le_check = f32x4_lt(_distance, _min_distances);
                 _min_distances = f32x4_pmin(_distance, _min_distances);
