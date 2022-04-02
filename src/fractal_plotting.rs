@@ -130,25 +130,21 @@ pub fn fill_pixels_simd(
         parts_count.or(Some(1)).unwrap(),
     );
 
-    let filler = |x: usize, y: usize| {
+    let filler = |_xs: v128, _ys: v128| {
         let mut _min_distances = SimdMath::_F32_MAX;
         let mut _closest_root_ids = SimdMath::_I32_ZERO;
-        // Simd can be used here
-        let (x, y) = (4.0 * x as f32, y as f32);
-        let mut _xs = f32x4_splat(x);
-        _xs = f32x4_add(_xs, f32x4(0.0, 1.0, 2.0, 3.0));
 
         let mut _points1 = f32x4(
             f32x4_extract_lane::<0>(_xs),
-            y,
+            f32x4_extract_lane::<0>(_ys),
             f32x4_extract_lane::<1>(_xs),
-            y,
+            f32x4_extract_lane::<1>(_ys),
         );
         let mut _points2 = f32x4(
             f32x4_extract_lane::<2>(_xs),
-            y,
+            f32x4_extract_lane::<2>(_ys),
             f32x4_extract_lane::<3>(_xs),
-            y,
+            f32x4_extract_lane::<3>(_ys),
         );
 
         _points1 = simd_transform_point_to_plot_scale(_points1, &plot_scale);
@@ -185,7 +181,12 @@ pub fn fill_pixels_simd(
     let w_int = w_int / 4;
     unsafe {
         for i in this_border..next_border {
-            *buffer_ptr.add(i) = filler(i % w_int, i / w_int);
+            let (x, y) = (i % w_int, i / w_int);
+            let (x, y) = (4.0 * x as f32, y as f32);
+            let (mut _xs, _ys) = (f32x4_splat(x), f32x4_splat(y));
+            _xs = f32x4_add(_xs, f32x4(0.0, 1.0, 2.0, 3.0));
+
+            *buffer_ptr.add(i) = filler(_xs, _ys);
         }
     }
 }
