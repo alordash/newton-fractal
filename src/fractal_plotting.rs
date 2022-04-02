@@ -58,7 +58,7 @@ pub fn fill_pixels_wasm(
             roots.as_slice(),
             iterations_count,
             colors,
-            buffer_ptr as *mut ColorsPack,
+            buffer_ptr as *mut u32,
             part_offset,
             parts_count,
         ),
@@ -71,7 +71,7 @@ pub fn calculate_part_size(
     offset: usize,
     step: usize,
 ) -> usize {
-    ((total_size * offset) as f32 / (parts_count * step) as f32).round() as usize * step
+    ((total_size * offset) as f32 / (parts_count * step) as f32).floor() as usize * step
 }
 
 pub fn fill_pixels_scalar(
@@ -114,7 +114,7 @@ pub fn fill_pixels_simd(
     roots: &[Complex32],
     iterations_count: usize,
     colors: &[u32],
-    buffer_ptr: *mut ColorsPack,
+    buffer_ptr: *mut u32,
     part_offset: Option<usize>,
     parts_count: Option<usize>,
 ) {
@@ -130,7 +130,7 @@ pub fn fill_pixels_simd(
         parts_count.or(Some(1)).unwrap(),
     );
 
-    let filler = |_xs: v128, _ys: v128| {
+    let filler = |_xs: v128, _ys: v128| -> ColorsPack {
         let mut _min_distances = SimdMath::_F32_MAX;
         let mut _closest_root_ids = SimdMath::_I32_ZERO;
 
@@ -174,19 +174,23 @@ pub fn fill_pixels_simd(
         }
     };
 
-    let total_size = w_int * h_int;
-    let this_border = calculate_part_size(total_size, parts_count, part_offset, 4) / 4;
-    let next_border = calculate_part_size(total_size, parts_count, part_offset + 1, 4) / 4;
+    log!("w_int: {}", w_int);
+    let total_size = w_int / 4;
+    log!("total_size: {}", total_size);
+    let this_border = calculate_part_size(total_size, parts_count, part_offset, 1);
+    let next_border = calculate_part_size(total_size, parts_count, part_offset + 1, 1);
+    log!("borders: {}...{}", this_border, next_border);
 
-    let w_int = w_int / 4;
     unsafe {
-        for i in this_border..next_border {
-            let (x, y) = (i % w_int, i / w_int);
-            let (x, y) = (4.0 * x as f32, y as f32);
-            let (mut _xs, _ys) = (f32x4_splat(x), f32x4_splat(y));
-            _xs = f32x4_add(_xs, f32x4(0.0, 1.0, 2.0, 3.0));
+        for y in 0..h_int {
+            for x in this_border..next_border {
+                // log!("({}, {})", x, y);
+                let (xf, yf) = (4.0 * x as f32, y as f32);
+                let (mut _xs, _ys) = (f32x4_splat(xf), f32x4_splat(yf));
+                _xs = f32x4_add(_xs, f32x4(0.0, 1.0, 2.0, 3.0));
 
-            *buffer_ptr.add(i) = filler(_xs, _ys);
+                *(buffer_ptr.add(4 * x + y * w_int) as *mut ColorsPack) = filler(_xs, _ys);
+            }
         }
     }
 }
