@@ -31,7 +31,7 @@ pub fn get_root_id(mut z: Complex32, roots: &[Complex32], iterations_count: usiz
     let mut closest_root_id: usize = 0;
 
     for (i, root) in roots.iter().enumerate() {
-        let distance = (z - root).norm_sqr().sqrt();
+        let distance = (z - root).norm_sqr();
         if distance < min_distance {
             min_distance = distance;
             closest_root_id = i;

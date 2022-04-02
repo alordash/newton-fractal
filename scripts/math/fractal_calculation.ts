@@ -16,11 +16,6 @@ function calculateSquareNorm(x: number, y: number): number {
     return x * x + y * y;
 }
 
-function calculateDistance(x: number, y: number): number {
-    let ratio = x / y;
-    return Math.abs(y) * Math.sqrt(1 + ratio * ratio);
-}
-
 function getRootId(roots: Complex32[], z: Complex32, iterationsCount: number): number {
     let i = 0;
     for (let iter = 0; iter < iterationsCount; iter++) {
@@ -57,9 +52,9 @@ function getRootId(roots: Complex32[], z: Complex32, iterationsCount: number): n
         let diffReal = z.re - root.re;
         let diffImag = z.im - root.im;
 
-        let distance = calculateDistance(diffReal, diffImag);
-        if (distance < minDistance) {
-            minDistance = distance;
+        let distanceSquared = calculateSquareNorm(diffReal, diffImag);
+        if (distanceSquared < minDistance) {
+            minDistance = distanceSquared;
             closestRootId = i;
         }
         i++;
