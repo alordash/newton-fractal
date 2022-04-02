@@ -101,10 +101,9 @@ pub fn fill_pixels_scalar(
 
     unsafe {
         for i in this_border..next_border {
-            let (x, y) = transform_point_to_plot_scale((i % w_int) as f32, (i / w_int) as f32, &plot_scale);
-            *buffer_ptr.add(i) = colors[
-                get_root_id(Complex32::new(x, y), roots, iterations_count)
-            ];
+            let (x, y) =
+                transform_point_to_plot_scale((i % w_int) as f32, (i / w_int) as f32, &plot_scale);
+            *buffer_ptr.add(i) = colors[get_root_id(Complex32::new(x, y), roots, iterations_count)];
         }
     }
 }
@@ -132,8 +131,8 @@ pub fn fill_pixels_simd(
     let (w_int, h_int) = (width as usize, height as usize);
 
     let filler = |x: usize, y: usize| {
-        let mut _min_distances = SimdMath::F32_MAXIMUMS;
-        let mut _closest_root_ids = SimdMath::I32_ZEROES;
+        let mut _min_distances = f32x4(f32::MAX, f32::MAX, f32::MAX, f32::MAX);
+        let mut _closest_root_ids = i32x4(0, 0, 0, 0);
         // Simd can be used here
         let (x, y) = (4.0 * x as f32, y as f32);
         let mut _points1 = simd_transform_point_to_plot_scale(x + 0.0, y, x + 1.0, y, &plot_scale);

@@ -6,6 +6,8 @@ use std::ptr::addr_of;
 
 use crate::simd_math::SimdMath;
 
+pub const MIN_DIFF: f32 = 0.001;
+
 pub fn get_root_id(mut z: Complex32, roots: &[Complex32], iterations_count: usize) -> usize {
     // Newton's method approximation is performed inside of this cycle
     for _ in 0..iterations_count {
@@ -39,7 +41,6 @@ pub fn get_root_id(mut z: Complex32, roots: &[Complex32], iterations_count: usiz
     }
     closest_root_id
 }
-
 
 #[wasm_bindgen]
 pub fn get_root_id_wasm(x: f32, y: f32, roots: JsValue, iterations_count: usize) -> usize {
@@ -86,7 +87,10 @@ pub fn simd_newton_method_approx(z: u64, roots: &[Complex32]) -> u64 {
             let _diff = f32x4_sub(_z, *(roots_chunk.as_ptr() as *const v128));
 
             // 1*. Check: if (difference < 0.001) => z is one of roots
-            let _diff_le = f32x4_lt(f32x4_abs(_diff), SimdMath::F32_MIN_DIFFS);
+            let _diff_le = f32x4_lt(
+                f32x4_abs(_diff),
+                f32x4(MIN_DIFF, MIN_DIFF, MIN_DIFF, MIN_DIFF),
+            );
             if v128_any_true(v128_and(
                 _diff_le,
                 i32x4_shuffle::<1, 0, 3, 2>(_diff_le, _diff_le),
@@ -113,14 +117,17 @@ pub fn simd_newton_method_approx(z: u64, roots: &[Complex32]) -> u64 {
             let rem_as_u64 = addr_of!(*rem) as *const u64;
             let _diff = f32x4_sub(_z, v128_load64_zero(rem_as_u64));
 
-            let _diff_le = f32x4_lt(f32x4_abs(_diff), SimdMath::F32_MIN_DIFFS);
+            let _diff_le = f32x4_lt(
+                f32x4_abs(_diff),
+                f32x4(MIN_DIFF, MIN_DIFF, MIN_DIFF, MIN_DIFF),
+            );
             if v128_any_true(v128_and(
                 _diff_le,
                 i32x4_shuffle::<1, 0, 3, 2>(_diff_le, _diff_le),
             )) {
                 return z;
             }
-            
+
             let _inversion = SimdMath::complex_number_inversion(_diff);
 
             _sum = f32x4_add(_sum, _inversion);

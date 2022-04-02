@@ -5,11 +5,19 @@ use wasm_bindgen::prelude::*;
 pub struct SimdMath;
 
 impl SimdMath {
+    pub const SQUARE_NORM_SWAP_MASK: v128 =
+        i8x16(4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11);
     pub const NEGATION_MASK_FOR_INVERSION: v128 = f32x4(1.0, -1.0, 1.0, -1.0);
-    pub const F64_ZEROES: v128 = f64x2(0.0f64, 0.0f64);
-    pub const F32_MAXIMUMS: v128 = f32x4(f32::MAX, f32::MAX, f32::MAX, f32::MAX);
-    pub const F32_MIN_DIFFS: v128 = f32x4(0.001, 0.001, 0.001, 0.001);
-    pub const I32_ZEROES: v128 = i32x4(0, 0, 0, 0);
+
+    // Formula
+    // a^2 + b^2
+    #[inline]
+    #[target_feature(enable = "simd128")]
+    pub fn calculate_square_norm(_coords: v128) -> v128 {
+        let _squares = f32x4_mul(_coords, _coords);
+        let _swapped_squares = i8x16_swizzle(_squares, SimdMath::SQUARE_NORM_SWAP_MASK);
+        f32x4_add(_squares, _swapped_squares)
+    }
 
     // Formula:
     //   1 / z
@@ -22,27 +30,21 @@ impl SimdMath {
         // [a, -b, a, -b]
         let _numerator = f32x4_mul(_vec, SimdMath::NEGATION_MASK_FOR_INVERSION);
 
-        // [a^2, b^2, a^2, b^2]
-        let _squares = f32x4_mul(_vec, _vec);
-
-        // [b^2, a^2, b^2, a^2]
-        let _shifted_squares = i32x4_shuffle::<1, 0, 3, 2>(_squares, _squares);
+        // [
+        //      a^2 + b^2,
+        //      a^2 + b^2,
+        //      a^2 + b^2,
+        //      a^2 + b^2
+        // ]
+        let _square_norm = SimdMath::calculate_square_norm(_numerator);
 
         // [
-        //     a^2 + b^2,
-        //     a^2 + b^2,
-        //     a^2 + b^2,
-        //     a^2 + b^2
+        //       a / (a^2 + b^2),
+        //      -b / (a^2 + b^2),
+        //       a / (a^2 + b^2),
+        //      -b / (a^2 + b^2)
         // ]
-        let _denumerator = f32x4_add(_squares, _shifted_squares);
-
-        // [
-        //     a / (a^2 + b^2),
-        //    -b / (a^2 + b^2),
-        //     a / (a^2 + b^2),
-        //    -b / (a^2 + b^2)
-        // ]
-        f32x4_div(_numerator, _denumerator)
+        f32x4_div(_numerator, _square_norm)
     }
 
     // Formula:
@@ -52,33 +54,22 @@ impl SimdMath {
     #[target_feature(enable = "simd128")]
     pub fn calculate_distance(_points1: v128, _points2: v128) -> v128 {
         // [
-        //     x1 - x2 (= A),
-        //     y1 - y2 (= B),
-        //     x3 - x4 (= C),
-        //     y3 - y4 (= D)
+        //      x1 - x2 (= A),
+        //      y1 - y2 (= B),
+        //      x3 - x4 (= C),
+        //      y3 - y4 (= D)
         // ]
         let _diff = f32x4_sub(_points1, _points2);
-
-        // [A^2, B^2, C^2, D^2]
-        let _squares = f32x4_mul(_diff, _diff);
-
-        // [B^2, A^2, D^2, C^2]
-        let _shifted_squares = i32x4_shuffle::<1, 0, 3, 2>(_squares, _squares);
-
-        // [
-        //     A^2 + B^2,
-        //     A^2 + B^2,
-        //     C^2 + D^2,
-        //     C^2 + D^2
+        
+        // [ 
+        //      A^2 + B^2,
+        //      A^2 + B^2,
+        //      C^2 + D^2,
+        //      C^2 + D^2
         // ]
-        let _sum = f32x4_add(_squares, _shifted_squares);
+        let _square_norm = SimdMath::calculate_square_norm(_diff);
 
-        // [
-        //     sqrt(A^2 + B^2),
-        //     sqrt(A^2 + B^2),
-        //     sqrt(C^2 + D^2),
-        //     sqrt(C^2 + D^2)
-        // ]
-        f32x4_sqrt(_sum)
+
+        f32x4_sqrt(_square_norm)
     }
 }
