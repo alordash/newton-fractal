@@ -147,8 +147,8 @@ pub fn fill_pixels_simd(
             for (i, &root) in roots.iter().enumerate() {
                 let _ids = i32x4_splat(i as i32);
                 let _root = v128_load64_splat(addr_of!(root) as *const u64);
-                let _sqrt1 = SimdMath::calculate_distance(_points1, _root);
-                let _sqrt2 = SimdMath::calculate_distance(_points2, _root);
+                let _sqrt1 = SimdMath::calculate_square_norm(_points1, _root);
+                let _sqrt2 = SimdMath::calculate_square_norm(_points2, _root);
                 let _distance = i32x4_shuffle::<0, 2, 4, 6>(_sqrt1, _sqrt2);
 
                 let _le_check = f32x4_lt(_distance, _min_distances);

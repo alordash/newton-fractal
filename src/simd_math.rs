@@ -51,7 +51,7 @@ impl SimdMath {
     // _points1: (x1, y1, x3, y3)
     // _points2: (x2, y2, x4, y4)
     #[target_feature(enable = "simd128")]
-    pub fn calculate_distance(_points1: v128, _points2: v128) -> v128 {
+    pub fn calculate_square_norm(_points1: v128, _points2: v128) -> v128 {
         // [
         //      x1 - x2 (= A),
         //      y1 - y2 (= B),
@@ -72,14 +72,6 @@ impl SimdMath {
         //     C^2 + D^2,
         //     C^2 + D^2
         // ]
-        let _sum = f32x4_add(_squares, _shifted_squares);
-
-        // [
-        //     sqrt(A^2 + B^2),
-        //     sqrt(A^2 + B^2),
-        //     sqrt(C^2 + D^2),
-        //     sqrt(C^2 + D^2)
-        // ]
-        f32x4_sqrt(_sum)
+        f32x4_add(_squares, _shifted_squares)
     }
 }
