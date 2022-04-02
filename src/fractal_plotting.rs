@@ -131,8 +131,8 @@ pub fn fill_pixels_simd(
     let (w_int, h_int) = (width as usize, height as usize);
 
     let filler = |x: usize, y: usize| {
-        let mut _min_distances = f32x4(f32::MAX, f32::MAX, f32::MAX, f32::MAX);
-        let mut _closest_root_ids = i32x4(0, 0, 0, 0);
+        let mut _min_distances = SimdMath::_F32_MAX;
+        let mut _closest_root_ids = SimdMath::_I32_ZERO;
         // Simd can be used here
         let (x, y) = (4.0 * x as f32, y as f32);
         let mut _points1 = simd_transform_point_to_plot_scale(x + 0.0, y, x + 1.0, y, &plot_scale);
@@ -150,6 +150,7 @@ pub fn fill_pixels_simd(
                 let _sqrt1 = SimdMath::calculate_distance(_points1, _root);
                 let _sqrt2 = SimdMath::calculate_distance(_points2, _root);
                 let _distance = i32x4_shuffle::<0, 2, 4, 6>(_sqrt1, _sqrt2);
+
                 let _le_check = f32x4_lt(_distance, _min_distances);
                 _min_distances = f32x4_pmin(_distance, _min_distances);
                 _closest_root_ids = v128_bitselect(_ids, _closest_root_ids, _le_check);
