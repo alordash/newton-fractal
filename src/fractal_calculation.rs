@@ -103,7 +103,10 @@ pub fn simd_newton_method_approx(z: u64, roots: &[Complex32]) -> u64 {
         }
     }
     // Move second complex values to two first lanes
-    let _sums_shifted = i64x2_shuffle::<1, 0>(_sums, _sums);
+    let _sums_shifted = i8x16_swizzle(
+        _sums,
+        i8x16(8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7),
+    );
 
     // Process odd root
     if let Some(rem) = rem.get(0) {
