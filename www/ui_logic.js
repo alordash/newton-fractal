@@ -127,8 +127,10 @@ async function CanvasClick(me) {
     }
     draw();
 }
+let lastMousePos = { x: 0, y: 0 };
 function CanvasMouseDown(me) {
     let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
+    lastMousePos = { x: me.offsetX, y: me.offsetY };
     let { id, dst } = getClosestRoot(x, y);
     if (dst < CLICK_POINT_DISTANCE && !me.shiftKey && !me.ctrlKey) {
         holdingPointIndex = id;
@@ -146,6 +148,16 @@ function CanvasMouseMove(me) {
         }
         else {
             document.body.style.cursor = "auto";
+        }
+        if (me.buttons == 1) {
+            let newX = me.offsetX;
+            let newY = me.offsetY;
+            let dx = lastMousePos.x - newX;
+            let dy = lastMousePos.y - newY;
+            plotScale.x_offset += plotScale.x_value_range * dx / plotScale.x_display_range;
+            plotScale.y_offset += plotScale.y_value_range * dy / plotScale.y_display_range;
+            lastMousePos = { x: me.offsetX, y: me.offsetY };
+            draw();
         }
         return;
     }
