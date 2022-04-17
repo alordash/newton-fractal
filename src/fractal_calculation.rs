@@ -118,7 +118,7 @@ pub fn simd_newton_method_approx(z: u64, roots: &[Complex32]) -> u64 {
 
             let _square_norms = SimdMath::calculate_square_norms(_diffs);
 
-            if v128_any_true(f32x4_lt(_square_norms, _MIN_DIFFS)) {
+            if (i8x16_extract_lane::<0>(f32x4_lt(_square_norms, _MIN_DIFFS)) & 1) == 1 {
                 return z;
             }
 
