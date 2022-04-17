@@ -57,7 +57,7 @@ function addRoot(xMapped: number, yMapped: number) {
     }
 }
 
-function getClosestRoot(xMapped: number, yMapped: number) {
+function getClosestRoot(xMapped: number, yMapped: number, plotScale: PlotScale) {
     let id = 0;
     let minDst = Number.MAX_SAFE_INTEGER;
     for (let i = 0; i < roots.length; i++) {
@@ -69,7 +69,7 @@ function getClosestRoot(xMapped: number, yMapped: number) {
             id = i;
         }
     }
-    return { id, dst: minDst };
+    return { id, dst: minDst * plotScale.x_display_range / plotScale.x_value_range };
 }
 
 export {

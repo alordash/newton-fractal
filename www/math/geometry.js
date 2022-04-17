@@ -37,7 +37,7 @@ function addRoot(xMapped, yMapped) {
         regionColors.push(generateColor());
     }
 }
-function getClosestRoot(xMapped, yMapped) {
+function getClosestRoot(xMapped, yMapped, plotScale) {
     let id = 0;
     let minDst = Number.MAX_SAFE_INTEGER;
     for (let i = 0; i < roots.length; i++) {
@@ -49,7 +49,7 @@ function getClosestRoot(xMapped, yMapped) {
             id = i;
         }
     }
-    return { id, dst: minDst };
+    return { id, dst: minDst * plotScale.x_display_range / plotScale.x_value_range };
 }
 export { PlotScale, addRoot, getClosestRoot, };
 //# sourceMappingURL=geometry.js.map

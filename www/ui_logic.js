@@ -6,7 +6,7 @@ import { drawNewtonFractalGpu, InitWebgl2Drawing, gl } from './webgl/webgl2_draw
 const CPU_MAX_ITERATIONS_COUNT = 25;
 const GPU_MAX_ITERATIONS_COUNT = 250;
 const ROOT_POINT_SIZE = 4.0;
-const CLICK_POINT_DISTANCE = 0.05;
+const CLICK_POINT_DISTANCE = 10;
 let SCALE = 1;
 const RESIZE_FACTOR = 0.011;
 let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
@@ -119,7 +119,7 @@ async function CanvasClick(me) {
         addRoot(x, y);
     }
     else if (me.ctrlKey) {
-        let { id, dst } = getClosestRoot(x, y);
+        let { id, dst } = getClosestRoot(x, y, plotScale);
         resetFps();
         roots.splice(id, 1);
     }
@@ -133,7 +133,7 @@ let lastMousePos = { x: 0, y: 0 };
 function CanvasMouseDown(me) {
     let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
     lastMousePos = { x: me.offsetX, y: me.offsetY };
-    let { id, dst } = getClosestRoot(x, y);
+    let { id, dst } = getClosestRoot(x, y, plotScale);
     if (dst < CLICK_POINT_DISTANCE && !me.shiftKey && !me.ctrlKey) {
         holdingPointIndex = id;
     }
@@ -144,7 +144,7 @@ function CanvasMouseDown(me) {
 function CanvasMouseMove(me) {
     if (holdingPointIndex == -1) {
         let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
-        let { id, dst } = getClosestRoot(x, y);
+        let { id, dst } = getClosestRoot(x, y, plotScale);
         if (dst < CLICK_POINT_DISTANCE) {
             document.body.style.cursor = "all-scroll";
         }

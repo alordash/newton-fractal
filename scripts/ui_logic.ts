@@ -8,7 +8,7 @@ const CPU_MAX_ITERATIONS_COUNT = 25;
 const GPU_MAX_ITERATIONS_COUNT = 250;
 
 const ROOT_POINT_SIZE = 4.0;
-const CLICK_POINT_DISTANCE = 0.05;
+const CLICK_POINT_DISTANCE = 10;
 
 let SCALE = 1;
 const RESIZE_FACTOR = 0.011;
@@ -141,7 +141,7 @@ async function CanvasClick(me: MouseEvent) {
         resetFps();
         addRoot(x, y);
     } else if (me.ctrlKey) {
-        let { id, dst } = getClosestRoot(x, y);
+        let { id, dst } = getClosestRoot(x, y, plotScale);
         resetFps();
         roots.splice(id, 1);
     } else if (me.altKey) {
@@ -157,7 +157,7 @@ function CanvasMouseDown(me: MouseEvent) {
     let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
     lastMousePos = { x: me.offsetX, y: me.offsetY };
 
-    let { id, dst } = getClosestRoot(x, y);
+    let { id, dst } = getClosestRoot(x, y, plotScale);
     if (dst < CLICK_POINT_DISTANCE && !me.shiftKey && !me.ctrlKey) {
         holdingPointIndex = id;
     } else {
@@ -168,7 +168,7 @@ function CanvasMouseDown(me: MouseEvent) {
 function CanvasMouseMove(me: MouseEvent) {
     if (holdingPointIndex == -1) {
         let [x, y] = transformPointToPlotScale(me.offsetX, me.offsetY, plotScale);
-        let { id, dst } = getClosestRoot(x, y);
+        let { id, dst } = getClosestRoot(x, y, plotScale);
         if (dst < CLICK_POINT_DISTANCE) {
             document.body.style.cursor = "all-scroll";
         } else {
