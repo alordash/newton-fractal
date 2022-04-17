@@ -12,6 +12,12 @@ impl SimdMath {
         i8x16(4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11);
     pub const _NEGATION_MASK_FOR_INVERSION: v128 = f32x4(1.0, -1.0, 1.0, -1.0);
 
+    // a % b = a - b * floor(a / b)
+    #[target_feature(enable = "simd128")]
+    pub fn f32x4_mod(_a: v128, _b: v128) -> v128 {
+        f32x4_sub(_a, f32x4_mul(_b, f32x4_floor(f32x4_div(_a, _b))))
+    }
+
     // Formula:
     //   1 / z
     // = 1 / (a + bi)
@@ -59,7 +65,7 @@ impl SimdMath {
         //      y3 - y4 (= D)
         // ]
         let _diff = f32x4_sub(_points1, _points2);
-        
+
         // [A^2, B^2, C^2, D^2]
         let _squares = f32x4_mul(_diff, _diff);
 

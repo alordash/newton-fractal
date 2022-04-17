@@ -10,7 +10,7 @@ class PlotScale {
         this.y_display_range = y_display_range;
     }
     static calculatePlotScale(innerWidth, innerHeight) {
-        const width = Math.round(innerWidth * 0.65 / 4) * 4;
+        const width = Math.round(innerWidth * 0.65);
         const height = Math.round(innerHeight * 0.75);
         const k = height / width;
         const x_range = 4;

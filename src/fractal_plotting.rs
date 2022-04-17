@@ -71,7 +71,7 @@ pub fn calculate_part_size(
     offset: usize,
     step: usize,
 ) -> usize {
-    ((total_size * offset) as f32 / (parts_count * step) as f32).round() as usize * step
+    ((total_size * offset) as f32 / (parts_count * step) as f32).floor() as usize * step
 }
 
 pub fn fill_pixels_scalar(
@@ -130,7 +130,7 @@ pub fn fill_pixels_simd(
         parts_count.or(Some(1)).unwrap(),
     );
 
-    let filler = |_xs: v128, _ys: v128| {
+    let filler = |_xs: v128, _ys: v128| -> ColorsPack {
         let mut _min_distances = SimdMath::_F32_MAX;
         let mut _closest_root_ids = SimdMath::_I32_ZERO;
 
@@ -178,15 +178,16 @@ pub fn fill_pixels_simd(
     let this_border = calculate_part_size(total_size, parts_count, part_offset, 4) / 4;
     let next_border = calculate_part_size(total_size, parts_count, part_offset + 1, 4) / 4;
 
-    let w_int = w_int / 4;
+    let _width = f32x4_splat(width);
+
     unsafe {
         for i in this_border..next_border {
-            let (x, y) = (i % w_int, i / w_int);
-            let (x, y) = (4.0 * x as f32, y as f32);
-            let (mut _xs, _ys) = (f32x4_splat(x), f32x4_splat(y));
-            _xs = f32x4_add(_xs, f32x4(0.0, 1.0, 2.0, 3.0));
+            let mut _i = f32x4_splat((4 * i) as f32);
+            _i = f32x4_add(_i, f32x4(0.0, 1.0, 2.0, 3.0));
+            let _xs = SimdMath::f32x4_mod(_i, _width);
+            let _ys = f32x4_floor(f32x4_div(_i, _width));
 
-            *buffer_ptr.add(i) = filler(_xs, _ys);
+            *(buffer_ptr.add(i)) = filler(_xs, _ys);
         }
     }
 }
