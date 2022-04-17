@@ -158,13 +158,13 @@ pub fn fill_pixels_simd(
         unsafe {
             for (i, &root) in roots.iter().enumerate() {
                 let _ids = i32x4_splat(i as i32);
-                let _root = v128_load64_splat(addr_of!(root) as *const u64);
-                let _dist1 = SimdMath::calculate_squared_distances(_points1, _root);
-                let _dist2 = SimdMath::calculate_squared_distances(_points2, _root);
-                let _distance = i32x4_shuffle::<0, 2, 4, 6>(_dist1, _dist2);
+                let _roots = v128_load64_splat(addr_of!(root) as *const u64);
+                let _dists1 = SimdMath::calculate_squared_distances(_points1, _roots);
+                let _dists2 = SimdMath::calculate_squared_distances(_points2, _roots);
+                let _distances = i32x4_shuffle::<0, 2, 4, 6>(_dists1, _dists2);
 
-                let _le_check = f32x4_lt(_distance, _min_distances);
-                _min_distances = f32x4_pmin(_distance, _min_distances);
+                let _le_check = f32x4_lt(_distances, _min_distances);
+                _min_distances = f32x4_pmin(_distances, _min_distances);
                 _closest_root_ids = v128_bitselect(_ids, _closest_root_ids, _le_check);
             }
         }

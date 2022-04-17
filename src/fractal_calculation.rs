@@ -77,7 +77,7 @@ pub fn simd_newton_method_approx(z: u64, roots: &[Complex32]) -> u64 {
     // "imaginary" parts of first complex value and 'C' and 'D' are "real"
     // and "imaginary" parts of second complex value as well.
 
-    let mut _sum = SimdMath::_F32_ZERO;
+    let mut _sums = SimdMath::_F32_ZERO;
     let _z = unsafe { v128_load64_splat(&z) };
     let roots_chunks_iter = roots.chunks_exact(2);
     let rem = roots_chunks_iter.remainder();
@@ -85,26 +85,25 @@ pub fn simd_newton_method_approx(z: u64, roots: &[Complex32]) -> u64 {
         unsafe {
             // General formula: sum += 1.0 / (z - root)
             // 1. Subtraction: z - root
-            let _diff = f32x4_sub(_z, *(roots_chunk.as_ptr() as *const v128));
+            let _diffs = f32x4_sub(_z, *(roots_chunk.as_ptr() as *const v128));
+
+            let _square_norms = SimdMath::calculate_square_norms(_diffs);
 
             // 1*. Check: if (difference < 0.001) => z is one of roots
-            let _diff_le = f32x4_lt(f32x4_abs(_diff), _MIN_DIFFS);
-            if v128_any_true(v128_and(
-                _diff_le,
-                i32x4_shuffle::<1, 0, 3, 2>(_diff_le, _diff_le),
-            )) {
+            if v128_any_true(f32x4_lt(_square_norms, _MIN_DIFFS)) {
                 return z;
             }
 
             // 2. Inversion: 1.0 / (z - root)
-            let _inversion = SimdMath::complex_number_inversion(_diff);
+            let mut _inversions = f32x4_mul(_diffs, SimdMath::_NEGATION_MASK_FOR_INVERSION);
+            _inversions = f32x4_div(_inversions, _square_norms);
 
             // 3. Addition: sum += 1.0 / (z - root)
-            _sum = f32x4_add(_sum, _inversion);
+            _sums = f32x4_add(_sums, _inversions);
         }
     }
     // Move second complex values to two first lanes
-    let _sum_shift = i64x2_shuffle::<1, 0>(_sum, _sum);
+    let _sums_shifted = i64x2_shuffle::<1, 0>(_sums, _sums);
 
     // Process odd root
     if let Some(rem) = rem.get(0) {
@@ -112,30 +111,28 @@ pub fn simd_newton_method_approx(z: u64, roots: &[Complex32]) -> u64 {
             // This part of code does exactly what the previous cycle does,
             // except second complex value in vector is equal to 0: [A, B, 0, 0];
 
-            let rem_as_u64 = addr_of!(*rem) as *const u64;
-            let _diff = f32x4_sub(_z, v128_load64_zero(rem_as_u64));
+            let _diffs = f32x4_sub(_z, v128_load64_zero(addr_of!(*rem) as *const u64));
 
-            let _diff_le = f32x4_lt(f32x4_abs(_diff), _MIN_DIFFS);
-            if v128_any_true(v128_and(
-                _diff_le,
-                i32x4_shuffle::<1, 0, 3, 2>(_diff_le, _diff_le),
-            )) {
+            let _square_norms = SimdMath::calculate_square_norms(_diffs);
+
+            if v128_any_true(f32x4_lt(_square_norms, _MIN_DIFFS)) {
                 return z;
             }
 
-            let _inversion = SimdMath::complex_number_inversion(_diff);
+            let mut _inversions = f32x4_mul(_diffs, SimdMath::_NEGATION_MASK_FOR_INVERSION);
+            _inversions = f32x4_div(_inversions, _square_norms);
 
-            _sum = f32x4_add(_sum, _inversion);
+            _sums = f32x4_add(_sums, _inversions);
         }
     }
 
     // Sum first and second complex values
-    _sum = f32x4_add(_sum, _sum_shift);
+    _sums = f32x4_add(_sums, _sums_shifted);
 
     // Return value: z - 1.0 / sum
     unsafe {
-        let _inversion = SimdMath::complex_number_inversion(_sum);
-        let _sub = f32x4_sub(_z, _inversion);
-        *(addr_of!(_sub) as *const u64)
+        let _inversions = SimdMath::complex_numbers_inversion(_sums);
+        let _subs = f32x4_sub(_z, _inversions);
+        *(addr_of!(_subs) as *const u64)
     }
 }

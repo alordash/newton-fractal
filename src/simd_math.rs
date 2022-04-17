@@ -21,7 +21,7 @@ impl SimdMath {
     // Formula
     // Square norm of z (a: re, b: im) = a^2 + b^2
     #[target_feature(enable = "simd128")]
-    pub fn calculate_square_norm(_vec: v128) -> v128 {
+    pub fn calculate_square_norms(_vec: v128) -> v128 {
         // [a^2, b^2, a^2, b^2]
         let _squares = f32x4_mul(_vec, _vec);
 
@@ -44,9 +44,9 @@ impl SimdMath {
     // Real:        a / (a^2 + b^2)
     // Imagine:    -b / (a^2 + b^2)
     #[target_feature(enable = "simd128")]
-    pub fn complex_number_inversion(_vec: v128) -> v128 {
+    pub fn complex_numbers_inversion(_vec: v128) -> v128 {
         // [a, -b, a, -b]
-        let _numerator = f32x4_mul(_vec, SimdMath::_NEGATION_MASK_FOR_INVERSION);
+        let _numerators = f32x4_mul(_vec, SimdMath::_NEGATION_MASK_FOR_INVERSION);
 
         // [
         //     a^2 + b^2,
@@ -54,7 +54,7 @@ impl SimdMath {
         //     a^2 + b^2,
         //     a^2 + b^2
         // ]
-        let _denumerator = SimdMath::calculate_square_norm(_numerator);
+        let _denumerators = SimdMath::calculate_square_norms(_numerators);
 
         // [
         //       a / (a^2 + b^2),
@@ -62,7 +62,7 @@ impl SimdMath {
         //       a / (a^2 + b^2),
         //      -b / (a^2 + b^2)
         // ]
-        f32x4_div(_numerator, _denumerator)
+        f32x4_div(_numerators, _denumerators)
     }
 
     // Formula:
@@ -77,7 +77,7 @@ impl SimdMath {
         //      x3 - x4 (= C),
         //      y3 - y4 (= D)
         // ]
-        let _diff = f32x4_sub(_points1, _points2);
+        let _diffs = f32x4_sub(_points1, _points2);
 
         // [
         //     A^2 + B^2,
@@ -85,6 +85,6 @@ impl SimdMath {
         //     C^2 + D^2,
         //     C^2 + D^2
         // ]
-        SimdMath::calculate_square_norm(_diff)
+        SimdMath::calculate_square_norms(_diffs)
     }
 }
