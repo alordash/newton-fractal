@@ -10,6 +10,9 @@ const GPU_MAX_ITERATIONS_COUNT = 250;
 const ROOT_POINT_SIZE = 4.0;
 const CLICK_POINT_DISTANCE = 0.05;
 
+let SCALE = 1;
+const RESIZE_FACTOR = 0.011;
+
 let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
 let holdingPointIndex = -1;
 
@@ -197,6 +200,19 @@ function CanvasMouseMove(me: MouseEvent) {
     draw();
 }
 
+function CanvasWheelEvent(we: WheelEvent) {
+    let [x, y] = transformPointToPlotScale(we.offsetX, we.offsetY, plotScale);
+    let d = we.deltaY * RESIZE_FACTOR;
+    if (d < 0) {
+        d = -1 / d;
+    }
+    plotScale.x_offset -= (d - 1) * (x - plotScale.x_offset);
+    plotScale.y_offset -= (d - 1) * (y - plotScale.y_offset);
+    plotScale.x_value_range *= d;
+    plotScale.y_value_range *= d;
+    draw();
+}
+
 async function WindowResize() {
     let { innerWidth, innerHeight } = window;
     plotScale = PlotScale.calculatePlotScale(innerWidth, innerHeight, plotScale.x_offset, plotScale.x_value_range, plotScale.y_offset);
@@ -295,9 +311,10 @@ window.addEventListener("keydown", e => {
 async function run() {
     InitWebgl2Drawing(gpuCanvas);
 
-    rootsCanvas.addEventListener("mousedown", CanvasMouseDown);
     rootsCanvas.addEventListener("click", CanvasClick);
+    rootsCanvas.addEventListener("mousedown", CanvasMouseDown);
     rootsCanvas.addEventListener("mousemove", CanvasMouseMove);
+    rootsCanvas.addEventListener("wheel", CanvasWheelEvent);
 
     window.addEventListener("resize", WindowResize);
 
