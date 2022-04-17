@@ -237,10 +237,15 @@ const changePresetButtonCallback = () => {
 };
 changePresetButton.addEventListener("click", changePresetButtonCallback);
 window.addEventListener("keydown", e => {
+    let c = e.key.toLocaleLowerCase();
+    if (c == 'escape') {
+        plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
+        draw();
+        return;
+    }
     if (e.ctrlKey || e.shiftKey) {
         return;
     }
-    let c = e.key.toLocaleLowerCase();
     if (c == 'c' || c == 'с') {
         changePresetButtonCallback();
     }
