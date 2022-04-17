@@ -8,8 +8,6 @@ impl SimdMath {
     pub const _F32_ZERO: v128 = f32x4(0.0, 0.0, 0.0, 0.0);
     pub const _F32_MAX: v128 = f32x4(f32::MAX, f32::MAX, f32::MAX, f32::MAX);
     pub const _I32_ZERO: v128 = i32x4(0, 0, 0, 0);
-    pub const _SQUARE_NORM_SWAP_MASK: v128 =
-        i8x16(4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11);
     pub const _NEGATION_MASK_FOR_INVERSION: v128 = f32x4(1.0, -1.0, 1.0, -1.0);
 
     // a % b = a - b * floor(a / b)
@@ -26,7 +24,10 @@ impl SimdMath {
         let _squares = f32x4_mul(_vec, _vec);
 
         // [b^2, a^2, b^2, a^2]
-        let _shifted_squares = i8x16_swizzle(_squares, SimdMath::_SQUARE_NORM_SWAP_MASK);
+        let _shifted_squares = i8x16_swizzle(
+            _squares,
+            i8x16(4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11),
+        );
 
         // [
         //     a^2 + b^2,
