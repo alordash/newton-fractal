@@ -42,6 +42,11 @@ pub fn fill_pixels_wasm(
 
     let colors: Vec<[u8; 4]> = colors.into_serde().unwrap();
     let colors = convert_colors_array(&colors);
+    
+    let (part_offset, parts_count) = (
+        part_offset.or(Some(0)).unwrap(),
+        parts_count.or(Some(1)).unwrap(),
+    );
 
     match drawing_mode {
         DrawingModes::Scalar => fill_pixels_scalar(
@@ -80,14 +85,9 @@ pub fn fill_pixels_scalar(
     iterations_count: usize,
     colors: &[u32],
     buffer_ptr: *mut u32,
-    part_offset: Option<usize>,
-    parts_count: Option<usize>,
+    part_offset: usize,
+    parts_count: usize,
 ) {
-    let (part_offset, parts_count) = (
-        part_offset.or(Some(0)).unwrap(),
-        parts_count.or(Some(1)).unwrap(),
-    );
-
     let PlotScale {
         x_display_range: width,
         y_display_range: height,
@@ -115,8 +115,8 @@ pub fn fill_pixels_simd(
     iterations_count: usize,
     colors: &[u32],
     buffer_ptr: *mut ColorsPack,
-    part_offset: Option<usize>,
-    parts_count: Option<usize>,
+    part_offset: usize,
+    parts_count: usize,
 ) {
     let PlotScale {
         x_display_range: width,
@@ -124,11 +124,6 @@ pub fn fill_pixels_simd(
         ..
     } = *plot_scale;
     let (w_int, h_int) = (width as usize, height as usize);
-
-    let (part_offset, parts_count) = (
-        part_offset.or(Some(0)).unwrap(),
-        parts_count.or(Some(1)).unwrap(),
-    );
 
     let filler = |_xs: v128, _ys: v128| -> ColorsPack {
         let mut _min_distances = SimdMath::_F32_MAX;
