@@ -171,7 +171,7 @@ function CanvasMouseMove(me) {
 }
 async function WindowResize() {
     let { innerWidth, innerHeight } = window;
-    plotScale = PlotScale.calculatePlotScale(innerWidth, innerHeight);
+    plotScale = PlotScale.calculatePlotScale(innerWidth, innerHeight, plotScale.x_offset, plotScale.x_value_range, plotScale.y_offset);
     resizeCanvas(plotScale.x_display_range, plotScale.y_display_range);
     gl.resize();
     resetFps();

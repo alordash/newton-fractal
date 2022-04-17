@@ -1,5 +1,7 @@
 import { generateColor } from '../visuals/colors.js';
 import { regionColors, roots } from '../visuals/fractal_presets.js';
+const DEFAULT_X_RANGE = 4;
+const DEFAULT_X_OFFSET = -2;
 class PlotScale {
     constructor(x_offset, y_offset, x_value_range, y_value_range, x_display_range, y_display_range) {
         this.x_offset = x_offset;
@@ -9,13 +11,23 @@ class PlotScale {
         this.x_display_range = x_display_range;
         this.y_display_range = y_display_range;
     }
-    static calculatePlotScale(innerWidth, innerHeight) {
+    static calculatePlotScale(innerWidth, innerHeight, x_offset, x_range, y_offset, y_range) {
         const width = Math.round(innerWidth * 0.65);
         const height = Math.round(innerHeight * 0.75);
         const k = height / width;
-        const x_range = 4;
-        const x_offset = -2;
-        return new PlotScale(x_offset, x_offset * k, x_range, x_range * k, width, height);
+        if (x_offset == undefined) {
+            x_offset = DEFAULT_X_OFFSET;
+        }
+        if (y_offset == undefined) {
+            y_offset = x_offset * k;
+        }
+        if (x_range == undefined) {
+            x_range = DEFAULT_X_RANGE;
+        }
+        if (y_range == undefined) {
+            y_range = x_range * k;
+        }
+        return new PlotScale(x_offset, y_offset, x_range, y_range, width, height);
     }
 }
 function addRoot(xMapped, yMapped) {

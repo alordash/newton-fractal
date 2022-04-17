@@ -1,6 +1,9 @@
 import { generateColor } from '../visuals/colors.js';
 import { regionColors, roots } from '../visuals/fractal_presets.js';
 
+const DEFAULT_X_RANGE = 4;
+const DEFAULT_X_OFFSET = -2;
+
 class PlotScale {
     x_offset: number;
     y_offset: number;
@@ -26,13 +29,23 @@ class PlotScale {
     }
 
     // Coefficients control canvas appearing size
-    static calculatePlotScale(innerWidth: number, innerHeight: number): PlotScale {
+    static calculatePlotScale(innerWidth: number, innerHeight: number, x_offset?: number, x_range?: number, y_offset?: number, y_range?: number): PlotScale {
         const width = Math.round(innerWidth * 0.65);
         const height = Math.round(innerHeight * 0.75);
         const k = height / width;
-        const x_range = 4;
-        const x_offset = -2;
-        return new PlotScale(x_offset, x_offset * k, x_range, x_range * k, width, height);
+        if (x_offset == undefined) {
+            x_offset = DEFAULT_X_OFFSET;
+        }
+        if (y_offset == undefined) {
+            y_offset = x_offset * k;
+        }
+        if (x_range == undefined) {
+            x_range = DEFAULT_X_RANGE;
+        }
+        if (y_range == undefined) {
+            y_range = x_range * k;
+        }
+        return new PlotScale(x_offset, y_offset, x_range, y_range, width, height);
     }
 }
 
