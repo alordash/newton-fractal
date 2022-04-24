@@ -11,7 +11,7 @@ let SCALE = 1;
 const RESIZE_FACTOR = 0.011;
 let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
 let holdingPointIndex = -1;
-const TOTAL_FPS_RESET_THRESHOLD = 1000;
+const TOTAL_FPS_RESET_THRESHOLD = 20000;
 let totalFps = 0;
 let fpsMeasures = -2;
 function getIterationsCount() {
