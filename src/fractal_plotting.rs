@@ -143,5 +143,18 @@ pub fn fill_pixels_simd(
 
             *(buffer_ptr.add(i)) = transmute([colors[id0], colors[id1], colors[id2], colors[id3]]);
         }
+        // Filling unfit pixels at the end
+        if part_offset == parts_count - 1 {
+            let unfit_pixels_begin = 4 * next_border;
+            let buffer_as_u32_ptr = buffer_ptr as *mut u32;
+            for i in unfit_pixels_begin..total_size {
+                let (x, y) = transform_point_to_plot_scale(
+                    (i % w_int) as f32,
+                    (i / w_int) as f32,
+                    &plot_scale,
+                );
+                *buffer_as_u32_ptr.add(i) = colors[get_root_id(Complex32::new(x, y), roots, iterations_count)];
+            }
+        }
     }
 }
