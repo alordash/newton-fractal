@@ -2,8 +2,10 @@ use num_complex::Complex32;
 use wasm_bindgen::prelude::*;
 
 use std::arch::wasm32::*;
+use std::mem::transmute;
 use std::ptr::addr_of;
 
+use crate::geometry::{simd_transform_point_to_plot_scale, PlotScale};
 use crate::simd_math::SimdMath;
 
 pub const MIN_DIFF: f32 = 0.001;
@@ -56,6 +58,51 @@ pub fn get_root_id_wasm(x: f32, y: f32, roots: JsValue, iterations_count: usize)
         .collect();
 
     get_root_id(z, &complex_roots, iterations_count)
+}
+
+#[target_feature(enable = "simd128")]
+pub unsafe fn simd_get_root_id(
+    _xs: v128,
+    _ys: v128,
+    roots: &[Complex32],
+    iterations_count: usize,
+    plot_scale: &PlotScale,
+) -> (usize, usize, usize, usize) {
+    let mut _min_distances = SimdMath::_F32_MAX;
+    let mut _closest_root_ids = SimdMath::_I32_ZERO;
+
+    let mut _points1 = f32x4(
+        f32x4_extract_lane::<0>(_xs),
+        f32x4_extract_lane::<0>(_ys),
+        f32x4_extract_lane::<1>(_xs),
+        f32x4_extract_lane::<1>(_ys),
+    );
+    let mut _points2 = f32x4(
+        f32x4_extract_lane::<2>(_xs),
+        f32x4_extract_lane::<2>(_ys),
+        f32x4_extract_lane::<3>(_xs),
+        f32x4_extract_lane::<3>(_ys),
+    );
+
+    _points1 = simd_transform_point_to_plot_scale(_points1, &plot_scale);
+    _points2 = simd_transform_point_to_plot_scale(_points2, &plot_scale);
+    for _ in 0..iterations_count {
+        _points1 = simd_newton_method_approx_for_two_numbers(_points1, &roots);
+        _points2 = simd_newton_method_approx_for_two_numbers(_points2, &roots);
+    }
+    for (i, &root) in roots.iter().enumerate() {
+        let _ids = i32x4_splat(i as i32);
+        let _roots = v128_load64_splat(addr_of!(root) as *const u64);
+        let _dists1 = SimdMath::calculate_squared_distances(_points1, _roots);
+        let _dists2 = SimdMath::calculate_squared_distances(_points2, _roots);
+        let _distances = i32x4_shuffle::<0, 2, 4, 6>(_dists1, _dists2);
+
+        let _le_check = f32x4_lt(_distances, _min_distances);
+        _min_distances = f32x4_pmin(_distances, _min_distances);
+        _closest_root_ids = v128_bitselect(_ids, _closest_root_ids, _le_check);
+    }
+
+    return transmute(_closest_root_ids);
 }
 
 #[inline]

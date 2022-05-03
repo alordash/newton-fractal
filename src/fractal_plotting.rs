@@ -42,7 +42,7 @@ pub fn fill_pixels_wasm(
 
     let colors: Vec<[u8; 4]> = colors.into_serde().unwrap();
     let colors = convert_colors_array(&colors);
-    
+
     let (part_offset, parts_count) = (
         part_offset.or(Some(0)).unwrap(),
         parts_count.or(Some(1)).unwrap(),
@@ -125,50 +125,6 @@ pub fn fill_pixels_simd(
     } = *plot_scale;
     let (w_int, h_int) = (width as usize, height as usize);
 
-    let filler = |_xs: v128, _ys: v128| -> ColorsPack {
-        let mut _min_distances = SimdMath::_F32_MAX;
-        let mut _closest_root_ids = SimdMath::_I32_ZERO;
-
-        let mut _points1 = f32x4(
-            f32x4_extract_lane::<0>(_xs),
-            f32x4_extract_lane::<0>(_ys),
-            f32x4_extract_lane::<1>(_xs),
-            f32x4_extract_lane::<1>(_ys),
-        );
-        let mut _points2 = f32x4(
-            f32x4_extract_lane::<2>(_xs),
-            f32x4_extract_lane::<2>(_ys),
-            f32x4_extract_lane::<3>(_xs),
-            f32x4_extract_lane::<3>(_ys),
-        );
-
-        _points1 = simd_transform_point_to_plot_scale(_points1, &plot_scale);
-        _points2 = simd_transform_point_to_plot_scale(_points2, &plot_scale);
-        for _ in 0..iterations_count {
-            unsafe {
-                _points1 = simd_newton_method_approx_for_two_numbers(_points1, &roots);
-                _points2 = simd_newton_method_approx_for_two_numbers(_points2, &roots);
-            }
-        }
-        unsafe {
-            for (i, &root) in roots.iter().enumerate() {
-                let _ids = i32x4_splat(i as i32);
-                let _roots = v128_load64_splat(addr_of!(root) as *const u64);
-                let _dists1 = SimdMath::calculate_squared_distances(_points1, _roots);
-                let _dists2 = SimdMath::calculate_squared_distances(_points2, _roots);
-                let _distances = i32x4_shuffle::<0, 2, 4, 6>(_dists1, _dists2);
-
-                let _le_check = f32x4_lt(_distances, _min_distances);
-                _min_distances = f32x4_pmin(_distances, _min_distances);
-                _closest_root_ids = v128_bitselect(_ids, _closest_root_ids, _le_check);
-            }
-        }
-        unsafe {
-            let (id1, id2, id3, id4): (usize, usize, usize, usize) = transmute(_closest_root_ids);
-            transmute([colors[id1], colors[id2], colors[id3], colors[id4]])
-        }
-    };
-
     let total_size = w_int * h_int;
     let this_border = calculate_part_size(total_size, parts_count, part_offset, 4) / 4;
     let next_border = calculate_part_size(total_size, parts_count, part_offset + 1, 4) / 4;
@@ -182,7 +138,10 @@ pub fn fill_pixels_simd(
             let _xs = SimdMath::f32x4_mod(_i, _width);
             let _ys = f32x4_floor(f32x4_div(_i, _width));
 
-            *(buffer_ptr.add(i)) = filler(_xs, _ys);
+            let (id0, id1, id2, id3) =
+                simd_get_root_id(_xs, _ys, roots, iterations_count, &plot_scale);
+
+            *(buffer_ptr.add(i)) = transmute([colors[id0], colors[id1], colors[id2], colors[id3]]);
         }
     }
 }

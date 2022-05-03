@@ -13,6 +13,14 @@ declare namespace wasm_bindgen {
 	*/
 	export function fill_pixels_wasm(drawing_mode: number, plot_scale: any, roots: any, iterations_count: number, colors: any, buffer_ptr: number, part_offset?: number, parts_count?: number): void;
 	/**
+	* @param {number} x
+	* @param {number} y
+	* @param {any} roots
+	* @param {number} iterations_count
+	* @returns {number}
+	*/
+	export function get_root_id_wasm(x: number, y: number, roots: any, iterations_count: number): number;
+	/**
 	* @returns {any}
 	*/
 	export function get_wasm_memory(): any;
@@ -26,14 +34,6 @@ declare namespace wasm_bindgen {
 	* @param {number} buffer_ptr
 	*/
 	export function free_u32_buffer(size: number, buffer_ptr: number): void;
-	/**
-	* @param {number} x
-	* @param {number} y
-	* @param {any} roots
-	* @param {number} iterations_count
-	* @returns {number}
-	*/
-	export function get_root_id_wasm(x: number, y: number, roots: any, iterations_count: number): number;
 	/**
 	*/
 	export function main(): void;
@@ -56,10 +56,10 @@ declare type InitInput = RequestInfo | URL | Response | BufferSource | WebAssemb
 declare interface InitOutput {
   readonly __wbg_simdmath_free: (a: number) => void;
   readonly fill_pixels_wasm: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => void;
+  readonly get_root_id_wasm: (a: number, b: number, c: number, d: number) => number;
   readonly get_wasm_memory: () => number;
   readonly create_u32_buffer: (a: number, b: number) => void;
   readonly free_u32_buffer: (a: number, b: number) => void;
-  readonly get_root_id_wasm: (a: number, b: number, c: number, d: number) => number;
   readonly main: () => void;
   readonly memory: WebAssembly.Memory;
   readonly __wbindgen_malloc: (a: number) => number;

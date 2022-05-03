@@ -125,6 +125,18 @@ __exports.fill_pixels_wasm = function(drawing_mode, plot_scale, roots, iteration
 };
 
 /**
+* @param {number} x
+* @param {number} y
+* @param {any} roots
+* @param {number} iterations_count
+* @returns {number}
+*/
+__exports.get_root_id_wasm = function(x, y, roots, iterations_count) {
+    var ret = wasm.get_root_id_wasm(x, y, addHeapObject(roots), iterations_count);
+    return ret >>> 0;
+};
+
+/**
 * @returns {any}
 */
 __exports.get_wasm_memory = function() {
@@ -154,18 +166,6 @@ __exports.create_u32_buffer = function(size) {
 */
 __exports.free_u32_buffer = function(size, buffer_ptr) {
     wasm.free_u32_buffer(size, buffer_ptr);
-};
-
-/**
-* @param {number} x
-* @param {number} y
-* @param {any} roots
-* @param {number} iterations_count
-* @returns {number}
-*/
-__exports.get_root_id_wasm = function(x, y, roots, iterations_count) {
-    var ret = wasm.get_root_id_wasm(x, y, addHeapObject(roots), iterations_count);
-    return ret >>> 0;
 };
 
 /**
