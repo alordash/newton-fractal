@@ -98,7 +98,7 @@ pub unsafe fn simd_get_root_id(
         let _distances = i32x4_shuffle::<0, 2, 4, 6>(_dists1, _dists2);
 
         let _le_check = f32x4_lt(_distances, _min_distances);
-        _min_distances = f32x4_pmin(_distances, _min_distances);
+        _min_distances = v128_bitselect(_distances, _min_distances, _le_check);
         _closest_root_ids = v128_bitselect(_ids, _closest_root_ids, _le_check);
     }
 
