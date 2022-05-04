@@ -2,6 +2,9 @@ declare namespace wasm_bindgen {
 	/* tslint:disable */
 	/* eslint-disable */
 	/**
+	*/
+	export function main(): void;
+	/**
 	* @param {number} drawing_mode
 	* @param {any} plot_scale
 	* @param {any} roots
@@ -36,17 +39,9 @@ declare namespace wasm_bindgen {
 	export function free_u32_buffer(size: number, buffer_ptr: number): void;
 	/**
 	*/
-	export function main(): void;
-	/**
-	*/
 	export enum DrawingModes {
 	  Simd,
 	  Scalar,
-	}
-	/**
-	*/
-	export class SimdMath {
-	  free(): void;
 	}
 	
 }
@@ -54,13 +49,12 @@ declare namespace wasm_bindgen {
 declare type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 declare interface InitOutput {
-  readonly __wbg_simdmath_free: (a: number) => void;
+  readonly main: () => void;
   readonly fill_pixels_wasm: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => void;
   readonly get_root_id_wasm: (a: number, b: number, c: number, d: number) => number;
   readonly get_wasm_memory: () => number;
   readonly create_u32_buffer: (a: number, b: number) => void;
   readonly free_u32_buffer: (a: number, b: number) => void;
-  readonly main: () => void;
   readonly memory: WebAssembly.Memory;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
