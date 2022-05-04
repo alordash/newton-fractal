@@ -67,7 +67,7 @@ pub unsafe fn simd_get_root_id(
     roots: &[Complex32],
     iterations_count: usize,
     plot_scale: &PlotScale,
-) -> (usize, usize, usize, usize) {
+) -> (u32, u32, u32, u32) {
     let mut _min_distances = SimdMath::_F32_MAX;
     let mut _closest_root_ids = SimdMath::_I32_ZERO;
 

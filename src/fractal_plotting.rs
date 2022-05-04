@@ -141,7 +141,12 @@ pub fn fill_pixels_simd(
             let (id0, id1, id2, id3) =
                 simd_get_root_id(_xs, _ys, roots, iterations_count, &plot_scale);
 
-            *(buffer_ptr.add(i)) = transmute([colors[id0], colors[id1], colors[id2], colors[id3]]);
+            *(buffer_ptr.add(i)) = transmute([
+                colors[id0 as usize],
+                colors[id1 as usize],
+                colors[id2 as usize],
+                colors[id3 as usize],
+            ]);
         }
         // Filling unfit pixels at the end
         if part_offset == parts_count - 1 {
@@ -153,7 +158,8 @@ pub fn fill_pixels_simd(
                     (i / w_int) as f32,
                     &plot_scale,
                 );
-                *buffer_as_u32_ptr.add(i) = colors[get_root_id(Complex32::new(x, y), roots, iterations_count)];
+                *buffer_as_u32_ptr.add(i) =
+                    colors[get_root_id(Complex32::new(x, y), roots, iterations_count)];
             }
         }
     }
