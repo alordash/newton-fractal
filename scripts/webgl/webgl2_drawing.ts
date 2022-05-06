@@ -1,3 +1,4 @@
+import { PlotScale } from '../math/geometry.js';
 import { GLManager } from "./gl_manager.js";
 
 let gl: GLManager;

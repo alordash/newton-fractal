@@ -1,3 +1,5 @@
+import { PlotScale } from '../math/geometry.js';
+
 class GLManager {
     ctx: WebGL2RenderingContext;
     vertShader: WebGLShader;
@@ -42,7 +44,7 @@ class GLManager {
         ctx.vertexAttribPointer(positionAttributeLocation, 2, ctx.FLOAT, false, 0, 0);
 
         ctx.bindVertexArray(vao);
-        
+
         let sync = ctx.fenceSync(ctx.SYNC_GPU_COMMANDS_COMPLETE, 0);
 
         let i = 0;
@@ -50,7 +52,7 @@ class GLManager {
         ctx.drawArrays(ctx.TRIANGLES, 0, 6);
         ctx.flush();
 
-        while(ctx.getSyncParameter(sync, ctx.SYNC_STATUS) == ctx.UNSIGNALED) {
+        while (ctx.getSyncParameter(sync, ctx.SYNC_STATUS) == ctx.UNSIGNALED) {
             await new Promise(resolve => setTimeout(resolve, 1));
         }
 
