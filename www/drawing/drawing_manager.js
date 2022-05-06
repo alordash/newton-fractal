@@ -1,4 +1,4 @@
-const { create_u32_buffer, free_u32_buffer } = wasm_bindgen;
+import init, { create_u32_buffer, free_u32_buffer } from '../../pkg/newton_fractal.js';
 const WASM_MODULE_SOURCE_PATH = '../pkg/newton_fractal_bg.wasm';
 let wasmModule;
 const DRAWING_WORKER_SOURCE_PATH = './drawing/drawing_worker.js';
@@ -56,7 +56,7 @@ const drawingWorkerInitCallback = function (ev) {
     }
 };
 function createDrawingWorker(sourcePath) {
-    let worker = new Worker(sourcePath);
+    let worker = new Worker(sourcePath, { type: "module" });
     worker.onmessage = drawingWorkerInitCallback;
     return worker;
 }
@@ -71,7 +71,7 @@ function initializeWorkers(sharedMemory) {
 }
 async function initializeDrawingManager() {
     let sharedMemory = new WebAssembly.Memory({ initial: 100, maximum: 1000, shared: true });
-    wasmModule = await wasm_bindgen(WASM_MODULE_SOURCE_PATH, sharedMemory);
+    wasmModule = await init(WASM_MODULE_SOURCE_PATH, sharedMemory);
     initializeWorkers(sharedMemory);
 }
 function runDrawingWorkers(drawingMode, plotScale, roots, iterationsCount, colors, threadsCount = drawingWorkersCount) {

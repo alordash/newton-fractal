@@ -1,38 +1,36 @@
-let wasm_bindgen;
-(function() {
-    const __exports = {};
-    let wasm;
 
-    let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
+let wasm;
 
-    cachedTextDecoder.decode();
+let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
 
-    let cachegetUint8Memory0 = null;
-    function getUint8Memory0() {
-        if (cachegetUint8Memory0 === null || cachegetUint8Memory0.buffer !== wasm.memory.buffer) {
-            cachegetUint8Memory0 = new Uint8Array(wasm.memory.buffer);
-        }
-        return cachegetUint8Memory0;
+cachedTextDecoder.decode();
+
+let cachegetUint8Memory0 = null;
+function getUint8Memory0() {
+    if (cachegetUint8Memory0 === null || cachegetUint8Memory0.buffer !== wasm.memory.buffer) {
+        cachegetUint8Memory0 = new Uint8Array(wasm.memory.buffer);
     }
+    return cachegetUint8Memory0;
+}
 
-    function getStringFromWasm0(ptr, len) {
-        return cachedTextDecoder.decode(getUint8Memory0().slice(ptr, ptr + len));
-    }
+function getStringFromWasm0(ptr, len) {
+    return cachedTextDecoder.decode(getUint8Memory0().slice(ptr, ptr + len));
+}
 
-    const heap = new Array(32).fill(undefined);
+const heap = new Array(32).fill(undefined);
 
-    heap.push(undefined, null, true, false);
+heap.push(undefined, null, true, false);
 
-    let heap_next = heap.length;
+let heap_next = heap.length;
 
-    function addHeapObject(obj) {
-        if (heap_next === heap.length) heap.push(heap.length + 1);
-        const idx = heap_next;
-        heap_next = heap[idx];
+function addHeapObject(obj) {
+    if (heap_next === heap.length) heap.push(heap.length + 1);
+    const idx = heap_next;
+    heap_next = heap[idx];
 
-        heap[idx] = obj;
-        return idx;
-    }
+    heap[idx] = obj;
+    return idx;
+}
 
 function getObject(idx) { return heap[idx]; }
 
@@ -108,9 +106,9 @@ function getInt32Memory0() {
 }
 /**
 */
-__exports.main = function() {
+export function main() {
     wasm.main();
-};
+}
 
 function isLikeNone(x) {
     return x === undefined || x === null;
@@ -125,9 +123,9 @@ function isLikeNone(x) {
 * @param {number | undefined} part_offset
 * @param {number | undefined} parts_count
 */
-__exports.fill_pixels_wasm = function(drawing_mode, plot_scale, roots, iterations_count, colors, buffer_ptr, part_offset, parts_count) {
+export function fill_pixels_wasm(drawing_mode, plot_scale, roots, iterations_count, colors, buffer_ptr, part_offset, parts_count) {
     wasm.fill_pixels_wasm(drawing_mode, addHeapObject(plot_scale), addHeapObject(roots), iterations_count, addHeapObject(colors), buffer_ptr, !isLikeNone(part_offset), isLikeNone(part_offset) ? 0 : part_offset, !isLikeNone(parts_count), isLikeNone(parts_count) ? 0 : parts_count);
-};
+}
 
 /**
 * @param {number} x
@@ -136,24 +134,24 @@ __exports.fill_pixels_wasm = function(drawing_mode, plot_scale, roots, iteration
 * @param {number} iterations_count
 * @returns {number}
 */
-__exports.get_root_id_wasm = function(x, y, roots, iterations_count) {
+export function get_root_id_wasm(x, y, roots, iterations_count) {
     var ret = wasm.get_root_id_wasm(x, y, addHeapObject(roots), iterations_count);
     return ret >>> 0;
-};
+}
 
 /**
 * @returns {any}
 */
-__exports.get_wasm_memory = function() {
+export function get_wasm_memory() {
     var ret = wasm.get_wasm_memory();
     return takeObject(ret);
-};
+}
 
 /**
 * @param {number} size
 * @returns {number | undefined}
 */
-__exports.create_u32_buffer = function(size) {
+export function create_u32_buffer(size) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
         wasm.create_u32_buffer(retptr, size);
@@ -163,19 +161,19 @@ __exports.create_u32_buffer = function(size) {
     } finally {
         wasm.__wbindgen_add_to_stack_pointer(16);
     }
-};
+}
 
 /**
 * @param {number} size
 * @param {number} buffer_ptr
 */
-__exports.free_u32_buffer = function(size, buffer_ptr) {
+export function free_u32_buffer(size, buffer_ptr) {
     wasm.free_u32_buffer(size, buffer_ptr);
-};
+}
 
 /**
 */
-__exports.DrawingModes = Object.freeze({ Simd:0,"0":"Simd",Scalar:1,"1":"Scalar", });
+export const DrawingModes = Object.freeze({ Simd:0,"0":"Simd",Scalar:1,"1":"Scalar", });
 
 async function load(module, imports) {
     if (typeof Response === 'function' && module instanceof Response) {
@@ -210,13 +208,7 @@ async function load(module, imports) {
 
 async function init(input, maybe_memory) {
     if (typeof input === 'undefined') {
-        let src;
-        if (typeof document === 'undefined') {
-            src = location.href;
-        } else {
-            src = document.currentScript.src;
-        }
-        input = src.replace(/\.js$/, '_bg.wasm');
+        input = new URL('newton_fractal_bg.wasm', import.meta.url);
     }
     const imports = {};
     imports.wbg = {};
@@ -260,6 +252,5 @@ async function init(input, maybe_memory) {
     return wasm;
 }
 
-wasm_bindgen = Object.assign(init, __exports);
+export default init;
 
-})();

@@ -1,5 +1,6 @@
+import init, { create_u32_buffer, free_u32_buffer, InitOutput } from '../../pkg/newton_fractal.js';
+
 import { PlotScale } from "../math/geometry.js";
-const { create_u32_buffer, free_u32_buffer } = wasm_bindgen;
 
 const WASM_MODULE_SOURCE_PATH = '../pkg/newton_fractal_bg.wasm';
 let wasmModule: InitOutput;
@@ -90,7 +91,7 @@ const drawingWorkerInitCallback = function (ev: MessageEvent<number>) {
 }
 
 function createDrawingWorker(sourcePath: string | URL) {
-    let worker = new Worker(sourcePath);
+    let worker = new Worker(sourcePath, { type: "module" });
     worker.onmessage = drawingWorkerInitCallback;
     return worker;
 }
@@ -108,7 +109,7 @@ function initializeWorkers(sharedMemory: WebAssembly.Memory) {
 
 async function initializeDrawingManager() {
     let sharedMemory = new WebAssembly.Memory({ initial: 100, maximum: 1000, shared: true });
-    wasmModule = await wasm_bindgen(WASM_MODULE_SOURCE_PATH, sharedMemory);
+    wasmModule = await init(WASM_MODULE_SOURCE_PATH, sharedMemory);
     initializeWorkers(sharedMemory);
 }
 

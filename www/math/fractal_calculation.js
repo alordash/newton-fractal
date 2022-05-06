@@ -71,4 +71,5 @@ function fillPixelsJavascript(buffer, plotScale, roots, iterationsCount, colors,
         u32BufferView[i] = colorPacks[getRootId(complexRoots, { re: xp, im: yp }, iterationsCount)];
     }
 }
+export { transformPointToCanvasScale, transformPointToPlotScale, fillPixelsJavascript };
 //# sourceMappingURL=fractal_calculation.js.map

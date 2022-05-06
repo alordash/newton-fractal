@@ -105,3 +105,9 @@ function fillPixelsJavascript(buffer: SharedArrayBuffer, plotScale: PlotScale, r
         ];
     }
 }
+
+export {
+    transformPointToCanvasScale,
+    transformPointToPlotScale,
+    fillPixelsJavascript
+};

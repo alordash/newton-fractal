@@ -1,7 +1,6 @@
+import init, { fill_pixels_wasm, DrawingModes as WasmDrawingModes, get_wasm_memory } from '../../pkg/newton_fractal.js';
+import { fillPixelsJavascript } from '../math/fractal_calculation.js';
 const WASM_MODULE_SOURCE_PATH = '../../pkg/newton_fractal_bg.wasm';
-importScripts('../../pkg/newton_fractal.js');
-importScripts('../math/fractal_calculation.js');
-const { fill_pixels_wasm, DrawingModes: WasmDrawingModes, get_wasm_memory } = wasm_bindgen;
 function actualCallback(e) {
     let message = e.data;
     let { drawingModeId, plotScale, roots, iterationsCount, colors, partOffset, partsCount, bufferPtr } = message;
@@ -25,7 +24,7 @@ function actualCallback(e) {
 }
 onmessage = async function (e) {
     let { workerId, sharedMemory } = e.data;
-    await wasm_bindgen(WASM_MODULE_SOURCE_PATH, sharedMemory);
+    await init(WASM_MODULE_SOURCE_PATH, sharedMemory);
     onmessage = actualCallback;
     postMessage(workerId, undefined);
 };
