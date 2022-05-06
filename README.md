@@ -8,6 +8,13 @@ Inspired by [3blue1brown](https://www.3blue1brown.com/)'s [video about Newton's 
 
 ![Demo preview](./demo/11-250.png)
 
+## Build
+
+1. Rust-wasm:
+   `wasm-pack build --target web`
+2. TypeScript:
+   `tsc`
+
 ## Drawing techniques
 
 ### <details> <summary>1. Javascript</summary> [fractal_calculation.ts](https://github.com/alordash/newton-fractal/blob/main/scripts/math/fractal_calculation.ts) and [geometry.ts](https://github.com/alordash/newton-fractal/blob/main/scripts/math/geometry.ts) </details>
