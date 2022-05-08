@@ -13,7 +13,6 @@ wasm-bindgen = { version = "0.2.63", features = ["serde-serialize"] }
 num-complex = "0.4.0"
 
 [profile.release]
-lto = "thin"
 opt-level = 3
 debug = 0
 overflow-checks = false
