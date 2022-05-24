@@ -61,10 +61,11 @@
 
 <body>
     <script>
+        // Credits: https://stackoverflow.com/questions/62954570/javascript-feature-detect-module-support-for-web-workers
         function supportsWorkerType() {
             let supports = false;
             const tester = {
-                get type() { supports = true; } // it's been called, it's supported
+                get type() { supports = true; }
             };
             try {
                 const worker = new Worker('blob://', tester);
