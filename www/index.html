@@ -75,9 +75,9 @@
         }
         let workerTypesSupported = supportsWorkerType();
         if(!workerTypesSupported) {
-            let currLoc = window.location;
-            console.log('currLoc :>> ', currLoc);
-            window.location.replace(currLoc.href + "noModuleWorkers");
+            let currLoc = window.location.href;
+            let newLoc = currLoc.substring(0, currLoc.lastIndexOf('/')) + "/noModuleWorkers";
+            window.location.replace(newLoc);
         }
     </script>
     <script type="module">
