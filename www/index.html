@@ -60,6 +60,25 @@
 </head>
 
 <body>
+    <script>
+        function supportsWorkerType() {
+            let supports = false;
+            const tester = {
+                get type() { supports = true; } // it's been called, it's supported
+            };
+            try {
+                const worker = new Worker('blob://', tester);
+            } finally {
+                return supports;
+            }
+        }
+        let workerTypesSupported = supportsWorkerType();
+        if(!workerTypesSupported) {
+            let currLoc = window.location;
+            console.log('currLoc :>> ', currLoc);
+            window.location.replace(currLoc.href + "noModuleWorkers");
+        }
+    </script>
     <script type="module">
         if ("serviceWorker" in navigator) {
             // Register service worker
@@ -129,7 +148,6 @@
         </div>
     </a>
 
-    <script src="./module-workers-polyfill.js"></script>
     <script src="./ui_logic.js" type="module"></script>
 </body>
 
