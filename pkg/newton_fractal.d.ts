@@ -30,9 +30,10 @@ declare namespace wasm_bindgen {
 	* @param {number} x
 	* @param {number} y
 	* @param {any} roots
-	* @returns {any}
+	* @param {number} iterations_count
+	* @returns {number}
 	*/
-	export function newton_method_approx_wasm(x: number, y: number, roots: any): any;
+	export function get_root_id_wasm(x: number, y: number, roots: any, iterations_count: number): number;
 	/**
 	*/
 	export function main(): void;
@@ -58,7 +59,7 @@ declare interface InitOutput {
   readonly get_wasm_memory: () => number;
   readonly create_u32_buffer: (a: number, b: number) => void;
   readonly free_u32_buffer: (a: number, b: number) => void;
-  readonly newton_method_approx_wasm: (a: number, b: number, c: number) => number;
+  readonly get_root_id_wasm: (a: number, b: number, c: number, d: number) => number;
   readonly main: () => void;
   readonly memory: WebAssembly.Memory;
   readonly __wbindgen_malloc: (a: number) => number;

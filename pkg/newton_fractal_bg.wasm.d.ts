@@ -5,7 +5,7 @@ export function fill_pixels_wasm(a: number, b: number, c: number, d: number, e: 
 export function get_wasm_memory(): number;
 export function create_u32_buffer(a: number, b: number): void;
 export function free_u32_buffer(a: number, b: number): void;
-export function newton_method_approx_wasm(a: number, b: number, c: number): number;
+export function get_root_id_wasm(a: number, b: number, c: number, d: number): number;
 export function main(): void;
 export const memory: WebAssembly.Memory;
 export function __wbindgen_malloc(a: number): number;

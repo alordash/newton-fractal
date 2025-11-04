@@ -1,16 +1,15 @@
 import { changePreset, regionColors, roots } from './visuals/fractal_presets.js';
 import { generateColor } from './visuals/colors.js';
-import { PlotScale, addRoot, getClosestRoot, getClosestRootFractalwise } from './math/geometry.js';
+import { PlotScale, addRoot, getClosestRoot } from './math/geometry.js';
 import { DrawingModes, runDrawingWorkers } from './drawing/drawing_manager.js';
 import { drawNewtonFractalGpu, InitWebgl2Drawing, gl } from './webgl/webgl2_drawing.js';
-let cpuIterationsCount = 0;
-const cpuMaxIterationsCount = 25;
-const gpuMaxIterationsCount = 250;
-const rootPointSize = 4.0;
+const CPU_MAX_ITERATIONS_COUNT = 25;
+const GPU_MAX_ITERATIONS_COUNT = 250;
+const ROOT_POINT_SIZE = 4.0;
 const CLICK_POINT_DISTANCE = 0.05;
 let plotScale = PlotScale.calculatePlotScale(window.innerWidth, window.innerHeight);
 let holdingPointIndex = -1;
-const TOTAL_FPS_RESET_THRESHOLD = 1000000;
+const TOTAL_FPS_RESET_THRESHOLD = 1000;
 let totalFps = 0;
 let fpsMeasures = -2;
 function getIterationsCount() {
@@ -38,7 +37,8 @@ function calculateFps(elapsedMs) {
     fps = Math.round(fps * precisionPower) / precisionPower;
 }
 function updateInfoPanel(drawingMode, elapsedMs, approximate = false) {
-    loggerDiv.innerHTML = `Roots count: ${roots.length}</br>
+    loggerDiv.innerHTML = `Canvas size: ${cpuCanvas.width}x${cpuCanvas.height}</br>
+Roots count: ${roots.length}</br>
 Drawing technic: ${drawingMode}</br>
 Took: ${elapsedMs}ms<br>
 <b>Average FPS: ${approximate ? '~' : ''}${fpsMeasures <= 0 ? 0 : Math.round(totalFps * 10 / fpsMeasures) / 10}</b>`;
@@ -96,7 +96,7 @@ function plotPoint(x, y, size, plotScale) {
 function plotRoots(plotScale, roots) {
     rootsCanvasContext.clearRect(0, 0, rootsCanvas.width, rootsCanvas.height);
     for (let [x, y] of roots) {
-        plotPoint(x, y, rootPointSize, plotScale);
+        plotPoint(x, y, ROOT_POINT_SIZE, plotScale);
     }
 }
 function resizeCanvas(width, height) {
@@ -124,7 +124,7 @@ async function CanvasClick(me) {
         roots.splice(id, 1);
     }
     else if (me.altKey) {
-        let { id, dst } = getClosestRootFractalwise(x, y, iterationsCount);
+        let id = wasm_bindgen.get_root_id_wasm(x, y, roots, iterationsCount);
         regionColors[id] = generateColor();
     }
     else {
@@ -218,15 +218,17 @@ for (const value of Object.values(DrawingModes)) {
 drawingModeSelect.addEventListener('change', () => {
     let drawingMode = drawingModeSelect.value;
     if (drawingMode == DrawingModes.GpuGlslScalar) {
-        cpuIterationsCount = getIterationsCount();
-        iterationsCountRange.max = gpuMaxIterationsCount.toString();
+        iterationsCountRange.max = GPU_MAX_ITERATIONS_COUNT.toString();
         cpuCanvas.style.display = 'none';
         gpuCanvas.style.display = 'block';
         threadsCountRange.disabled = true;
     }
     else {
-        iterationsCountDisplay.value = iterationsCountRange.value = cpuIterationsCount.toString();
-        iterationsCountRange.max = cpuMaxIterationsCount.toString();
+        let iterationsCount = getIterationsCount();
+        if (iterationsCount > CPU_MAX_ITERATIONS_COUNT) {
+            iterationsCountDisplay.value = iterationsCountRange.value = CPU_MAX_ITERATIONS_COUNT.toString();
+        }
+        iterationsCountRange.max = CPU_MAX_ITERATIONS_COUNT.toString();
         cpuCanvas.style.display = 'block';
         gpuCanvas.style.display = 'none';
         threadsCountRange.disabled = false;
@@ -269,9 +271,8 @@ async function run() {
     rootsCanvas.addEventListener("click", CanvasClick);
     rootsCanvas.addEventListener("mousemove", CanvasMouseMove);
     window.addEventListener("resize", WindowResize);
-    iterationsCountRange.max = cpuMaxIterationsCount.toString();
+    iterationsCountRange.max = CPU_MAX_ITERATIONS_COUNT.toString();
     let iterationsCount = getIterationsCount();
-    cpuIterationsCount = iterationsCount;
     let firstDraw = runDrawingWorkers(DrawingModes.CpuWasmScalar, plotScale, roots, iterationsCount, regionColors);
     firstDraw.then(async () => {
         WindowResize();

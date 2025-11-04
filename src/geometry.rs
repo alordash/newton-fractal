@@ -32,19 +32,12 @@ pub fn transform_point_to_canvas_scale(x: f32, y: f32, plot_scale: &PlotScale) -
 // x = x_offset + x * x_value_range / width
 // y = y_offset + y * y_value_range / height
 #[target_feature(enable = "simd128")]
-pub fn simd_transform_point_to_plot_scale(
-    x1: f32,
-    y1: f32,
-    x2: f32,
-    y2: f32,
-    plot_scale: &PlotScale,
-) -> v128 {
-    // Note: because values in PlotScale are located linear
-    // in memory we can use pointer to x-related values
-    // to extract simultaneously both x- and y-related
-    // values. To do this, the pointer is cast to u64.
+pub fn simd_transform_point_to_plot_scale(_points: v128, plot_scale: &PlotScale) -> v128 {
+    // Note: because parameters in PlotScale are arranged
+    // linearly in memory, we can use pointer to x-related
+    // params to extract simultaneously both x- and y-related
+    // params. To do this, the pointer is cast to u64.
     unsafe {
-        let _source_points = f32x4(x1, y1, x2, y2);
         // For short x_value_range = xr, y_value_range = yr
         // _ranges = [xr, yr, xr, yr]
         let _ranges = v128_load64_splat(addr_of!(plot_scale.x_value_range) as *const u64);
@@ -58,7 +51,7 @@ pub fn simd_transform_point_to_plot_scale(
 
         // x * x_value_range
         // [x1 * xr, y1 * yr, x2 * xr, y2 * yr]
-        let _mul = f32x4_mul(_source_points, _ranges);
+        let _mul = f32x4_mul(_points, _ranges);
 
         // x * x_value_range / width
         // [

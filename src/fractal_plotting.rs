@@ -71,7 +71,7 @@ pub fn calculate_part_size(
     offset: usize,
     step: usize,
 ) -> usize {
-    ((total_size * offset) as f32 / (parts_count * step) as f32).round() as usize * step
+    ((total_size * offset) as f32 / (parts_count * step) as f32).floor() as usize * step
 }
 
 pub fn fill_pixels_scalar(
@@ -95,36 +95,15 @@ pub fn fill_pixels_scalar(
     } = *plot_scale;
     let (w_int, h_int) = (width as usize, height as usize);
 
-    let filler = |x: usize, y: usize| {
-        let mut min_d = f32::MAX;
-        let mut closest_root_id: usize = 0;
-        let (xp, yp) = transform_point_to_plot_scale(x as f32, y as f32, &plot_scale);
-        let mut z = Complex32::new(xp, yp);
-        for _ in 0..iterations_count {
-            let (id, new_point) = newton_method_approx(z, &roots);
-            if (id & (1 << 31)) == 0 {
-                return colors[id];
-            }
-            z = new_point;
-        }
-
-        for (i, root) in roots.iter().enumerate() {
-            let d = (z - root).norm_sqr().sqrt();
-            if d < min_d {
-                min_d = d;
-                closest_root_id = i;
-            }
-        }
-        colors[closest_root_id]
-    };
-
     let total_size = w_int * h_int;
     let this_border = calculate_part_size(total_size, parts_count, part_offset, 1);
     let next_border = calculate_part_size(total_size, parts_count, part_offset + 1, 1);
 
     unsafe {
         for i in this_border..next_border {
-            *buffer_ptr.add(i) = filler(i % w_int, i / w_int);
+            let (x, y) =
+                transform_point_to_plot_scale((i % w_int) as f32, (i / w_int) as f32, &plot_scale);
+            *buffer_ptr.add(i) = colors[get_root_id(Complex32::new(x, y), roots, iterations_count)];
         }
     }
 }
@@ -139,11 +118,6 @@ pub fn fill_pixels_simd(
     part_offset: Option<usize>,
     parts_count: Option<usize>,
 ) {
-    let (part_offset, parts_count) = (
-        part_offset.or(Some(0)).unwrap(),
-        parts_count.or(Some(1)).unwrap(),
-    );
-
     let PlotScale {
         x_display_range: width,
         y_display_range: height,
@@ -151,13 +125,30 @@ pub fn fill_pixels_simd(
     } = *plot_scale;
     let (w_int, h_int) = (width as usize, height as usize);
 
-    let filler = |x: usize, y: usize| {
-        let mut _min_distances = SimdMath::F32_MAXIMUMS;
-        let mut _closest_root_ids = SimdMath::I32_ZEROES;
-        // Simd can be used here
-        let (x, y) = (4.0 * x as f32, y as f32);
-        let mut _points1 = simd_transform_point_to_plot_scale(x + 0.0, y, x + 1.0, y, &plot_scale);
-        let mut _points2 = simd_transform_point_to_plot_scale(x + 2.0, y, x + 3.0, y, &plot_scale);
+    let (part_offset, parts_count) = (
+        part_offset.or(Some(0)).unwrap(),
+        parts_count.or(Some(1)).unwrap(),
+    );
+
+    let filler = |_xs: v128, _ys: v128| -> ColorsPack {
+        let mut _min_distances = SimdMath::_F32_MAX;
+        let mut _closest_root_ids = SimdMath::_I32_ZERO;
+
+        let mut _points1 = f32x4(
+            f32x4_extract_lane::<0>(_xs),
+            f32x4_extract_lane::<0>(_ys),
+            f32x4_extract_lane::<1>(_xs),
+            f32x4_extract_lane::<1>(_ys),
+        );
+        let mut _points2 = f32x4(
+            f32x4_extract_lane::<2>(_xs),
+            f32x4_extract_lane::<2>(_ys),
+            f32x4_extract_lane::<3>(_xs),
+            f32x4_extract_lane::<3>(_ys),
+        );
+
+        _points1 = simd_transform_point_to_plot_scale(_points1, &plot_scale);
+        _points2 = simd_transform_point_to_plot_scale(_points2, &plot_scale);
         for _ in 0..iterations_count {
             unsafe {
                 _points1 = simd_newton_method_approx_for_two_numbers(_points1, &roots);
@@ -168,9 +159,10 @@ pub fn fill_pixels_simd(
             for (i, &root) in roots.iter().enumerate() {
                 let _ids = i32x4_splat(i as i32);
                 let _root = v128_load64_splat(addr_of!(root) as *const u64);
-                let _sqrt1 = SimdMath::calculate_distance(_points1, _root);
-                let _sqrt2 = SimdMath::calculate_distance(_points2, _root);
-                let _distance = i32x4_shuffle::<0, 2, 4, 6>(_sqrt1, _sqrt2);
+                let _dist1 = SimdMath::calculate_square_norm(_points1, _root);
+                let _dist2 = SimdMath::calculate_square_norm(_points2, _root);
+                let _distance = i32x4_shuffle::<0, 2, 4, 6>(_dist1, _dist2);
+
                 let _le_check = f32x4_lt(_distance, _min_distances);
                 _min_distances = f32x4_pmin(_distance, _min_distances);
                 _closest_root_ids = v128_bitselect(_ids, _closest_root_ids, _le_check);
@@ -186,10 +178,16 @@ pub fn fill_pixels_simd(
     let this_border = calculate_part_size(total_size, parts_count, part_offset, 4) / 4;
     let next_border = calculate_part_size(total_size, parts_count, part_offset + 1, 4) / 4;
 
-    let w_int = w_int / 4;
+    let _width = f32x4_splat(width);
+
     unsafe {
         for i in this_border..next_border {
-            *buffer_ptr.add(i) = filler(i % w_int, i / w_int);
+            let mut _i = f32x4_splat((4 * i) as f32);
+            _i = f32x4_add(_i, f32x4(0.0, 1.0, 2.0, 3.0));
+            let _xs = SimdMath::f32x4_mod(_i, _width);
+            let _ys = f32x4_floor(f32x4_div(_i, _width));
+
+            *(buffer_ptr.add(i)) = filler(_xs, _ys);
         }
     }
 }
